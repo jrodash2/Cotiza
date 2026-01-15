@@ -7,52 +7,32 @@
     <div class="col-12">
       <div class="card">
         <div class="card-header">
-          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+          <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
             <h5 class="mb-0">Cotizaciones</h5>
-            <div class="d-flex gap-2">
-              <a class="btn btn-primary btn-lg" href="{% url 'cotizaciones:cotizacion_create' %}">➕ Nueva Cotización</a>
-              <a class="btn btn-outline-secondary" href="{% url 'cotizaciones:cliente_list' %}">Clientes</a>
-              <a class="btn btn-outline-secondary" href="{% url 'cotizaciones:producto_list' %}">Productos/Servicios</a>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              <form method="get" class="d-flex flex-wrap gap-2">
+                <select class="form-select" name="cliente">
+                  <option value="">Todos</option>
+                  {% for cliente in clientes %}
+                    <option value="{{ cliente.id }}" {% if request.GET.cliente == cliente.id|stringformat:'s' %}selected{% endif %}>{{ cliente.nombre }}</option>
+                  {% endfor %}
+                </select>
+                <select class="form-select" name="estado">
+                  <option value="">Todos</option>
+                  {% for value,label in estados %}
+                    <option value="{{ value }}" {% if request.GET.estado == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <input type="date" class="form-control" name="fecha_inicio" value="{{ request.GET.fecha_inicio }}">
+                <input type="date" class="form-control" name="fecha_fin" value="{{ request.GET.fecha_fin }}">
+                <input type="text" class="form-control" name="q" placeholder="00151" value="{{ request.GET.q }}">
+                <button class="btn btn-outline-primary" type="submit">Filtrar</button>
+              </form>
+              <a class="btn btn-primary" href="{% url 'cotizaciones:cotizacion_create' %}">➕ Nueva Cotización</a>
             </div>
           </div>
         </div>
         <div class="card-body">
-          <form method="get" class="row g-3 mb-4">
-            <div class="col-md-3">
-              <label class="form-label">Cliente</label>
-              <select class="form-select" name="cliente">
-                <option value="">Todos</option>
-                {% for cliente in clientes %}
-                  <option value="{{ cliente.id }}" {% if request.GET.cliente == cliente.id|stringformat:'s' %}selected{% endif %}>{{ cliente.nombre }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Estado</label>
-              <select class="form-select" name="estado">
-                <option value="">Todos</option>
-                {% for value,label in estados %}
-                  <option value="{{ value }}" {% if request.GET.estado == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Fecha inicio</label>
-              <input type="date" class="form-control" name="fecha_inicio" value="{{ request.GET.fecha_inicio }}">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Fecha fin</label>
-              <input type="date" class="form-control" name="fecha_fin" value="{{ request.GET.fecha_fin }}">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Correlativo</label>
-              <input type="text" class="form-control" name="q" placeholder="00151" value="{{ request.GET.q }}">
-            </div>
-            <div class="col-md-1 d-flex align-items-end">
-              <button class="btn btn-outline-primary w-100" type="submit">Filtrar</button>
-            </div>
-          </form>
-
           <div class="table-responsive">
             <table class="table table-bordered table-striped">
               <thead class="table-light">
@@ -83,8 +63,8 @@
                     {% endif %}
                     <td>
                       <div class="d-flex flex-wrap gap-2">
-                        <a class="btn btn-sm btn-outline-primary" href="{% url 'cotizaciones:cotizacion_detail' cotizacion.pk %}">Ver</a>
-                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'cotizaciones:cotizacion_update' cotizacion.pk %}">Editar</a>
+                        <a class="btn btn-outline-secondary btn-sm" href="{% url 'cotizaciones:cotizacion_detail' cotizacion.pk %}">Ver</a>
+                        <a class="btn btn-outline-primary btn-sm" href="{% url 'cotizaciones:cotizacion_update' cotizacion.pk %}">Editar</a>
                         <a class="btn btn-sm btn-outline-success" href="{% url 'cotizaciones:cotizacion_pdf' cotizacion.pk %}">PDF</a>
                       </div>
                     </td>
