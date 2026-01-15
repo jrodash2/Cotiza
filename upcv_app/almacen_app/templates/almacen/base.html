@@ -71,10 +71,30 @@
   <body> 
 
     <style>
- footer {
-  flex-shrink: 0;
-}
-</style>
+      :root {
+        --sidebar-width: 260px;
+      }
+
+      .page-body-wrapper {
+        position: relative;
+      }
+
+      .main-content {
+        margin-left: var(--sidebar-width);
+        padding: 20px;
+      }
+
+      @media (max-width: 991px) {
+        .main-content {
+          margin-left: 0;
+          padding: 15px;
+        }
+      }
+
+      footer {
+        flex-shrink: 0;
+      }
+    </style>
 
     <!-- loader starts-->
     <div class="loader-wrapper">
@@ -459,9 +479,11 @@
         <!-- Page Sidebar Ends-->
         
           
-          {% block content %}
-          <!-- El contenido de la página se inyectará aquí -->
-          {% endblock %}
+          <main class="main-content">
+            {% block content %}
+            <!-- El contenido de la página se inyectará aquí -->
+            {% endblock %}
+          </main>
 
 
         </div>
