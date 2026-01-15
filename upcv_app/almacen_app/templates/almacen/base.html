@@ -73,6 +73,16 @@
     <style>
       :root {
         --sidebar-width: 260px;
+        --header-height: 70px;
+      }
+
+      .page-header {
+        position: fixed;
+        top: 0;
+        left: var(--sidebar-width);
+        right: 0;
+        height: var(--header-height);
+        z-index: 1030;
       }
 
       .page-body-wrapper {
@@ -81,10 +91,15 @@
 
       .main-content {
         margin-left: var(--sidebar-width);
+        margin-top: var(--header-height);
         padding: 20px;
       }
 
       @media (max-width: 991px) {
+        .page-header {
+          left: 0;
+        }
+
         .main-content {
           margin-left: 0;
           padding: 15px;
