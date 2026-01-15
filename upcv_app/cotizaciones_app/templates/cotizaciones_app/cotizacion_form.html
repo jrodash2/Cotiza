@@ -1,0 +1,124 @@
+{% extends 'almacen/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">{% if cotizacion %}Editar{% else %}Nueva{% endif %} cotización</h5>
+        </div>
+        <div class="card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">Fecha emisión</label>
+                {{ form.fecha_emision }}
+                {{ form.fecha_emision.errors }}
+              </div>
+              <div class="col-md-5">
+                <label class="form-label">Cliente</label>
+                {{ form.cliente }}
+                {{ form.cliente.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Título</label>
+                {{ form.titulo }}
+                {{ form.titulo.errors }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Validez (días)</label>
+                {{ form.validez_dias }}
+                {{ form.validez_dias.errors }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Garantía</label>
+                {{ form.garantia_texto }}
+                {{ form.garantia_texto.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Estado</label>
+                {{ form.estado }}
+                {{ form.estado.errors }}
+              </div>
+              <div class="col-md-12">
+                <label class="form-label">Observaciones</label>
+                {{ form.observaciones }}
+                {{ form.observaciones.errors }}
+              </div>
+            </div>
+
+            <hr class="my-4">
+            <h6>Ítems</h6>
+            {% if formset.non_form_errors %}
+              <div class="alert alert-danger">
+                {{ formset.non_form_errors }}
+              </div>
+            {% endif %}
+            {{ formset.management_form }}
+            <div class="table-responsive">
+              <table class="table table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th style="min-width: 200px;">Producto/Servicio</th>
+                    <th style="min-width: 180px;">Descripción</th>
+                    <th style="width: 120px;">Cantidad</th>
+                    <th style="width: 150px;">Precio venta</th>
+                    {% if show_costs %}
+                      <th style="width: 150px;">Precio costo</th>
+                    {% endif %}
+                    <th style="width: 120px;">Eliminar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item_form in formset %}
+                    <tr>
+                      <td>
+                        {{ item_form.producto_servicio }}
+                        {{ item_form.producto_servicio.errors }}
+                      </td>
+                      <td>
+                        {{ item_form.descripcion_editable }}
+                        {{ item_form.descripcion_editable.errors }}
+                      </td>
+                      <td>
+                        {{ item_form.cantidad }}
+                        {{ item_form.cantidad.errors }}
+                      </td>
+                      <td>
+                        {{ item_form.precio_venta_unitario }}
+                        {{ item_form.precio_venta_unitario.errors }}
+                      </td>
+                      {% if show_costs %}
+                        <td>
+                          {{ item_form.precio_costo_unitario }}
+                          {{ item_form.precio_costo_unitario.errors }}
+                        </td>
+                      {% endif %}
+                      <td class="text-center">
+                        {% if item_form.instance.pk %}
+                          {{ item_form.DELETE }}
+                        {% endif %}
+                      </td>
+                      {% for hidden in item_form.hidden_fields %}
+                        {{ hidden }}
+                      {% endfor %}
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="d-flex gap-2 justify-content-end">
+              <a class="btn btn-outline-secondary" href="{% url 'cotizaciones:cotizacion_list' %}">Cancelar</a>
+              <button class="btn btn-primary" type="submit">Guardar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
