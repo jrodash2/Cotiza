@@ -3,7 +3,7 @@ from django.urls import path
 from . import views
 
 
-app_name = 'cotizaciones_app'
+app_name = 'cotizaciones'
 
 urlpatterns = [
     path('clientes/', views.ClienteListView.as_view(), name='cliente_list'),
@@ -14,7 +14,7 @@ urlpatterns = [
     path('productos/<int:pk>/editar/', views.ProductoServicioUpdateView.as_view(), name='producto_update'),
     path('', views.CotizacionListView.as_view(), name='cotizacion_list'),
     path('nueva/', views.CotizacionCreateView.as_view(), name='cotizacion_create'),
-    path('<int:pk>/', views.cotizacion_detail, name='cotizacion_detail'),
+    path('<int:pk>/', views.CotizacionDetailView.as_view(), name='cotizacion_detail'),
     path('<int:pk>/editar/', views.CotizacionUpdateView.as_view(), name='cotizacion_update'),
     path('<int:pk>/pdf/', views.cotizacion_pdf, name='cotizacion_pdf'),
     path('<int:pk>/print/', views.cotizacion_print, name='cotizacion_print'),

@@ -13,9 +13,9 @@
               <small class="text-muted">{{ cotizacion.fecha_emision }} · {{ cotizacion.get_estado_display }}</small>
             </div>
             <div class="d-flex flex-wrap gap-2">
-              <a class="btn btn-outline-secondary" href="{% url 'cotizaciones_app:cotizacion_update' cotizacion.pk %}">Editar</a>
-              <a class="btn btn-outline-success" href="{% url 'cotizaciones_app:cotizacion_pdf' cotizacion.pk %}">Descargar PDF</a>
-              <a class="btn btn-outline-primary" href="{% url 'cotizaciones_app:cotizacion_print' cotizacion.pk %}?download=jpg" target="_blank">Descargar JPG</a>
+              <a class="btn btn-outline-secondary" href="{% url 'cotizaciones:cotizacion_update' cotizacion.pk %}">Editar</a>
+              <a class="btn btn-outline-success" href="{% url 'cotizaciones:cotizacion_pdf' cotizacion.pk %}">Descargar PDF</a>
+              <a class="btn btn-outline-primary" href="{% url 'cotizaciones:cotizacion_print' cotizacion.pk %}?download=jpg" target="_blank">Descargar JPG</a>
             </div>
           </div>
         </div>

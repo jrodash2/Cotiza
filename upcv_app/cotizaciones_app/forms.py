@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django import forms
-from django.forms import inlineformset_factory
+from django.forms import BaseInlineFormSet, inlineformset_factory
 
 from .models import Cliente, ProductoServicio, Cotizacion, CotizacionItem
 
@@ -152,10 +152,28 @@ class CotizacionItemForm(forms.ModelForm):
         return cleaned_data
 
 
+class CotizacionItemInlineFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        items_validos = 0
+        for form in self.forms:
+            if not hasattr(form, "cleaned_data"):
+                continue
+            if form.cleaned_data.get("DELETE"):
+                continue
+            producto = form.cleaned_data.get("producto_servicio")
+            cantidad = form.cleaned_data.get("cantidad")
+            if producto and cantidad:
+                items_validos += 1
+        if items_validos == 0:
+            raise forms.ValidationError("Debes agregar al menos un ítem a la cotización.")
+
+
 CotizacionItemFormSet = inlineformset_factory(
     Cotizacion,
     CotizacionItem,
     form=CotizacionItemForm,
+    formset=CotizacionItemInlineFormSet,
     extra=3,
     can_delete=True,
 )

@@ -8,7 +8,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils.dateparse import parse_date
 from django.views import View
-from django.views.generic import CreateView, ListView, UpdateView
+from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from weasyprint import HTML
 
 from almacen_app.models import Institucion
@@ -45,7 +45,7 @@ class ClienteCreateView(LoginRequiredMixin, CreateView):
     model = Cliente
     form_class = ClienteForm
     template_name = 'cotizaciones_app/cliente_form.html'
-    success_url = reverse_lazy('cotizaciones_app:cliente_list')
+    success_url = reverse_lazy('cotizaciones:cliente_list')
 
     def form_valid(self, form):
         messages.success(self.request, 'Cliente creado correctamente.')
@@ -56,7 +56,7 @@ class ClienteUpdateView(LoginRequiredMixin, UpdateView):
     model = Cliente
     form_class = ClienteForm
     template_name = 'cotizaciones_app/cliente_form.html'
-    success_url = reverse_lazy('cotizaciones_app:cliente_list')
+    success_url = reverse_lazy('cotizaciones:cliente_list')
 
     def form_valid(self, form):
         messages.success(self.request, 'Cliente actualizado correctamente.')
@@ -81,7 +81,7 @@ class ProductoServicioCreateView(LoginRequiredMixin, CreateView):
     model = ProductoServicio
     form_class = ProductoServicioForm
     template_name = 'cotizaciones_app/producto_form.html'
-    success_url = reverse_lazy('cotizaciones_app:producto_list')
+    success_url = reverse_lazy('cotizaciones:producto_list')
 
     def form_valid(self, form):
         messages.success(self.request, 'Producto/servicio creado correctamente.')
@@ -92,7 +92,7 @@ class ProductoServicioUpdateView(LoginRequiredMixin, UpdateView):
     model = ProductoServicio
     form_class = ProductoServicioForm
     template_name = 'cotizaciones_app/producto_form.html'
-    success_url = reverse_lazy('cotizaciones_app:producto_list')
+    success_url = reverse_lazy('cotizaciones:producto_list')
 
     def form_valid(self, form):
         messages.success(self.request, 'Producto/servicio actualizado correctamente.')
@@ -154,7 +154,7 @@ class CotizacionCreateView(LoginRequiredMixin, View):
             formset.instance = cotizacion
             formset.save()
             messages.success(request, 'Cotización creada correctamente.')
-            return redirect('cotizaciones_app:cotizacion_detail', pk=cotizacion.pk)
+            return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
         messages.error(request, 'Revisa los errores en el formulario.')
         return render(
             request,
@@ -191,7 +191,7 @@ class CotizacionUpdateView(LoginRequiredMixin, View):
             form.save()
             formset.save()
             messages.success(request, 'Cotización actualizada correctamente.')
-            return redirect('cotizaciones_app:cotizacion_detail', pk=cotizacion.pk)
+            return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
         messages.error(request, 'Revisa los errores en el formulario.')
         return render(
             request,
@@ -200,19 +200,19 @@ class CotizacionUpdateView(LoginRequiredMixin, View):
         )
 
 
-@login_required
-def cotizacion_detail(request, pk):
-    cotizacion = get_object_or_404(Cotizacion.objects.select_related('cliente'), pk=pk)
-    items = cotizacion.items.select_related('producto_servicio')
-    return render(
-        request,
-        'cotizaciones_app/cotizacion_detail.html',
-        {
-            'cotizacion': cotizacion,
-            'items': items,
-            'show_costs': request.user.is_staff,
-        },
-    )
+class CotizacionDetailView(LoginRequiredMixin, DetailView):
+    model = Cotizacion
+    template_name = 'cotizaciones_app/cotizacion_detail.html'
+    context_object_name = 'cotizacion'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('cliente')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['items'] = self.object.items.select_related('producto_servicio')
+        context['show_costs'] = self.request.user.is_staff
+        return context
 
 
 @login_required
