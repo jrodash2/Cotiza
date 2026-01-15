@@ -1,0 +1,64 @@
+{% extends 'almacen/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Productos / Servicios</h5>
+            <a class="btn btn-primary" href="{% url 'cotizaciones_app:producto_create' %}">Nuevo</a>
+          </div>
+        </div>
+        <div class="card-body">
+          <form method="get" class="row g-3 mb-3">
+            <div class="col-md-4">
+              <input type="text" class="form-control" name="q" placeholder="Buscar por nombre o descripción" value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-outline-primary" type="submit">Buscar</button>
+            </div>
+          </form>
+
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead class="table-light">
+                <tr>
+                  <th>Tipo</th>
+                  <th>Nombre</th>
+                  <th>Unidad</th>
+                  <th>Precio costo</th>
+                  <th>Precio venta</th>
+                  <th>Activo</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for producto in productos %}
+                  <tr>
+                    <td>{{ producto.get_tipo_display }}</td>
+                    <td>{{ producto.nombre }}</td>
+                    <td>{{ producto.unidad }}</td>
+                    <td>Q {{ producto.precio_costo|floatformat:2 }}</td>
+                    <td>Q {{ producto.precio_venta|floatformat:2 }}</td>
+                    <td>{% if producto.activo %}Sí{% else %}No{% endif %}</td>
+                    <td>
+                      <a class="btn btn-sm btn-outline-secondary" href="{% url 'cotizaciones_app:producto_update' producto.pk %}">Editar</a>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="7" class="text-center">No hay productos/servicios registrados.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

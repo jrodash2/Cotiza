@@ -1,0 +1,104 @@
+{% extends 'almacen/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+            <div>
+              <h5 class="mb-1">Cotización {{ cotizacion.correlativo }}</h5>
+              <small class="text-muted">{{ cotizacion.fecha_emision }} · {{ cotizacion.get_estado_display }}</small>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <a class="btn btn-outline-secondary" href="{% url 'cotizaciones_app:cotizacion_update' cotizacion.pk %}">Editar</a>
+              <a class="btn btn-outline-success" href="{% url 'cotizaciones_app:cotizacion_pdf' cotizacion.pk %}">Descargar PDF</a>
+              <a class="btn btn-outline-primary" href="{% url 'cotizaciones_app:cotizacion_print' cotizacion.pk %}?download=jpg" target="_blank">Descargar JPG</a>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <h6 class="text-muted">Cliente</h6>
+              <p class="mb-1"><strong>{{ cotizacion.cliente.nombre }}</strong></p>
+              <p class="mb-1">{{ cotizacion.cliente.direccion }}</p>
+              <p class="mb-1">Tel: {{ cotizacion.cliente.telefono }}</p>
+              <p class="mb-0">NIT: {{ cotizacion.cliente.nit }}</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+              {% if cotizacion.titulo %}
+                <h5 class="mb-2">{{ cotizacion.titulo }}</h5>
+              {% endif %}
+              <p class="mb-1"><strong>Validez:</strong> {{ cotizacion.validez_dias }} días</p>
+              <p class="mb-0 text-danger fw-bold">{{ cotizacion.garantia_texto }}</p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead class="table-light">
+                <tr>
+                  <th>Descripción</th>
+                  <th style="width: 120px;">Cantidad</th>
+                  <th style="width: 160px;">Precio venta</th>
+                  <th style="width: 160px;">Total venta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in items %}
+                  <tr>
+                    <td>
+                      <strong>{{ item.producto_servicio.nombre }}</strong><br>
+                      {{ item.descripcion_editable|default:item.producto_servicio.descripcion }}
+                    </td>
+                    <td>{{ item.cantidad }}</td>
+                    <td>Q {{ item.precio_venta_unitario|floatformat:2 }}</td>
+                    <td>Q {{ item.total_linea_venta|floatformat:2 }}</td>
+                  </tr>
+                  {% if show_costs %}
+                    <tr class="table-secondary">
+                      <td colspan="4">
+                        <div class="d-flex flex-wrap gap-4">
+                          <span><strong>Precio costo:</strong> Q {{ item.precio_costo_unitario|floatformat:2 }}</span>
+                          <span><strong>Total costo:</strong> Q {{ item.total_linea_costo|floatformat:2 }}</span>
+                          <span><strong>Ganancia:</strong> Q {{ item.ganancia_linea|floatformat:2 }}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  {% endif %}
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="text-center">No hay ítems registrados.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="row justify-content-end">
+            <div class="col-md-4">
+              <div class="border rounded p-3 bg-light">
+                <p class="mb-1"><strong>Subtotal venta:</strong> Q {{ cotizacion.subtotal_venta|floatformat:2 }}</p>
+                {% if show_costs %}
+                  <p class="mb-1"><strong>Subtotal costo:</strong> Q {{ cotizacion.subtotal_costo|floatformat:2 }}</p>
+                  <p class="mb-0"><strong>Ganancia total:</strong> Q {{ cotizacion.ganancia_total|floatformat:2 }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          {% if cotizacion.observaciones %}
+            <div class="mt-4">
+              <h6>Observaciones</h6>
+              <p class="mb-0">{{ cotizacion.observaciones }}</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
