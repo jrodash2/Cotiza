@@ -270,6 +270,22 @@
                     </svg><span>Dashboard</span></a>
                   
                 </li>
+                <li class="sidebar-list"><i class="fa fa-thumb-tack"></i>
+                  <a class="sidebar-link sidebar-title" href="#">
+                    <svg class="stroke-icon">
+                      <use href="../assets/svg/icon-sprite.svg#stroke-gallery"></use>
+                    </svg>
+                    <svg class="fill-icon">
+                      <use href="../assets/svg/icon-sprite.svg#fill-gallery"></use>
+                    </svg>
+                    <span>Cotizaciones</span>
+                  </a>
+                  <ul class="sidebar-submenu">
+                    <li><a href="{% url 'cotizaciones:cotizacion_list' %}">Cotizaciones</a></li>
+                    <li><a href="{% url 'cotizaciones:cliente_list' %}">Clientes</a></li>
+                    <li><a href="{% url 'cotizaciones:producto_list' %}">Productos / Servicios</a></li>
+                  </ul>
+                </li>
                 
 
 
@@ -305,6 +321,22 @@
                       <use href="../assets/svg/icon-sprite.svg#fill-home"></use>
                     </svg><span>Dashboard</span></a>
                   
+                </li>
+                <li class="sidebar-list"><i class="fa fa-thumb-tack"></i>
+                  <a class="sidebar-link sidebar-title" href="#">
+                    <svg class="stroke-icon">
+                      <use href="../assets/svg/icon-sprite.svg#stroke-gallery"></use>
+                    </svg>
+                    <svg class="fill-icon">
+                      <use href="../assets/svg/icon-sprite.svg#fill-gallery"></use>
+                    </svg>
+                    <span>Cotizaciones</span>
+                  </a>
+                  <ul class="sidebar-submenu">
+                    <li><a href="{% url 'cotizaciones:cotizacion_list' %}">Cotizaciones</a></li>
+                    <li><a href="{% url 'cotizaciones:cliente_list' %}">Clientes</a></li>
+                    <li><a href="{% url 'cotizaciones:producto_list' %}">Productos / Servicios</a></li>
+                  </ul>
                 </li>
                 
                 <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link " href="{% url 'almacen:crear_form1h' %}">
