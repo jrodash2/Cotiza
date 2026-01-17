@@ -15,6 +15,8 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from weasyprint import HTML
 
 from almacen_app.models import Institucion
+from django.contrib.staticfiles import finders
+from django.templatetags.static import static
 
 from .forms import (
     ClienteForm,
@@ -314,6 +316,13 @@ def _get_cotizacion_context(pk):
     return cotizacion, items, institucion
 
 
+def _get_logo_url(request, for_pdf=False):
+    logo_path = finders.find('assets/images/logo/logo.png')
+    if for_pdf and logo_path:
+        return f"file://{logo_path}"
+    return request.build_absolute_uri(static('assets/images/logo/logo.png'))
+
+
 def _require_staff(user):
     if not user_can_view_costs(user):
         raise PermissionDenied
@@ -323,6 +332,7 @@ def _require_staff(user):
 def cotizacion_print(request, pk):
     cotizacion, items, institucion = _get_cotizacion_context(pk)
     download_jpg = request.GET.get('download') == 'jpg'
+    logo_url = _get_logo_url(request, for_pdf=False)
     return render(
         request,
         'cotizaciones_app/cotizacion_cliente_jpg.html',
@@ -330,6 +340,9 @@ def cotizacion_print(request, pk):
             'cotizacion': cotizacion,
             'items': items,
             'institucion': institucion,
+            'logo_url': logo_url,
+            'account_number': '123-456789-0',
+            'bank_name': None,
             'show_costs': False,
             'download_jpg': download_jpg,
         },
@@ -339,12 +352,16 @@ def cotizacion_print(request, pk):
 @login_required
 def cotizacion_pdf(request, pk):
     cotizacion, items, institucion = _get_cotizacion_context(pk)
+    logo_url = _get_logo_url(request, for_pdf=True)
     html_string = render_to_string(
         'cotizaciones_app/cotizacion_cliente_pdf.html',
         {
             'cotizacion': cotizacion,
             'items': items,
             'institucion': institucion,
+            'logo_url': logo_url,
+            'account_number': '123-456789-0',
+            'bank_name': None,
             'show_costs': False,
             'download_jpg': False,
         },
@@ -361,6 +378,7 @@ def cotizacion_pdf(request, pk):
 @login_required
 def cotizacion_cliente_jpg(request, pk):
     cotizacion, items, institucion = _get_cotizacion_context(pk)
+    logo_url = _get_logo_url(request, for_pdf=False)
     return render(
         request,
         'cotizaciones_app/cotizacion_cliente_jpg.html',
@@ -368,6 +386,9 @@ def cotizacion_cliente_jpg(request, pk):
             'cotizacion': cotizacion,
             'items': items,
             'institucion': institucion,
+            'logo_url': logo_url,
+            'account_number': '123-456789-0',
+            'bank_name': None,
             'show_costs': False,
             'download_jpg': True,
         },
