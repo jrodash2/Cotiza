@@ -145,48 +145,72 @@ class CotizacionListView(LoginRequiredMixin, ListView):
         return context
 
 
-class CotizacionCreateView(LoginRequiredMixin, View):
+class CotizacionCreateView(LoginRequiredMixin, CreateView):
+    model = Cotizacion
+    form_class = CotizacionForm
     template_name = 'cotizaciones_app/cotizacion_form.html'
 
-    def get(self, request):
-        form = CotizacionForm()
-        formset = CotizacionItemFormSet(
-            form_kwargs={'show_costs': user_can_view_costs(request.user)},
-            prefix='items',
-        )
-        return render(
-            request,
-            self.template_name,
-            {'form': form, 'formset': formset, 'show_costs': user_can_view_costs(request.user)},
-        )
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.POST:
+            context['formset'] = CotizacionItemFormSet(
+                self.request.POST,
+                form_kwargs={'show_costs': user_can_view_costs(self.request.user)},
+                prefix='items',
+            )
+        else:
+            context['formset'] = CotizacionItemFormSet(
+                form_kwargs={'show_costs': user_can_view_costs(self.request.user)},
+                prefix='items',
+            )
+        context['show_costs'] = user_can_view_costs(self.request.user)
+        return context
 
-    def post(self, request):
-        form = CotizacionForm(request.POST)
+    def post(self, request, *args, **kwargs):
+        form = self.get_form()
         formset = CotizacionItemFormSet(
             request.POST,
-            form_kwargs={'show_costs': user_can_view_costs(request.user)},
+            form_kwargs={'show_costs': user_can_view_costs(self.request.user)},
             prefix='items',
         )
+
+        # print("POST keys:", [k for k in request.POST.keys() if k.startswith("items-")][:80])
+        # print("TOTAL_FORMS:", request.POST.get("items-TOTAL_FORMS"))
+        # print("form valid:", form.is_valid())
+        # print("formset valid:", formset.is_valid())
+        # print("form errors:", form.errors)
+        # print("formset errors:", formset.errors)
+        # print("non_form_errors:", formset.non_form_errors())
+
         if form.is_valid() and formset.is_valid():
-            cotizacion = form.save()
+            return self.forms_valid(form, formset)
+        return self.forms_invalid(form, formset)
+
+    def forms_invalid(self, form, formset):
+        messages.error(self.request, 'Revisa los errores en el formulario.')
+        return self.render_to_response(self.get_context_data(form=form, formset=formset))
+
+    def forms_valid(self, form, formset):
+        with transaction.atomic():
+            cotizacion = form.save(commit=False)
+            cotizacion.fecha_emision = timezone.now().date()
+            cotizacion.save()
+
             formset.instance = cotizacion
             items = formset.save(commit=False)
             for item in items:
+                item.cotizacion = cotizacion
                 item.precio_venta_unitario = item.producto_servicio.precio_venta
                 item.precio_costo_unitario = item.producto_servicio.precio_costo
                 if not item.descripcion_editable:
                     item.descripcion_editable = item.producto_servicio.descripcion
                 item.save()
-            for item in formset.deleted_objects:
-                item.delete()
-            messages.success(request, 'Cotización creada correctamente.')
-            return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
-        messages.error(request, 'Revisa los errores en el formulario.')
-        return render(
-            request,
-            self.template_name,
-            {'form': form, 'formset': formset, 'show_costs': user_can_view_costs(request.user)},
-        )
+            if hasattr(formset, 'deleted_objects'):
+                for item in formset.deleted_objects:
+                    item.delete()
+
+        messages.success(self.request, 'Cotización creada correctamente.')
+        return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
 
 
 class CotizacionUpdateView(LoginRequiredMixin, UpdateView):
