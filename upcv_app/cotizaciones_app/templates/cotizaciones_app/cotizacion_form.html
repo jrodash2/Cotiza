@@ -2,9 +2,9 @@
 {% load static %}
 
 {% block content %}
-<div class="form-page-wrap">
+<div class="container-fluid form-page-wrap">
   <div class="card">
-    <div class="card-header d-flex align-items-center justify-content-between">
+    <div class="card-header d-flex flex-wrap gap-2 align-items-center justify-content-between">
       <h5 class="mb-0">{% if cotizacion %}Editar{% else %}Nueva{% endif %} cotización</h5>
       <a class="btn btn-light" href="{% url 'cotizaciones:cotizacion_list' %}">Volver</a>
     </div>
@@ -28,8 +28,8 @@
                   </div>
                   <div class="col-12 col-md-3">
                     <label class="form-label">Fecha emisión</label>
-                    {{ form.fecha_emision }}
-                    {{ form.fecha_emision.errors }}
+                    {{ form.fecha_emision.as_hidden }}
+                    <p class="form-control-plaintext mb-0">{{ form.instance.fecha_emision|default:'' }}</p>
                   </div>
                   <div class="col-12 col-md-3">
                     <label class="form-label">Estado</label>
@@ -68,50 +68,60 @@
                     {{ formset.non_form_errors }}
                   </div>
                 {% endif %}
-                <div class="d-flex justify-content-end mb-3">
-                  <button type="button" class="btn btn-primary btn-sm" id="add-item-btn">+ Agregar ítem</button>
+                {% for item_form in formset %}
+                  {% if item_form.errors %}
+                    <div class="alert alert-danger">
+                      {{ item_form.errors }}
+                    </div>
+                  {% endif %}
+                {% endfor %}
+                <div class="d-flex flex-wrap gap-2 justify-content-end mb-3">
+                  <button type="button" class="btn btn-primary" id="add-item-btn">+ Agregar ítem</button>
                 </div>
                 {{ formset.management_form }}
                 <div class="table-responsive">
                   <table class="table table-sm table-bordered align-middle" id="items-table">
                     <thead class="table-light">
                       <tr>
-                        <th style="min-width: 240px;">Producto/Servicio</th>
-                        <th style="width: 140px;">Cantidad</th>
-                        <th style="width: 160px;">Precio</th>
-                        <th style="width: 160px;">Subtotal</th>
-                        <th style="width: 140px;">Acciones</th>
+                        <th class="w-50">Producto/Servicio</th>
+                        <th class="text-nowrap">Cantidad</th>
+                        <th class="text-nowrap">Precio</th>
+                        <th class="text-nowrap">Subtotal</th>
+                        <th class="text-nowrap">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody data-formset-prefix="{{ formset.prefix }}" data-price-url="{% url 'cotizaciones:producto_precio' 0 %}">
+                    <tbody id="items-tbody" data-formset-prefix="items" data-price-url="{% url 'cotizaciones:producto_precio' 0 %}">
                       {% for item_form in formset %}
-                        <tr class="item-form">
-                          <td>
+                        <tr class="item-row">
+                          <td class="w-50">
+                            {{ item_form.id }}
                             {{ item_form.producto_servicio }}
                             {{ item_form.producto_servicio.errors }}
                           </td>
-                          <td>
+                          <td class="w-25">
                             {{ item_form.cantidad }}
                             {{ item_form.cantidad.errors }}
                           </td>
                           <td class="text-nowrap">
-                            <span class="js-precio">
+                            <span class="js-precio" data-value="0">
                               Q {{ item_form.instance.precio_venta_unitario|default_if_none:"0.00"|floatformat:2 }}
                             </span>
                           </td>
                           <td class="text-nowrap">
-                            <span class="js-subtotal">
+                            <span class="js-subtotal" data-value="0">
                               Q {{ item_form.instance.total_linea_venta|default_if_none:"0.00"|floatformat:2 }}
                             </span>
                           </td>
-                          <td>
+                          <td class="text-nowrap">
                             {% if formset.can_delete %}
-                              <span class="d-none">{{ item_form.DELETE }}</span>
-                              <button type="button" class="btn btn-outline-danger btn-sm js-remove">Eliminar</button>
+                              {{ item_form.DELETE }}
                             {% endif %}
+                            <button type="button" class="btn btn-outline-danger btn-sm js-remove">Eliminar</button>
                           </td>
                           {% for hidden in item_form.hidden_fields %}
-                            {{ hidden }}
+                            {% if hidden.name != 'id' %}
+                              {{ hidden }}
+                            {% endif %}
                           {% endfor %}
                         </tr>
                       {% endfor %}
@@ -119,20 +129,22 @@
                   </table>
                 </div>
                 <template id="item-row-template">
-                  <tr class="item-form">
-                    <td>{{ formset.empty_form.producto_servicio }}</td>
-                    <td>{{ formset.empty_form.cantidad }}</td>
-                    <td class="text-nowrap"><span class="js-precio">Q 0.00</span></td>
-                    <td class="text-nowrap"><span class="js-subtotal">Q 0.00</span></td>
-                    <td>
-                      {% if formset.can_delete %}
-                        <span class="d-none">{{ formset.empty_form.DELETE }}</span>
-                        <button type="button" class="btn btn-outline-danger btn-sm js-remove">Eliminar</button>
-                      {% endif %}
+                  <tr class="item-row">
+                    <td class="w-50">
+                      {{ formset.empty_form.id }}
+                      {{ formset.empty_form.producto_servicio }}
                     </td>
-                    {% for hidden in formset.empty_form.hidden_fields %}
-                      {{ hidden }}
-                    {% endfor %}
+                    <td class="w-25">
+                      {{ formset.empty_form.cantidad }}
+                    </td>
+                    <td class="text-nowrap"><span class="js-precio" data-value="0">Q 0.00</span></td>
+                    <td class="text-nowrap"><span class="js-subtotal" data-value="0">Q 0.00</span></td>
+                    <td class="text-nowrap">
+                      {% if formset.can_delete %}
+                        {{ formset.empty_form.DELETE }}
+                      {% endif %}
+                      <button type="button" class="btn btn-outline-danger btn-sm js-remove">Eliminar</button>
+                    </td>
                   </tr>
                 </template>
               </div>
@@ -157,7 +169,7 @@
             </div>
           </div>
         </div>
-        <div class="d-flex gap-2 justify-content-end mt-4">
+        <div class="d-flex flex-wrap gap-2 justify-content-end mt-4">
           <a class="btn btn-light" href="{% url 'cotizaciones:cotizacion_list' %}">Cancelar</a>
           <button class="btn btn-primary" type="submit">Guardar</button>
         </div>
@@ -167,18 +179,17 @@
 </div>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const tableBody = document.querySelector('#items-table tbody');
+    const tableBody = document.getElementById('items-tbody');
     const addButton = document.getElementById('add-item-btn');
     const template = document.getElementById('item-row-template');
     if (!tableBody || !addButton || !template) {
-      return;
-    }
+          return;
+        }
 
-    const formsetPrefix = tableBody.dataset.formsetPrefix;
-    const totalFormsInput = document.querySelector(`input[name="${formsetPrefix}-TOTAL_FORMS"]`);
+    const totalFormsInput = document.getElementById('id_items-TOTAL_FORMS');
     const priceUrlTemplate = tableBody.dataset.priceUrl;
 
-    const buildPriceUrl = (productId) => priceUrlTemplate.replace('0/', `${productId}/`);
+        const buildPriceUrl = (productId) => priceUrlTemplate.replace('0/', `${productId}/`);
 
     const parsePrice = (value) => {
       const cleaned = value.replace('Q', '').replace(',', '').trim();
@@ -240,33 +251,47 @@
           const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
           if (deleteInput) {
             deleteInput.checked = true;
-            row.classList.add('d-none');
+            row.style.display = 'none';
             return;
           }
           row.remove();
-          if (totalFormsInput) {
-            totalFormsInput.value = Math.max(parseInt(totalFormsInput.value, 10) - 1, 0);
-          }
         });
       }
     };
 
+    const buildRowFromTemplate = (index) => {
+      const html = template.innerHTML.replaceAll('__prefix__', index);
+      return html;
+    };
+
     const addRow = () => {
-      const formIndex = parseInt(totalFormsInput.value, 10);
-      const html = template.innerHTML.replace(/__prefix__/g, formIndex);
-      const tempWrapper = document.createElement('tbody');
-      tempWrapper.innerHTML = html.trim();
-      const newRow = tempWrapper.querySelector('tr');
-      if (!newRow) {
+      if (!totalFormsInput) {
         return;
       }
-      tableBody.appendChild(newRow);
+      const formIndex = parseInt(totalFormsInput.value, 10);
+      const rowHtml = buildRowFromTemplate(formIndex);
+      if (!rowHtml) {
+        return;
+      }
+      tableBody.insertAdjacentHTML('beforeend', rowHtml);
       totalFormsInput.value = formIndex + 1;
-      bindRow(newRow);
+      const rows = tableBody.querySelectorAll('.item-row');
+      const newRow = rows[rows.length - 1];
+      if (newRow) {
+        newRow.querySelectorAll('select').forEach((select) => {
+          select.classList.add('form-select');
+        });
+        newRow.querySelectorAll('input').forEach((input) => {
+          if (input.type !== 'checkbox' && input.type !== 'hidden') {
+            input.classList.add('form-control');
+          }
+        });
+        bindRow(newRow);
+      }
     };
 
     addButton.addEventListener('click', addRow);
-    Array.from(tableBody.querySelectorAll('.item-form')).forEach((row) => {
+    Array.from(tableBody.querySelectorAll('.item-row')).forEach((row) => {
       bindRow(row);
       updateRowPrice(row);
     });
