@@ -83,9 +83,13 @@
                     {% endif %}
                     <td>
                       <div class="d-flex gap-2 flex-wrap justify-content-end">
-                        <a class="btn btn-outline-secondary btn-sm" href="{% url 'cotizaciones:cotizacion_detail' cotizacion.pk %}">Ver</a>
-                        <a class="btn btn-outline-primary btn-sm" href="{% url 'cotizaciones:cotizacion_update' cotizacion.pk %}">Editar</a>
-                        <a class="btn btn-sm btn-outline-success" href="{% url 'cotizaciones:cotizacion_pdf' cotizacion.pk %}">PDF</a>
+                        {% if cotizacion.pk %}
+                          <a class="btn btn-outline-secondary btn-sm" href="{% url 'cotizaciones:cotizacion_detail' cotizacion.pk %}">Ver</a>
+                          <a class="btn btn-outline-primary btn-sm" href="{% url 'cotizaciones:cotizacion_update' cotizacion.pk %}">Editar</a>
+                          <a class="btn btn-sm btn-outline-success" href="{% url 'cotizaciones:cotizacion_pdf' cotizacion.pk %}">PDF</a>
+                        {% else %}
+                          <span class="text-muted small">Sin acciones</span>
+                        {% endif %}
                       </div>
                     </td>
                   </tr>
