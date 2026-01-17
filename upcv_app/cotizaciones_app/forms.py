@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from django import forms
 from django.forms import BaseInlineFormSet, inlineformset_factory
 
@@ -105,24 +103,15 @@ class CotizacionForm(forms.ModelForm):
 
 
 class CotizacionItemForm(forms.ModelForm):
-    precio_venta_unitario = forms.DecimalField(min_value=Decimal('0.00'), required=False)
-    precio_costo_unitario = forms.DecimalField(min_value=Decimal('0.00'), required=False)
-
     class Meta:
         model = CotizacionItem
         fields = [
             'producto_servicio',
-            'descripcion_editable',
             'cantidad',
-            'precio_venta_unitario',
-            'precio_costo_unitario',
         ]
-        widgets = {
-            'descripcion_editable': forms.Textarea(attrs={'rows': 2}),
-        }
 
     def __init__(self, *args, **kwargs):
-        show_costs = kwargs.pop('show_costs', True)
+        kwargs.pop('show_costs', True)
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
@@ -132,10 +121,6 @@ class CotizacionItemForm(forms.ModelForm):
             else:
                 existing_class = field.widget.attrs.get('class', '')
                 field.widget.attrs['class'] = f'{existing_class} form-control'.strip()
-        if not show_costs:
-            self.fields['precio_costo_unitario'].widget = forms.HiddenInput()
-            if self.instance and self.instance.pk:
-                self.fields['precio_costo_unitario'].initial = self.instance.precio_costo_unitario
 
     def clean_cantidad(self):
         cantidad = self.cleaned_data.get('cantidad')
@@ -143,20 +128,16 @@ class CotizacionItemForm(forms.ModelForm):
             raise forms.ValidationError('La cantidad debe ser mayor a 0.')
         return cantidad
 
-    def clean(self):
-        cleaned_data = super().clean()
-        producto = cleaned_data.get('producto_servicio')
-        precio_venta = cleaned_data.get('precio_venta_unitario')
-        precio_costo = cleaned_data.get('precio_costo_unitario')
-        descripcion = cleaned_data.get('descripcion_editable')
-        if producto:
-            if precio_venta in (None, ''):
-                cleaned_data['precio_venta_unitario'] = producto.precio_venta
-            if precio_costo in (None, ''):
-                cleaned_data['precio_costo_unitario'] = producto.precio_costo
-            if not descripcion:
-                cleaned_data['descripcion_editable'] = producto.descripcion
-        return cleaned_data
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if instance.producto_servicio_id:
+            instance.precio_venta_unitario = instance.producto_servicio.precio_venta
+            instance.precio_costo_unitario = instance.producto_servicio.precio_costo
+            if not instance.descripcion_editable:
+                instance.descripcion_editable = instance.producto_servicio.descripcion
+        if commit:
+            instance.save()
+        return instance
 
 
 class CotizacionItemInlineFormSet(BaseInlineFormSet):
@@ -181,6 +162,7 @@ CotizacionItemFormSet = inlineformset_factory(
     CotizacionItem,
     form=CotizacionItemForm,
     formset=CotizacionItemInlineFormSet,
-    extra=3,
+    fields=('producto_servicio', 'cantidad'),
+    extra=0,
     can_delete=True,
 )

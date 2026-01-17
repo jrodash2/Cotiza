@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
@@ -152,7 +152,15 @@ class CotizacionCreateView(LoginRequiredMixin, View):
         if form.is_valid() and formset.is_valid():
             cotizacion = form.save()
             formset.instance = cotizacion
-            formset.save()
+            items = formset.save(commit=False)
+            for item in items:
+                item.precio_venta_unitario = item.producto_servicio.precio_venta
+                item.precio_costo_unitario = item.producto_servicio.precio_costo
+                if not item.descripcion_editable:
+                    item.descripcion_editable = item.producto_servicio.descripcion
+                item.save()
+            for item in formset.deleted_objects:
+                item.delete()
             messages.success(request, 'Cotización creada correctamente.')
             return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
         messages.error(request, 'Revisa los errores en el formulario.')
@@ -188,8 +196,17 @@ class CotizacionUpdateView(LoginRequiredMixin, View):
             form_kwargs={'show_costs': request.user.is_staff},
         )
         if form.is_valid() and formset.is_valid():
-            form.save()
-            formset.save()
+            cotizacion = form.save()
+            formset.instance = cotizacion
+            items = formset.save(commit=False)
+            for item in items:
+                item.precio_venta_unitario = item.producto_servicio.precio_venta
+                item.precio_costo_unitario = item.producto_servicio.precio_costo
+                if not item.descripcion_editable:
+                    item.descripcion_editable = item.producto_servicio.descripcion
+                item.save()
+            for item in formset.deleted_objects:
+                item.delete()
             messages.success(request, 'Cotización actualizada correctamente.')
             return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
         messages.error(request, 'Revisa los errores en el formulario.')
@@ -256,3 +273,14 @@ def cotizacion_pdf(request, pk):
     filename = f"cotizacion_{cotizacion.correlativo}.pdf"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+
+@login_required
+def producto_precio(request, pk):
+    producto = get_object_or_404(ProductoServicio, pk=pk)
+    return JsonResponse(
+        {
+            'precio_venta': str(producto.precio_venta),
+            'precio_costo': str(producto.precio_costo),
+        }
+    )

@@ -68,49 +68,46 @@
                     {{ formset.non_form_errors }}
                   </div>
                 {% endif %}
+                <div class="d-flex justify-content-end mb-3">
+                  <button type="button" class="btn btn-primary btn-sm" id="add-item-btn">+ Agregar ítem</button>
+                </div>
                 {{ formset.management_form }}
                 <div class="table-responsive">
-                  <table class="table table-sm table-bordered align-middle">
+                  <table class="table table-sm table-bordered align-middle" id="items-table">
                     <thead class="table-light">
                       <tr>
-                        <th style="min-width: 200px;">Producto/Servicio</th>
-                        <th style="min-width: 180px;">Descripción</th>
-                        <th style="width: 120px;">Cantidad</th>
-                        <th style="width: 150px;">Precio venta</th>
-                        {% if show_costs %}
-                          <th style="width: 150px;">Precio costo</th>
-                        {% endif %}
-                        <th style="width: 120px;">Eliminar</th>
+                        <th style="min-width: 240px;">Producto/Servicio</th>
+                        <th style="width: 140px;">Cantidad</th>
+                        <th style="width: 160px;">Precio</th>
+                        <th style="width: 160px;">Subtotal</th>
+                        <th style="width: 140px;">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody data-formset-prefix="{{ formset.prefix }}" data-price-url="{% url 'cotizaciones:producto_precio' 0 %}">
                       {% for item_form in formset %}
-                        <tr>
+                        <tr class="item-form">
                           <td>
                             {{ item_form.producto_servicio }}
                             {{ item_form.producto_servicio.errors }}
                           </td>
                           <td>
-                            {{ item_form.descripcion_editable }}
-                            {{ item_form.descripcion_editable.errors }}
-                          </td>
-                          <td>
                             {{ item_form.cantidad }}
                             {{ item_form.cantidad.errors }}
                           </td>
-                          <td>
-                            {{ item_form.precio_venta_unitario }}
-                            {{ item_form.precio_venta_unitario.errors }}
+                          <td class="text-nowrap">
+                            <span class="js-precio">
+                              Q {{ item_form.instance.precio_venta_unitario|default_if_none:"0.00"|floatformat:2 }}
+                            </span>
                           </td>
-                          {% if show_costs %}
-                            <td>
-                              {{ item_form.precio_costo_unitario }}
-                              {{ item_form.precio_costo_unitario.errors }}
-                            </td>
-                          {% endif %}
-                          <td class="text-center">
-                            {% if item_form.instance.pk %}
-                              {{ item_form.DELETE }}
+                          <td class="text-nowrap">
+                            <span class="js-subtotal">
+                              Q {{ item_form.instance.total_linea_venta|default_if_none:"0.00"|floatformat:2 }}
+                            </span>
+                          </td>
+                          <td>
+                            {% if formset.can_delete %}
+                              <span class="d-none">{{ item_form.DELETE }}</span>
+                              <button type="button" class="btn btn-outline-danger btn-sm js-remove">Eliminar</button>
                             {% endif %}
                           </td>
                           {% for hidden in item_form.hidden_fields %}
@@ -121,6 +118,23 @@
                     </tbody>
                   </table>
                 </div>
+                <template id="item-row-template">
+                  <tr class="item-form">
+                    <td>{{ formset.empty_form.producto_servicio }}</td>
+                    <td>{{ formset.empty_form.cantidad }}</td>
+                    <td class="text-nowrap"><span class="js-precio">Q 0.00</span></td>
+                    <td class="text-nowrap"><span class="js-subtotal">Q 0.00</span></td>
+                    <td>
+                      {% if formset.can_delete %}
+                        <span class="d-none">{{ formset.empty_form.DELETE }}</span>
+                        <button type="button" class="btn btn-outline-danger btn-sm js-remove">Eliminar</button>
+                      {% endif %}
+                    </td>
+                    {% for hidden in formset.empty_form.hidden_fields %}
+                      {{ hidden }}
+                    {% endfor %}
+                  </tr>
+                </template>
               </div>
             </div>
           </div>
@@ -151,4 +165,111 @@
     </div>
   </div>
 </div>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const tableBody = document.querySelector('#items-table tbody');
+    const addButton = document.getElementById('add-item-btn');
+    const template = document.getElementById('item-row-template');
+    if (!tableBody || !addButton || !template) {
+      return;
+    }
+
+    const formsetPrefix = tableBody.dataset.formsetPrefix;
+    const totalFormsInput = document.querySelector(`input[name="${formsetPrefix}-TOTAL_FORMS"]`);
+    const priceUrlTemplate = tableBody.dataset.priceUrl;
+
+    const buildPriceUrl = (productId) => priceUrlTemplate.replace('0/', `${productId}/`);
+
+    const parsePrice = (value) => {
+      const cleaned = value.replace('Q', '').replace(',', '').trim();
+      const parsed = Number.parseFloat(cleaned);
+      return Number.isNaN(parsed) ? 0 : parsed;
+    };
+
+    const updateSubtotal = (row, price) => {
+      const qtyInput = row.querySelector('input[name$="-cantidad"]');
+      const subtotalSpan = row.querySelector('.js-subtotal');
+      const quantity = Number.parseFloat(qtyInput?.value || '0');
+      const subtotal = (Number.isNaN(quantity) ? 0 : quantity) * price;
+      subtotalSpan.textContent = `Q ${subtotal.toFixed(2)}`;
+    };
+
+    const updateRowPrice = (row) => {
+      const productSelect = row.querySelector('select[name$="-producto_servicio"]');
+      const priceSpan = row.querySelector('.js-precio');
+      if (!productSelect || !priceSpan) {
+        return;
+      }
+      const productId = productSelect.value;
+      if (!productId) {
+        priceSpan.textContent = 'Q 0.00';
+        updateSubtotal(row, 0);
+        return;
+      }
+      fetch(buildPriceUrl(productId))
+        .then((response) => (response.ok ? response.json() : Promise.reject()))
+        .then((data) => {
+          const price = Number.parseFloat(data.precio_venta || '0');
+          const safePrice = Number.isNaN(price) ? 0 : price;
+          priceSpan.textContent = `Q ${safePrice.toFixed(2)}`;
+          updateSubtotal(row, safePrice);
+        })
+        .catch(() => {
+          priceSpan.textContent = 'Q 0.00';
+          updateSubtotal(row, 0);
+        });
+    };
+
+    const bindRow = (row) => {
+      const productSelect = row.querySelector('select[name$="-producto_servicio"]');
+      const qtyInput = row.querySelector('input[name$="-cantidad"]');
+      const removeBtn = row.querySelector('.js-remove');
+
+      if (productSelect) {
+        productSelect.addEventListener('change', () => updateRowPrice(row));
+      }
+      if (qtyInput) {
+        qtyInput.addEventListener('input', () => {
+          const priceSpan = row.querySelector('.js-precio');
+          const price = priceSpan ? parsePrice(priceSpan.textContent) : 0;
+          updateSubtotal(row, price);
+        });
+      }
+      if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+          const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+          if (deleteInput) {
+            deleteInput.checked = true;
+            row.classList.add('d-none');
+            return;
+          }
+          row.remove();
+          if (totalFormsInput) {
+            totalFormsInput.value = Math.max(parseInt(totalFormsInput.value, 10) - 1, 0);
+          }
+        });
+      }
+    };
+
+    const addRow = () => {
+      const formIndex = parseInt(totalFormsInput.value, 10);
+      const html = template.innerHTML.replace(/__prefix__/g, formIndex);
+      const tempWrapper = document.createElement('tbody');
+      tempWrapper.innerHTML = html.trim();
+      const newRow = tempWrapper.querySelector('tr');
+      if (!newRow) {
+        return;
+      }
+      tableBody.appendChild(newRow);
+      totalFormsInput.value = formIndex + 1;
+      bindRow(newRow);
+    };
+
+    addButton.addEventListener('click', addRow);
+    Array.from(tableBody.querySelectorAll('.item-form')).forEach((row) => {
+      bindRow(row);
+      updateRowPrice(row);
+    });
+  });
+</script>
 {% endblock %}
