@@ -86,30 +86,30 @@
                     <tbody id="items-tbody" data-formset-prefix="items" data-price-url="{% url 'cotizaciones:producto_precio' 0 %}">
                       {% for item_form in formset %}
                         <tr class="item-row">
-                          {{ item_form.id }}
-                          <td>
+                          <td class="w-50">
+                            {{ item_form.id }}
                             {{ item_form.producto_servicio }}
                             {{ item_form.producto_servicio.errors }}
                           </td>
-                          <td>
+                          <td class="w-25">
                             {{ item_form.cantidad }}
                             {{ item_form.cantidad.errors }}
                           </td>
                           <td class="text-nowrap">
-                            <span class="js-precio">
+                            <span class="js-precio" data-value="0">
                               Q {{ item_form.instance.precio_venta_unitario|default_if_none:"0.00"|floatformat:2 }}
                             </span>
                           </td>
                           <td class="text-nowrap">
-                            <span class="js-subtotal">
+                            <span class="js-subtotal" data-value="0">
                               Q {{ item_form.instance.total_linea_venta|default_if_none:"0.00"|floatformat:2 }}
                             </span>
                           </td>
-                          <td>
+                          <td class="text-nowrap">
                             {% if formset.can_delete %}
-                              <span class="d-none">{{ item_form.DELETE }}</span>
-                              <button type="button" class="btn btn-outline-danger btn-sm js-remove">Eliminar</button>
+                              {{ item_form.DELETE }}
                             {% endif %}
+                            <button type="button" class="btn btn-outline-danger btn-sm js-remove">Eliminar</button>
                           </td>
                           {% for hidden in item_form.hidden_fields %}
                             {% if hidden.name != 'id' %}
@@ -123,15 +123,15 @@
                 </div>
                 <template id="item-row-template">
                   <tr class="item-row">
-                    <td>
-                      {{ formset.empty_form.producto_servicio }}
+                    <td class="w-50">
                       {{ formset.empty_form.id }}
+                      {{ formset.empty_form.producto_servicio }}
                     </td>
-                    <td>
+                    <td class="w-25">
                       {{ formset.empty_form.cantidad }}
                     </td>
-                    <td class="text-nowrap"><span class="js-precio">Q 0.00</span></td>
-                    <td class="text-nowrap"><span class="js-subtotal">Q 0.00</span></td>
+                    <td class="text-nowrap"><span class="js-precio" data-value="0">Q 0.00</span></td>
+                    <td class="text-nowrap"><span class="js-subtotal" data-value="0">Q 0.00</span></td>
                     <td class="text-nowrap">
                       {% if formset.can_delete %}
                         {{ formset.empty_form.DELETE }}
@@ -179,7 +179,6 @@
           return;
         }
 
-    const formsetPrefix = 'items';
     const totalFormsInput = document.getElementById('id_items-TOTAL_FORMS');
     const priceUrlTemplate = tableBody.dataset.priceUrl;
     const emptyRow = template.dataset.emptyForm;
@@ -277,11 +276,7 @@
           const idInput = row.querySelector('input[name$="-id"]');
           if (deleteInput) {
             deleteInput.checked = true;
-            row.classList.add('d-none');
-            return;
-          }
-          if (idInput && idInput.value) {
-            row.classList.add('d-none');
+            row.style.display = 'none';
             return;
           }
           row.remove();
@@ -290,11 +285,8 @@
     };
 
     const buildRowFromTemplate = (index) => {
-      const clone = template.content.cloneNode(true);
-      const container = document.createElement('div');
-      container.appendChild(clone);
-      container.innerHTML = container.innerHTML.replaceAll('__prefix__', index);
-      return container.innerHTML;
+      const html = template.innerHTML.replaceAll('__prefix__', index);
+      return html;
     };
 
     const addRow = () => {
