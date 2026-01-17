@@ -4,10 +4,10 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  const width = 2550;
-  const height = 3300;
+  const width = 1275;
+  const height = 1650;
   window.html2canvas(target, {
-    scale: 1,
+    scale: 2,
     useCORS: true,
     width,
     height,
