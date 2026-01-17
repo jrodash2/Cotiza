@@ -486,9 +486,11 @@
         
           
           <main class="page-body main-content">
-            {% block content %}
-            <!-- El contenido de la página se inyectará aquí -->
-            {% endblock %}
+            <div class="container-fluid">
+              {% block content %}
+              <!-- El contenido de la página se inyectará aquí -->
+              {% endblock %}
+            </div>
           </main>
 
 
