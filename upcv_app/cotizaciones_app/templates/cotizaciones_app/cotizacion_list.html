@@ -63,7 +63,13 @@
                 {% for cotizacion in cotizaciones %}
                   <tr>
                     <td class="text-nowrap">{{ cotizacion.correlativo }}</td>
-                    <td class="text-nowrap">{{ cotizacion.fecha|date:"d/m/Y" }}</td>
+                    <td class="text-nowrap">
+                      {% if cotizacion.fecha_emision %}
+                        {{ cotizacion.fecha_emision|date:"d/m/Y" }}
+                      {% else %}
+                        —
+                      {% endif %}
+                    </td>
                     <td>{{ cotizacion.cliente }}</td>
                     <td>{{ cotizacion.estado }}</td>
                     <td class="text-nowrap">Q {{ cotizacion.total_venta|floatformat:2 }}</td>
