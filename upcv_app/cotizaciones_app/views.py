@@ -111,6 +111,7 @@ class CotizacionListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         queryset = super().get_queryset().select_related('cliente')
         cliente_id = self.request.GET.get('cliente')
+        q_cliente = self.request.GET.get('q_cliente')
         estado = self.request.GET.get('estado')
         fecha_inicio = parse_date(self.request.GET.get('fecha_inicio', ''))
         fecha_fin = parse_date(self.request.GET.get('fecha_fin', ''))
@@ -118,6 +119,13 @@ class CotizacionListView(LoginRequiredMixin, ListView):
 
         if cliente_id:
             queryset = queryset.filter(cliente_id=cliente_id)
+        if q_cliente:
+            queryset = queryset.filter(
+                Q(cliente__nombre__icontains=q_cliente)
+                | Q(cliente__telefono__icontains=q_cliente)
+                | Q(cliente__email__icontains=q_cliente)
+                | Q(cliente__nit__icontains=q_cliente)
+            )
         if estado:
             queryset = queryset.filter(estado=estado)
         if fecha_inicio:

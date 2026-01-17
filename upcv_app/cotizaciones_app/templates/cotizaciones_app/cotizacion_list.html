@@ -22,6 +22,10 @@
                     </select>
                   </div>
                   <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label">Cliente</label>
+                    <input type="text" class="form-control w-100" name="q_cliente" placeholder="Nombre, teléfono, email o NIT" value="{{ request.GET.q_cliente }}">
+                  </div>
+                  <div class="col-12 col-md-6 col-lg-3">
                     <label class="form-label">Fecha inicio</label>
                     <input type="date" class="form-control w-100" name="fecha_inicio" value="{{ request.GET.fecha_inicio }}">
                   </div>
