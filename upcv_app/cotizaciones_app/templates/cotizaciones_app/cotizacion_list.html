@@ -53,10 +53,16 @@
                   <th>Estado</th>
                   <th>Total venta</th>
                   {% if show_costs %}
-                    <th>Total costo</th>
-                    <th>Ganancia</th>
+                    <td>Q {{ cotizacion.subtotal_costo|floatformat:2 }}</td>
+                    <td>Q {{ cotizacion.ganancia_total|floatformat:2 }}</td>
                   {% endif %}
-                  <th>Acciones</th>
+                  <td>
+                    <div class="d-flex flex-wrap gap-2">
+                      <a class="btn btn-outline-secondary btn-sm" href="{% url 'cotizaciones:cotizacion_detail' cotizacion.pk %}">Ver</a>
+                      <a class="btn btn-outline-primary btn-sm" href="{% url 'cotizaciones:cotizacion_update' cotizacion.pk %}">Editar</a>
+                      <a class="btn btn-sm btn-outline-success" href="{% url 'cotizaciones:cotizacion_pdf' cotizacion.pk %}">PDF</a>
+                    </div>
+                  </td>
                 </tr>
               </thead>
               <tbody>
