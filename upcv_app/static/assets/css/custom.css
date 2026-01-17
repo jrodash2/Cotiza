@@ -76,3 +76,20 @@ body {
 .table-responsive {
   overflow-x: auto;
 }
+
+/* Cotizaciones list overflow fix */
+.cotizaciones-list-fix {
+  max-width: 100%;
+}
+
+.cotizaciones-list-fix .card {
+  max-width: 100%;
+}
+
+.cotizaciones-list-fix .table-responsive {
+  overflow-x: auto;
+}
+
+.cotizaciones-list-fix .btn {
+  white-space: nowrap;
+}
