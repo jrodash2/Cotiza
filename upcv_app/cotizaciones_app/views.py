@@ -341,6 +341,7 @@ def _require_staff(user):
 def cotizacion_print(request, pk):
     cotizacion, items, institucion = _get_cotizacion_context(pk)
     download_jpg = request.GET.get('download') == 'jpg'
+    logo_url = _get_logo_url(request, for_pdf=False)
     return render(
         request,
         'cotizaciones_app/cotizacion_cliente_jpg.html',
