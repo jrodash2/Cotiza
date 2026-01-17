@@ -31,6 +31,10 @@
           <span class="label">Fecha</span>
           <span class="value">{{ cotizacion.fecha_emision }}</span>
         </div>
+        <div>
+          <span class="label">Validez</span>
+          <span class="value">{{ cotizacion.validez_dias }} días</span>
+        </div>
       </div>
     </header>
 
@@ -38,17 +42,27 @@
       <div>
         <h2>Cliente</h2>
         <p><strong>{{ cotizacion.cliente.nombre }}</strong></p>
-        <p>{{ cotizacion.cliente.direccion }}</p>
-        <p>Tel: {{ cotizacion.cliente.telefono }}</p>
-        <p>Email: {{ cotizacion.cliente.email }}</p>
-        <p>NIT: {{ cotizacion.cliente.nit }}</p>
+        {% if cotizacion.cliente.direccion %}
+          <p>{{ cotizacion.cliente.direccion }}</p>
+        {% endif %}
+        {% if cotizacion.cliente.telefono %}
+          <p>Tel: {{ cotizacion.cliente.telefono }}</p>
+        {% endif %}
+        {% if cotizacion.cliente.nit %}
+          <p>NIT: {{ cotizacion.cliente.nit }}</p>
+        {% endif %}
       </div>
       <div class="cotizacion-title">
         <h2>COTIZACIÓN</h2>
         {% if cotizacion.titulo %}
           <h3>{{ cotizacion.titulo }}</h3>
         {% endif %}
-        <p class="garantia">{{ cotizacion.garantia_texto }}</p>
+        {% if cotizacion.garantia_texto %}
+          <p class="garantia">{{ cotizacion.garantia_texto }}</p>
+        {% endif %}
+        {% if cotizacion.observaciones %}
+          <p>{{ cotizacion.observaciones }}</p>
+        {% endif %}
       </div>
     </section>
 
@@ -78,34 +92,14 @@
 
     <section class="totales">
       <div class="totales-box">
+        <span>Subtotal</span>
+        <strong>Q {{ cotizacion.subtotal_venta|floatformat:2 }}</strong>
+      </div>
+      <div class="totales-box">
         <span>Total</span>
         <strong>Q {{ cotizacion.subtotal_venta|floatformat:2 }}</strong>
       </div>
-      <div class="totales-info">
-        <p>Validez: {{ cotizacion.validez_dias }} días</p>
-        {% if cotizacion.observaciones %}
-          <p>Nota: {{ cotizacion.observaciones }}</p>
-        {% else %}
-          <p>Nota: Adicional Q75.00 por cada cámara si desea audio.</p>
-        {% endif %}
-      </div>
     </section>
-
-    {% if show_costs %}
-      <section class="costos-internos">
-        <h4>Costos internos</h4>
-        <div class="costos-grid">
-          <div>
-            <span>Subtotal costo</span>
-            <strong>Q {{ cotizacion.subtotal_costo|floatformat:2 }}</strong>
-          </div>
-          <div>
-            <span>Ganancia total</span>
-            <strong>Q {{ cotizacion.ganancia_total|floatformat:2 }}</strong>
-          </div>
-        </div>
-      </section>
-    {% endif %}
 
     <footer class="cotizacion-footer">
       <div>
@@ -118,10 +112,5 @@
       </div>
     </footer>
   </div>
-
-  {% if download_jpg %}
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script src="{% static 'cotizaciones_app/js/cotizacion_jpg.js' %}"></script>
-  {% endif %}
 </body>
 </html>

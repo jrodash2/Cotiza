@@ -43,7 +43,7 @@ class ProductoServicio(models.Model):
         if self.precio_costo < 0:
             raise ValidationError({'precio_costo': 'El precio de costo no puede ser negativo.'})
         if self.precio_venta < 0:
-            raise ValidationError({'precio_venta': 'El precio de venta no puede ser negativo.'})
+            raise ValidationError({'precio_venta': 'El precio no puede ser negativo.'})
 
 
 class CotizacionCorrelativo(models.Model):
@@ -131,7 +131,7 @@ class CotizacionItem(models.Model):
         if self.cantidad <= 0:
             raise ValidationError({'cantidad': 'La cantidad debe ser mayor a 0.'})
         if self.precio_venta_unitario < 0:
-            raise ValidationError({'precio_venta_unitario': 'El precio de venta no puede ser negativo.'})
+            raise ValidationError({'precio_venta_unitario': 'El precio no puede ser negativo.'})
         if self.precio_costo_unitario < 0:
             raise ValidationError({'precio_costo_unitario': 'El precio de costo no puede ser negativo.'})
 
