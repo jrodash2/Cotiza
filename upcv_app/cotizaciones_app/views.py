@@ -215,6 +215,8 @@ class CotizacionCreateView(LoginRequiredMixin, CreateView):
         messages.success(self.request, 'Cotización creada correctamente.')
         return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
 
+        messages.success(self.request, 'Cotización creada correctamente.')
+        return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
 
 class CotizacionUpdateView(LoginRequiredMixin, UpdateView):
     model = Cotizacion
