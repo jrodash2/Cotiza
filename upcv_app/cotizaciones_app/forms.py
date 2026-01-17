@@ -20,6 +20,9 @@ class ClienteForm(forms.ModelForm):
             'departamento',
             'notas',
         ]
+        widgets = {
+            'notas': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -85,7 +88,8 @@ class CotizacionForm(forms.ModelForm):
         ]
         widgets = {
             'fecha_emision': forms.DateInput(attrs={'type': 'date'}),
-            'observaciones': forms.Textarea(attrs={'rows': 3}),
+            'observaciones': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
+            'garantia_texto': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):
