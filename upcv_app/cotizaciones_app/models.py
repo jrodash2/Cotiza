@@ -142,12 +142,16 @@ class CotizacionItem(models.Model):
         return f"{self.cotizacion.correlativo} - {self.producto_servicio.nombre}"
 
     def clean(self) -> None:
-        if self.cantidad <= 0:
-            raise ValidationError({'cantidad': 'La cantidad debe ser mayor a 0.'})
-        if self.precio_venta_unitario < 0:
-            raise ValidationError({'precio_venta_unitario': 'El precio no puede ser negativo.'})
-        if self.precio_costo_unitario < 0:
-            raise ValidationError({'precio_costo_unitario': 'El precio de costo no puede ser negativo.'})
+        super().clean()
+        errors = {}
+        if self.cantidad is not None and self.cantidad <= 0:
+            errors['cantidad'] = 'La cantidad debe ser mayor a 0.'
+        if self.precio_venta_unitario is not None and self.precio_venta_unitario < 0:
+            errors['precio_venta_unitario'] = 'El precio no puede ser negativo.'
+        if self.precio_costo_unitario is not None and self.precio_costo_unitario < 0:
+            errors['precio_costo_unitario'] = 'El precio de costo no puede ser negativo.'
+        if errors:
+            raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
         self.total_linea_venta = (self.cantidad or Decimal('0.00')) * (self.precio_venta_unitario or Decimal('0.00'))
