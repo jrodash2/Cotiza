@@ -22,6 +22,17 @@
       justify-content: space-between;
       align-items: center;
       gap: 16px;
+      padding: 0 8px;
+    }
+    .brand {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .brand-logo {
+      width: 84px;
+      height: auto;
+      object-fit: contain;
     }
     .header-meta {
       text-align: right;
@@ -49,14 +60,20 @@
       flex-direction: column;
       gap: 12px;
       margin-top: 24px;
+      text-align: left;
+      align-items: flex-start;
     }
-    .totales-box {
-      background: #1d4ed8;
-      color: #ffffff;
-      padding: 16px 24px;
-      border-radius: 8px;
-      font-size: 18px;
-      text-align: center;
+    .total-label {
+      font-weight: 700;
+      color: #1d4ed8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 14px;
+    }
+    .total-amount {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
     }
   </style>
 </head>
@@ -133,9 +150,9 @@
     </table>
 
     <section class="totales">
-      <div class="totales-box">
-        <span>Total</span>
-        <strong>Q {{ cotizacion.subtotal_venta|floatformat:2 }}</strong>
+      <div>
+        <div class="total-label">Total</div>
+        <div class="total-amount">Q {{ cotizacion.subtotal_venta|floatformat:2 }}</div>
       </div>
       <div class="payment-box">
         <h4>Método de pago</h4>
