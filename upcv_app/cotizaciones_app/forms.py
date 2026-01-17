@@ -68,7 +68,7 @@ class ProductoServicioForm(forms.ModelForm):
     def clean_precio_venta(self):
         precio_venta = self.cleaned_data.get('precio_venta')
         if precio_venta is not None and precio_venta < 0:
-            raise forms.ValidationError('El precio de venta no puede ser negativo.')
+            raise forms.ValidationError('El precio no puede ser negativo.')
         return precio_venta
 
 
