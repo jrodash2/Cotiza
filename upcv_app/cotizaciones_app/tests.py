@@ -132,7 +132,6 @@ class CotizacionCreateTests(TestCase):
     def test_create_cotizacion_with_item(self):
         url = reverse('cotizaciones:cotizacion_create')
         data = {
-            'fecha_emision': timezone.now().date().isoformat(),
             'cliente': str(self.cliente.id),
             'titulo': 'Nueva',
             'validez_dias': '15',
@@ -151,3 +150,5 @@ class CotizacionCreateTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Cotizacion.objects.count(), 1)
         self.assertEqual(CotizacionItem.objects.count(), 1)
+        item = CotizacionItem.objects.first()
+        self.assertEqual(item.precio_venta_unitario, self.producto.precio_venta)

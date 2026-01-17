@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 from django.forms import BaseInlineFormSet, inlineformset_factory
 
 from .models import Cliente, ProductoServicio, Cotizacion, CotizacionItem
@@ -24,6 +25,9 @@ class ClienteForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.fields['fecha_emision'].initial = timezone.now().date()
+            self.fields['fecha_emision'].required = False
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs['class'] = 'form-check-input'
@@ -51,6 +55,9 @@ class ProductoServicioForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.fields['fecha_emision'].initial = timezone.now().date()
+            self.fields['fecha_emision'].required = False
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs['class'] = 'form-check-input'
@@ -92,6 +99,9 @@ class CotizacionForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.fields['fecha_emision'].initial = timezone.now().date()
+            self.fields['fecha_emision'].required = False
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs['class'] = 'form-check-input'
