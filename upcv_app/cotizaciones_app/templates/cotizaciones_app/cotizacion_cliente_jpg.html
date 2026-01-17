@@ -5,10 +5,6 @@
   <meta charset="utf-8">
   <title>Cotización {{ cotizacion.correlativo }}</title>
   <style>
-    @page {
-      size: letter;
-      margin: 24pt 28pt;
-    }
     * {
       box-sizing: border-box;
     }
@@ -25,17 +21,12 @@
       height: auto;
     }
     .page {
-      width: 100%;
-      background: #ffffff;
-    }
-    {% if download_jpg %}
-    .page {
       width: 2550px;
       height: 3300px;
       margin: 0 auto;
+      background: #ffffff;
       overflow: hidden;
     }
-    {% endif %}
     .container {
       width: 100%;
       height: 100%;
@@ -85,12 +76,6 @@
     .payment-box {
       border: 1px solid #dbe3f4;
       background: #f5f7ff;
-      padding: 10px;
-      margin-top: 10px;
-    }
-    .costs-box {
-      border: 1px solid #dbe3f4;
-      background: #f8fafc;
       padding: 10px;
       margin-top: 10px;
     }
@@ -158,9 +143,6 @@
           {% if cotizacion.cliente.telefono %}
             <div>Tel: {{ cotizacion.cliente.telefono }}</div>
           {% endif %}
-          {% if cotizacion.cliente.email %}
-            <div>Email: {{ cotizacion.cliente.email }}</div>
-          {% endif %}
           {% if cotizacion.cliente.nit %}
             <div>NIT: {{ cotizacion.cliente.nit }}</div>
           {% endif %}
@@ -211,22 +193,6 @@
           </td>
         </tr>
       </table>
-
-      {% if show_costs %}
-        <div class="costs-box">
-          <div style="font-weight: bold; margin-bottom: 6px;">Costos internos</div>
-          <table class="table0">
-            <tr>
-              <td style="width: 50%;">
-                Subtotal costo: <strong>Q {{ cotizacion.subtotal_costo|floatformat:2 }}</strong>
-              </td>
-              <td style="width: 50%; text-align: right;">
-                Ganancia total: <strong>Q {{ cotizacion.ganancia_total|floatformat:2 }}</strong>
-              </td>
-            </tr>
-          </table>
-        </div>
-      {% endif %}
 
       <div class="payment-box">
         <div style="font-weight: bold; margin-bottom: 4px;">Método de pago</div>
