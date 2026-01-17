@@ -112,3 +112,42 @@ class CotizacionUpdateTests(TestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
         self.assertFalse(CotizacionItem.objects.filter(id=self.item.id).exists())
+
+
+class CotizacionCreateTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.user = user_model.objects.create_user(username='creator', password='password')
+        self.client.force_login(self.user)
+        self.cliente = Cliente.objects.create(nombre='Cliente Create')
+        self.producto = ProductoServicio.objects.create(
+            tipo=ProductoServicio.TIPO_PRODUCTO,
+            nombre='Producto C',
+            descripcion='Desc C',
+            unidad='Unidad',
+            precio_costo=Decimal('5.00'),
+            precio_venta=Decimal('12.00'),
+        )
+
+    def test_create_cotizacion_with_item(self):
+        url = reverse('cotizaciones:cotizacion_create')
+        data = {
+            'fecha_emision': timezone.now().date().isoformat(),
+            'cliente': str(self.cliente.id),
+            'titulo': 'Nueva',
+            'validez_dias': '15',
+            'observaciones': '',
+            'garantia_texto': 'GARANTIA',
+            'estado': Cotizacion.ESTADO_BORRADOR,
+            'items-TOTAL_FORMS': '1',
+            'items-INITIAL_FORMS': '0',
+            'items-MIN_NUM_FORMS': '0',
+            'items-MAX_NUM_FORMS': '1000',
+            'items-0-id': '',
+            'items-0-producto_servicio': str(self.producto.id),
+            'items-0-cantidad': '1.00',
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Cotizacion.objects.count(), 1)
+        self.assertEqual(CotizacionItem.objects.count(), 1)

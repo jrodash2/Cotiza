@@ -68,6 +68,13 @@
                     {{ formset.non_form_errors }}
                   </div>
                 {% endif %}
+                {% for item_form in formset %}
+                  {% if item_form.errors %}
+                    <div class="alert alert-danger">
+                      {{ item_form.errors }}
+                    </div>
+                  {% endif %}
+                {% endfor %}
                 <div class="d-flex justify-content-end mb-3">
                   <button type="button" class="btn btn-primary" id="add-item-btn">+ Agregar ítem</button>
                 </div>

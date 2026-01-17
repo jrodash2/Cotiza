@@ -155,42 +155,33 @@ class CotizacionCreateView(LoginRequiredMixin, CreateView):
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+        self.object = None
         context = super().get_context_data(**kwargs)
         if 'formset' not in context:
             if self.request.POST:
-                context['formset'] = CotizacionItemFormSet(
-                    self.request.POST,
-                    form_kwargs={'show_costs': user_can_view_costs(self.request.user)},
-                    prefix='items',
-                )
+                context['formset'] = CotizacionItemFormSet(self.request.POST, prefix='items')
             else:
-                context['formset'] = CotizacionItemFormSet(
-                    form_kwargs={'show_costs': user_can_view_costs(self.request.user)},
-                    prefix='items',
-                )
-        context['show_costs'] = user_can_view_costs(self.request.user)
+                context['formset'] = CotizacionItemFormSet(prefix='items')
         return context
 
     def post(self, request, *args, **kwargs):
         self.object = None
-        form = CotizacionForm(request.POST)
-        formset = CotizacionItemFormSet(
-            request.POST,
-            form_kwargs={'show_costs': user_can_view_costs(self.request.user)},
-            prefix='items',
-        )
+        form = self.get_form()
+        formset = CotizacionItemFormSet(request.POST, prefix='items')
 
-        # print("=== CREATE POST ===")
-        # print("POST items keys:", [k for k in request.POST.keys() if k.startswith("items-")][:80])
+        # print("=== CREATE POST DEBUG ===")
+        # print("has csrf:", "csrfmiddlewaretoken" in request.POST)
         # print("TOTAL_FORMS:", request.POST.get("items-TOTAL_FORMS"))
         # print("INITIAL_FORMS:", request.POST.get("items-INITIAL_FORMS"))
         # print("MIN_NUM_FORMS:", request.POST.get("items-MIN_NUM_FORMS"))
         # print("MAX_NUM_FORMS:", request.POST.get("items-MAX_NUM_FORMS"))
-        # print("form.is_valid:", form.is_valid())
-        # print("form.errors:", form.errors)
-        # print("formset.is_valid:", formset.is_valid())
-        # print("formset.non_form_errors:", formset.non_form_errors())
-        # print("formset.errors:", formset.errors)
+        # print("POST items keys:", [k for k in request.POST.keys() if k.startswith("items-")][:120])
+        # print("POST cotizacion keys:", [k for k in request.POST.keys() if not k.startswith("items-")][:80])
+        # print("form valid:", form.is_valid())
+        # print("form errors:", form.errors)
+        # print("formset valid:", formset.is_valid())
+        # print("formset non_form_errors:", formset.non_form_errors())
+        # print("formset errors:", formset.errors)
 
         if form.is_valid() and formset.is_valid():
             return self.forms_valid(form, formset)
@@ -222,6 +213,8 @@ class CotizacionCreateView(LoginRequiredMixin, CreateView):
         messages.success(self.request, 'Cotización creada correctamente.')
         return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
 
+        messages.success(self.request, 'Cotización creada correctamente.')
+        return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
 
 class CotizacionUpdateView(LoginRequiredMixin, UpdateView):
     model = Cotizacion
