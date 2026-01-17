@@ -353,6 +353,8 @@ def cotizacion_print(request, pk):
             'bank_name': None,
             'show_costs': False,
             'download_jpg': download_jpg,
+            'is_internal': False,
+            'is_jpg': download_jpg,
         },
     )
 
@@ -370,6 +372,8 @@ def cotizacion_pdf(request, pk):
             'bank_name': None,
             'show_costs': False,
             'download_jpg': False,
+            'is_internal': False,
+            'is_jpg': False,
         },
         request=request,
     )
@@ -394,6 +398,8 @@ def cotizacion_cliente_jpg(request, pk):
             'bank_name': None,
             'show_costs': False,
             'download_jpg': True,
+            'is_internal': False,
+            'is_jpg': True,
         },
     )
 
@@ -410,6 +416,8 @@ def cotizacion_pdf_interno(request, pk):
             'institucion': institucion,
             'show_costs': True,
             'download_jpg': False,
+            'is_internal': True,
+            'is_jpg': False,
         },
         request=request,
     )
@@ -433,6 +441,8 @@ def cotizacion_jpg_interno(request, pk):
             'institucion': institucion,
             'show_costs': True,
             'download_jpg': True,
+            'is_internal': True,
+            'is_jpg': True,
         },
     )
 
