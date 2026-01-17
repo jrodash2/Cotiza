@@ -1,6 +1,9 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+import os
+
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
@@ -12,11 +15,10 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
-from weasyprint import HTML
+from xhtml2pdf import pisa
 
 from almacen_app.models import Institucion
 from django.contrib.staticfiles import finders
-from django.templatetags.static import static
 
 from .forms import (
     ClienteForm,
@@ -215,8 +217,6 @@ class CotizacionCreateView(LoginRequiredMixin, CreateView):
         messages.success(self.request, 'Cotización creada correctamente.')
         return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
 
-        messages.success(self.request, 'Cotización creada correctamente.')
-        return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
 
 class CotizacionUpdateView(LoginRequiredMixin, UpdateView):
     model = Cotizacion
@@ -316,11 +316,20 @@ def _get_cotizacion_context(pk):
     return cotizacion, items, institucion
 
 
-def _get_logo_url(request, for_pdf=False):
-    logo_path = finders.find('assets/images/logo/logo.png')
-    if for_pdf and logo_path:
-        return f"file://{logo_path}"
-    return request.build_absolute_uri(static('assets/images/logo/logo.png'))
+def link_callback(uri, rel):
+    if uri.startswith(settings.MEDIA_URL):
+        path = os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ""))
+    elif uri.startswith(settings.STATIC_URL):
+        path = finders.find(uri.replace(settings.STATIC_URL, ""))
+        if path is None:
+            path = os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ""))
+    else:
+        return uri
+
+    if not path or not os.path.isfile(path):
+        return uri
+
+    return path
 
 
 def _require_staff(user):
@@ -340,7 +349,6 @@ def cotizacion_print(request, pk):
             'cotizacion': cotizacion,
             'items': items,
             'institucion': institucion,
-            'logo_url': logo_url,
             'account_number': '123-456789-0',
             'bank_name': None,
             'show_costs': False,
@@ -352,14 +360,12 @@ def cotizacion_print(request, pk):
 @login_required
 def cotizacion_pdf(request, pk):
     cotizacion, items, institucion = _get_cotizacion_context(pk)
-    logo_url = _get_logo_url(request, for_pdf=True)
     html_string = render_to_string(
         'cotizaciones_app/cotizacion_cliente_pdf.html',
         {
             'cotizacion': cotizacion,
             'items': items,
             'institucion': institucion,
-            'logo_url': logo_url,
             'account_number': '123-456789-0',
             'bank_name': None,
             'show_costs': False,
@@ -367,9 +373,8 @@ def cotizacion_pdf(request, pk):
         },
         request=request,
     )
-    html = HTML(string=html_string, base_url=request.build_absolute_uri('/'))
-    pdf = html.write_pdf()
-    response = HttpResponse(pdf, content_type='application/pdf')
+    response = HttpResponse(content_type='application/pdf')
+    pisa.CreatePDF(html_string, dest=response, link_callback=link_callback)
     filename = f"cotizacion_{cotizacion.correlativo}.pdf"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
@@ -378,7 +383,6 @@ def cotizacion_pdf(request, pk):
 @login_required
 def cotizacion_cliente_jpg(request, pk):
     cotizacion, items, institucion = _get_cotizacion_context(pk)
-    logo_url = _get_logo_url(request, for_pdf=False)
     return render(
         request,
         'cotizaciones_app/cotizacion_cliente_jpg.html',
@@ -386,7 +390,6 @@ def cotizacion_cliente_jpg(request, pk):
             'cotizacion': cotizacion,
             'items': items,
             'institucion': institucion,
-            'logo_url': logo_url,
             'account_number': '123-456789-0',
             'bank_name': None,
             'show_costs': False,
@@ -410,9 +413,8 @@ def cotizacion_pdf_interno(request, pk):
         },
         request=request,
     )
-    html = HTML(string=html_string, base_url=request.build_absolute_uri('/'))
-    pdf = html.write_pdf()
-    response = HttpResponse(pdf, content_type='application/pdf')
+    response = HttpResponse(content_type='application/pdf')
+    pisa.CreatePDF(html_string, dest=response, link_callback=link_callback)
     filename = f"cotizacion_{cotizacion.correlativo}_interna.pdf"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response

@@ -17,17 +17,24 @@
     .letterhead-bottom {
       margin-top: 24px;
     }
-    .header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      padding: 0 8px;
+    .cotizacion-page {
+      padding: 0;
     }
-    .brand {
-      display: flex;
-      gap: 16px;
-      align-items: center;
+    .page-wrap {
+      padding: 24px 32px;
+    }
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .header-table td {
+      vertical-align: top;
+    }
+    .brand-table {
+      border-collapse: collapse;
+    }
+    .brand-table td {
+      vertical-align: middle;
     }
     .brand-logo {
       width: 84px;
@@ -56,12 +63,11 @@
       color: #1e3a8a;
     }
     .totales {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
       margin-top: 24px;
       text-align: left;
-      align-items: flex-start;
+    }
+    .total-block {
+      margin-bottom: 12px;
     }
     .total-label {
       font-weight: 700;
@@ -80,96 +86,108 @@
 <body>
   <div class="cotizacion-page" id="cotizacion-print" data-correlativo="{{ cotizacion.correlativo }}">
     <div class="letterhead-top"></div>
-    <header class="cotizacion-header">
-      <div class="header-row">
-        <div class="brand">
-          <img src="{{ logo_url }}" alt="Logo Tecnologías de Guatemala" class="brand-logo">
-          <div>
-            <h1>Tecnologías de Guatemala</h1>
-            <p>Centro de Soporte El Progreso</p>
-          </div>
-        </div>
-        <div class="header-meta">
-          <h2>COTIZACIÓN</h2>
-          <div><strong>{{ cotizacion.correlativo }}</strong></div>
-          <div>Fecha: {{ cotizacion.fecha_emision }}</div>
-        </div>
-      </div>
-    </header>
-
-    <section class="cotizacion-info">
-      <div>
-        <h2>Cliente</h2>
-        <p><strong>{{ cotizacion.cliente.nombre }}</strong></p>
-        {% if cotizacion.cliente.direccion %}
-          <p>{{ cotizacion.cliente.direccion }}</p>
-        {% endif %}
-        {% if cotizacion.cliente.telefono %}
-          <p>Tel: {{ cotizacion.cliente.telefono }}</p>
-        {% endif %}
-        {% if cotizacion.cliente.nit %}
-          <p>NIT: {{ cotizacion.cliente.nit }}</p>
-        {% endif %}
-      </div>
-      <div class="cotizacion-title">
-        <h2>COTIZACIÓN</h2>
-        {% if cotizacion.titulo %}
-          <h3>{{ cotizacion.titulo }}</h3>
-        {% endif %}
-        {% if cotizacion.garantia_texto %}
-          <p class="garantia">{{ cotizacion.garantia_texto }}</p>
-        {% endif %}
-        {% if cotizacion.observaciones %}
-          <p>{{ cotizacion.observaciones }}</p>
-        {% endif %}
-      </div>
-    </section>
-
-    <table class="cotizacion-table">
-      <thead>
-        <tr>
-          <th>Descripción</th>
-          <th>Cantidad</th>
-          <th>Precio</th>
-          <th>Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in items %}
+    <div class="page-wrap">
+      <header class="cotizacion-header">
+        <table class="header-table">
           <tr>
             <td>
-              <strong>{{ item.producto_servicio.nombre }}</strong><br>
-              {{ item.descripcion_editable|default:item.producto_servicio.descripcion }}
+              <table class="brand-table">
+                <tr>
+                  {% if institucion and institucion.logo %}
+                    <td class="brand-logo-cell">
+                      <img src="{{ institucion.logo.url }}" alt="Logo {{ institucion.nombre }}" class="brand-logo">
+                    </td>
+                  {% endif %}
+                  <td>
+                    <h1>Tecnologías de Guatemala</h1>
+                    <p>Centro de Soporte El Progreso</p>
+                  </td>
+                </tr>
+              </table>
             </td>
-            <td class="text-center">{{ item.cantidad }}</td>
-            <td class="text-end">Q {{ item.precio_venta_unitario|floatformat:2 }}</td>
-            <td class="text-end">Q {{ item.total_linea_venta|floatformat:2 }}</td>
+            <td class="header-meta">
+              <h2>COTIZACIÓN</h2>
+              <div><strong>{{ cotizacion.correlativo }}</strong></div>
+              <div>Fecha: {{ cotizacion.fecha_emision }}</div>
+            </td>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </table>
+      </header>
 
-    <section class="totales">
-      <div>
-        <div class="total-label">Total</div>
-        <div class="total-amount">Q {{ cotizacion.subtotal_venta|floatformat:2 }}</div>
-      </div>
-      <div class="payment-box">
-        <h4>Método de pago</h4>
-        <p>50% para confirmar el servicio y 50% contra entrega o finalización del proyecto.</p>
-      </div>
-    </section>
+      <section class="cotizacion-info">
+        <div>
+          <h2>Cliente</h2>
+          <p><strong>{{ cotizacion.cliente.nombre }}</strong></p>
+          {% if cotizacion.cliente.direccion %}
+            <p>{{ cotizacion.cliente.direccion }}</p>
+          {% endif %}
+          {% if cotizacion.cliente.telefono %}
+            <p>Tel: {{ cotizacion.cliente.telefono }}</p>
+          {% endif %}
+          {% if cotizacion.cliente.nit %}
+            <p>NIT: {{ cotizacion.cliente.nit }}</p>
+          {% endif %}
+        </div>
+        <div class="cotizacion-title">
+          <h2>COTIZACIÓN</h2>
+          {% if cotizacion.titulo %}
+            <h3>{{ cotizacion.titulo }}</h3>
+          {% endif %}
+          {% if cotizacion.garantia_texto %}
+            <p class="garantia">{{ cotizacion.garantia_texto }}</p>
+          {% endif %}
+          {% if cotizacion.observaciones %}
+            <p>{{ cotizacion.observaciones }}</p>
+          {% endif %}
+        </div>
+      </section>
 
-    <footer class="cotizacion-footer">
-      <div>
-        <p><strong>Cuenta Banrural:</strong> 0000000000000</p>
-        <p><strong>Web:</strong> tecnologiadeguatemala.com</p>
-      </div>
-      <div class="qr-box">
-        <p>QR</p>
-        <!-- TODO: Generar y mostrar QR cuando exista URL pública o datos configurados. -->
-      </div>
-    </footer>
+      <table class="cotizacion-table">
+        <thead>
+          <tr>
+            <th>Descripción</th>
+            <th>Cantidad</th>
+            <th>Precio</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr>
+              <td>
+                <strong>{{ item.producto_servicio.nombre }}</strong><br>
+                {{ item.descripcion_editable|default:item.producto_servicio.descripcion }}
+              </td>
+              <td class="text-center">{{ item.cantidad }}</td>
+              <td class="text-end">Q {{ item.precio_venta_unitario|floatformat:2 }}</td>
+              <td class="text-end">Q {{ item.total_linea_venta|floatformat:2 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <section class="totales">
+        <div class="total-block">
+          <div class="total-label">Total</div>
+          <div class="total-amount">Q {{ cotizacion.subtotal_venta|floatformat:2 }}</div>
+        </div>
+        <div class="payment-box">
+          <h4>Método de pago</h4>
+          <p>50% para confirmar el servicio y 50% contra entrega o finalización del proyecto.</p>
+        </div>
+      </section>
+
+      <footer class="cotizacion-footer">
+        <div>
+          <p><strong>Cuenta Banrural:</strong> 0000000000000</p>
+          <p><strong>Web:</strong> tecnologiadeguatemala.com</p>
+        </div>
+        <div class="qr-box">
+          <p>QR</p>
+          <!-- TODO: Generar y mostrar QR cuando exista URL pública o datos configurados. -->
+        </div>
+      </footer>
+    </div>
     <div class="letterhead-bottom"></div>
   </div>
 
