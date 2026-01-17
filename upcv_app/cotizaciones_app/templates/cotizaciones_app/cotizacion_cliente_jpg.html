@@ -4,191 +4,179 @@
 <head>
   <meta charset="utf-8">
   <title>Cotización {{ cotizacion.correlativo }}</title>
-  <link rel="stylesheet" href="{% static 'cotizaciones_app/css/cotizacion_print.css' %}">
   <style>
-    .letterhead-top,
-    .letterhead-bottom {
-      height: 8px;
-      background: #1d4ed8;
+    * {
+      box-sizing: border-box;
     }
-    .letterhead-top {
-      margin-bottom: 16px;
-    }
-    .letterhead-bottom {
-      margin-top: 24px;
-    }
-    .cotizacion-page {
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 10px;
+      color: #111111;
+      margin: 0;
       padding: 0;
+      background: #f3f4f6;
     }
-    .page-wrap {
-      padding: 24px 32px;
+    img {
+      max-width: 100%;
+      height: auto;
     }
-    .header-table {
+    .container {
+      width: 100%;
+      background: #ffffff;
+      padding: 24px 28px;
+    }
+    .header-band {
+      height: 6px;
+      background: #1f4bd8;
+      margin-bottom: 10px;
+    }
+    .footer-band {
+      height: 6px;
+      background: #1f4bd8;
+      margin-top: 10px;
+    }
+    .table0 {
       width: 100%;
       border-collapse: collapse;
     }
-    .header-table td {
-      vertical-align: top;
-    }
-    .brand-table {
+    .table {
+      width: 100%;
       border-collapse: collapse;
     }
-    .brand-table td {
-      vertical-align: middle;
+    .table th,
+    .table td {
+      border: 1px solid #cfd6e4;
+      padding: 6px 8px;
     }
-    .brand-logo {
-      width: 84px;
-      height: auto;
-      object-fit: contain;
+    .table th {
+      background: #f5f7fb;
+      font-weight: bold;
     }
-    .header-meta {
+    .text-right {
       text-align: right;
-      font-size: 13px;
-      color: #1f2937;
     }
-    .header-meta h2 {
-      margin: 0;
-      font-size: 22px;
-      color: #1d4ed8;
+    .text-center {
+      text-align: center;
+    }
+    .no-wrap {
+      white-space: nowrap;
     }
     .payment-box {
-      margin-top: 16px;
-      padding: 12px 16px;
-      border-radius: 8px;
-      background: #eef2ff;
+      border: 1px solid #dbe3f4;
+      background: #f5f7ff;
+      padding: 10px;
+      margin-top: 10px;
     }
-    .payment-box h4 {
-      margin: 0 0 6px;
-      font-size: 14px;
-      color: #1e3a8a;
-    }
-    .totales {
-      margin-top: 24px;
-      text-align: left;
-    }
-    .total-block {
-      margin-bottom: 12px;
-    }
-    .total-label {
-      font-weight: 700;
-      color: #1d4ed8;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-size: 14px;
-    }
-    .total-amount {
-      font-size: 20px;
-      font-weight: 700;
-      color: #0f172a;
+    @media print {
+      body {
+        background: #ffffff;
+      }
+      .container {
+        padding: 0;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="cotizacion-page" id="cotizacion-print" data-correlativo="{{ cotizacion.correlativo }}">
-    <div class="letterhead-top"></div>
-    <div class="page-wrap">
-      <header class="cotizacion-header">
-        <table class="header-table">
-          <tr>
-            <td>
-              <table class="brand-table">
-                <tr>
-                  {% if institucion and institucion.logo %}
-                    <td class="brand-logo-cell">
-                      <img src="{{ institucion.logo.url }}" alt="Logo {{ institucion.nombre }}" class="brand-logo">
-                    </td>
-                  {% endif %}
-                  <td>
-                    <h1>Tecnologías de Guatemala</h1>
-                    <p>Centro de Soporte El Progreso</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-            <td class="header-meta">
-              <h2>COTIZACIÓN</h2>
-              <div><strong>{{ cotizacion.correlativo }}</strong></div>
-              <div>Fecha: {{ cotizacion.fecha_emision }}</div>
-            </td>
-          </tr>
-        </table>
-      </header>
+  <div class="container" id="cotizacion-print" data-correlativo="{{ cotizacion.correlativo }}">
+    <div class="header-band"></div>
 
-      <section class="cotizacion-info">
-        <div>
-          <h2>Cliente</h2>
-          <p><strong>{{ cotizacion.cliente.nombre }}</strong></p>
+    <table class="table0">
+      <tr>
+        <td style="width: 60%; vertical-align: top;">
+          {% if institucion and institucion.logo %}
+            <div style="margin-bottom: 6px;">
+              <img src="{{ institucion.logo.url }}" alt="Logo {{ institucion.nombre }}" style="height: 46px;">
+            </div>
+          {% endif %}
+          <div style="font-size: 14px; font-weight: bold;">Tecnologías de Guatemala</div>
+          <div style="font-size: 11px;">Centro de Soporte El Progreso</div>
+        </td>
+        <td style="width: 40%; text-align: right; vertical-align: top;">
+          <div style="font-size: 16px; font-weight: bold; color: #1f4bd8;">COTIZACIÓN</div>
+          <div class="no-wrap"><strong>No. {{ cotizacion.correlativo }}</strong></div>
+          <div class="no-wrap">Fecha: {{ cotizacion.fecha_emision }}</div>
+        </td>
+      </tr>
+    </table>
+
+    <table class="table0" style="margin-top: 14px;">
+      <tr>
+        <td style="width: 55%; vertical-align: top;">
+          <div style="font-size: 12px; font-weight: bold; margin-bottom: 4px;">Cliente</div>
+          <div><strong>{{ cotizacion.cliente.nombre }}</strong></div>
           {% if cotizacion.cliente.direccion %}
-            <p>{{ cotizacion.cliente.direccion }}</p>
+            <div>{{ cotizacion.cliente.direccion }}</div>
           {% endif %}
           {% if cotizacion.cliente.telefono %}
-            <p>Tel: {{ cotizacion.cliente.telefono }}</p>
+            <div>Tel: {{ cotizacion.cliente.telefono }}</div>
           {% endif %}
           {% if cotizacion.cliente.nit %}
-            <p>NIT: {{ cotizacion.cliente.nit }}</p>
+            <div>NIT: {{ cotizacion.cliente.nit }}</div>
           {% endif %}
-        </div>
-        <div class="cotizacion-title">
-          <h2>COTIZACIÓN</h2>
+        </td>
+        <td style="width: 45%; text-align: right; vertical-align: top;">
           {% if cotizacion.titulo %}
-            <h3>{{ cotizacion.titulo }}</h3>
+            <div style="font-size: 12px; font-weight: bold;">{{ cotizacion.titulo }}</div>
           {% endif %}
           {% if cotizacion.garantia_texto %}
-            <p class="garantia">{{ cotizacion.garantia_texto }}</p>
+            <div style="margin-top: 6px; color: #b91c1c; font-weight: bold;">{{ cotizacion.garantia_texto }}</div>
           {% endif %}
           {% if cotizacion.observaciones %}
-            <p>{{ cotizacion.observaciones }}</p>
+            <div style="margin-top: 6px;">{{ cotizacion.observaciones }}</div>
           {% endif %}
-        </div>
-      </section>
+        </td>
+      </tr>
+    </table>
 
-      <table class="cotizacion-table">
-        <thead>
+    <table class="table" style="margin-top: 14px;">
+      <thead>
+        <tr>
+          <th style="width: 55%;">Descripción</th>
+          <th style="width: 15%;" class="text-center">Cantidad</th>
+          <th style="width: 15%;" class="text-right">Precio</th>
+          <th style="width: 15%;" class="text-right">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
           <tr>
-            <th>Descripción</th>
-            <th>Cantidad</th>
-            <th>Precio</th>
-            <th>Total</th>
+            <td>
+              <strong>{{ item.producto_servicio.nombre }}</strong><br>
+              {{ item.descripcion_editable|default:item.producto_servicio.descripcion }}
+            </td>
+            <td class="text-center">{{ item.cantidad }}</td>
+            <td class="text-right no-wrap">Q {{ item.precio_venta_unitario|floatformat:2 }}</td>
+            <td class="text-right no-wrap">Q {{ item.total_linea_venta|floatformat:2 }}</td>
           </tr>
-        </thead>
-        <tbody>
-          {% for item in items %}
-            <tr>
-              <td>
-                <strong>{{ item.producto_servicio.nombre }}</strong><br>
-                {{ item.descripcion_editable|default:item.producto_servicio.descripcion }}
-              </td>
-              <td class="text-center">{{ item.cantidad }}</td>
-              <td class="text-end">Q {{ item.precio_venta_unitario|floatformat:2 }}</td>
-              <td class="text-end">Q {{ item.total_linea_venta|floatformat:2 }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+        {% endfor %}
+      </tbody>
+    </table>
 
-      <section class="totales">
-        <div class="total-block">
-          <div class="total-label">Total</div>
-          <div class="total-amount">Q {{ cotizacion.subtotal_venta|floatformat:2 }}</div>
-        </div>
-        <div class="payment-box">
-          <h4>Método de pago</h4>
-          <p>50% para confirmar el servicio y 50% contra entrega o finalización del proyecto.</p>
-        </div>
-      </section>
-
-      <footer class="cotizacion-footer">
-        <div>
-          <p><strong>Cuenta Banrural:</strong> 0000000000000</p>
-          <p><strong>Web:</strong> tecnologiadeguatemala.com</p>
-        </div>
-        <div class="qr-box">
-          <p>QR</p>
-          <!-- TODO: Generar y mostrar QR cuando exista URL pública o datos configurados. -->
-        </div>
-      </footer>
+    <div style="margin-top: 10px; font-size: 12px; font-weight: bold; text-align: right;">
+      TOTAL: Q {{ cotizacion.subtotal_venta|floatformat:2 }}
     </div>
-    <div class="letterhead-bottom"></div>
+
+    <div class="payment-box">
+      <div style="font-weight: bold; margin-bottom: 4px;">Método de pago</div>
+      <div>50% para confirmar el servicio y 50% contra entrega o finalización del proyecto.</div>
+      <div style="margin-top: 6px;">
+        Cuenta Banrural: <strong style="font-size: 12px;">3356033880</strong> a nombre de Tecnologías de Guatemala
+      </div>
+    </div>
+
+    <table class="table0" style="margin-top: 12px;">
+      <tr>
+        <td style="width: 70%; vertical-align: top;">
+          <div><strong>Web:</strong> www.tecnologiasdeguatemala.com</div>
+        </td>
+        <td style="width: 30%; text-align: right; vertical-align: top;">
+          <div>QR</div>
+        </td>
+      </tr>
+    </table>
+
+    <div class="footer-band"></div>
   </div>
 
   {% if download_jpg %}
