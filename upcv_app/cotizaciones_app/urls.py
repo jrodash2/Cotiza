@@ -17,6 +17,7 @@ urlpatterns = [
     path('<int:pk>/', views.CotizacionDetailView.as_view(), name='cotizacion_detail'),
     path('<int:pk>/editar/', views.CotizacionUpdateView.as_view(), name='cotizacion_update'),
     path('producto-precio/<int:pk>/', views.producto_precio, name='producto_precio'),
-    path('<int:pk>/pdf/', views.cotizacion_pdf, name='cotizacion_pdf'),
+    path('<int:pk>/jpg/', views.cotizacion_cliente_jpg, name='cotizacion_jpg'),
     path('<int:pk>/print/', views.cotizacion_print, name='cotizacion_print'),
+    path('<int:pk>/jpg-interno/', views.cotizacion_jpg_interno, name='cotizacion_jpg_interno'),
 ]

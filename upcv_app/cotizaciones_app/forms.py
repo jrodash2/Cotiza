@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 from django.forms import BaseInlineFormSet, inlineformset_factory
 
 from .models import Cliente, ProductoServicio, Cotizacion, CotizacionItem
@@ -68,7 +69,7 @@ class ProductoServicioForm(forms.ModelForm):
     def clean_precio_venta(self):
         precio_venta = self.cleaned_data.get('precio_venta')
         if precio_venta is not None and precio_venta < 0:
-            raise forms.ValidationError('El precio de venta no puede ser negativo.')
+            raise forms.ValidationError('El precio no puede ser negativo.')
         return precio_venta
 
 
@@ -92,6 +93,9 @@ class CotizacionForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.fields['fecha_emision'].initial = timezone.now().date()
+            self.fields['fecha_emision'].required = False
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs['class'] = 'form-check-input'
