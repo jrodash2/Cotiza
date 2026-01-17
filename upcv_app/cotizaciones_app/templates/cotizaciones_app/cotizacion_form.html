@@ -28,8 +28,8 @@
                   </div>
                   <div class="col-12 col-md-3">
                     <label class="form-label">Fecha emisión</label>
-                    {{ form.fecha_emision }}
-                    {{ form.fecha_emision.errors }}
+                    {{ form.fecha_emision.as_hidden }}
+                    <p class="form-control-plaintext mb-0">{{ form.instance.fecha_emision|default:'' }}</p>
                   </div>
                   <div class="col-12 col-md-3">
                     <label class="form-label">Estado</label>

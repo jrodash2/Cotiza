@@ -8,6 +8,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
@@ -227,9 +228,14 @@ class CotizacionUpdateView(LoginRequiredMixin, UpdateView):
 
     def forms_valid(self, form, formset):
         with transaction.atomic():
-            cotizacion = form.save()
-            for item in formset.deleted_objects:
-                item.delete()
+            cotizacion = form.save(commit=False)
+            cotizacion.fecha_emision = timezone.now().date()
+            cotizacion.save()
+            for item_form in formset.forms:
+                if not item_form.cleaned_data:
+                    continue
+                if item_form.cleaned_data.get('DELETE') and item_form.instance.pk:
+                    item_form.instance.delete()
             items = formset.save(commit=False)
             for item in items:
                 item.cotizacion = cotizacion
