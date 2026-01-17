@@ -434,6 +434,96 @@ def cotizacion_jpg_interno(request, pk):
     cotizacion, items, institucion = _get_cotizacion_context(pk)
     return render(
         request,
+        'cotizaciones_app/cotizacion_cliente_jpg.html',
+        {
+            'cotizacion': cotizacion,
+            'items': items,
+            'institucion': institucion,
+            'account_number': '123-456789-0',
+            'bank_name': None,
+            'show_costs': False,
+            'download_jpg': download_jpg,
+            'is_internal': False,
+            'is_jpg': download_jpg,
+        },
+    )
+
+
+@login_required
+def cotizacion_pdf(request, pk):
+    cotizacion, items, institucion = _get_cotizacion_context(pk)
+    html_string = render_to_string(
+        'cotizaciones_app/cotizacion_cliente_pdf.html',
+        {
+            'cotizacion': cotizacion,
+            'items': items,
+            'institucion': institucion,
+            'account_number': '123-456789-0',
+            'bank_name': None,
+            'show_costs': False,
+            'download_jpg': False,
+            'is_internal': False,
+            'is_jpg': False,
+        },
+        request=request,
+    )
+    response = HttpResponse(content_type='application/pdf')
+    pisa.CreatePDF(html_string, dest=response, link_callback=link_callback)
+    filename = f"cotizacion_{cotizacion.correlativo}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+@login_required
+def cotizacion_cliente_jpg(request, pk):
+    cotizacion, items, institucion = _get_cotizacion_context(pk)
+    return render(
+        request,
+        'cotizaciones_app/cotizacion_cliente_jpg.html',
+        {
+            'cotizacion': cotizacion,
+            'items': items,
+            'institucion': institucion,
+            'account_number': '123-456789-0',
+            'bank_name': None,
+            'show_costs': False,
+            'download_jpg': True,
+            'is_internal': False,
+            'is_jpg': True,
+        },
+    )
+
+
+@login_required
+def cotizacion_pdf_interno(request, pk):
+    _require_staff(request.user)
+    cotizacion, items, institucion = _get_cotizacion_context(pk)
+    html_string = render_to_string(
+        'cotizaciones_app/cotizacion_print.html',
+        {
+            'cotizacion': cotizacion,
+            'items': items,
+            'institucion': institucion,
+            'show_costs': True,
+            'download_jpg': False,
+            'is_internal': True,
+            'is_jpg': False,
+        },
+        request=request,
+    )
+    response = HttpResponse(content_type='application/pdf')
+    pisa.CreatePDF(html_string, dest=response, link_callback=link_callback)
+    filename = f"cotizacion_{cotizacion.correlativo}_interna.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+@login_required
+def cotizacion_jpg_interno(request, pk):
+    _require_staff(request.user)
+    cotizacion, items, institucion = _get_cotizacion_context(pk)
+    return render(
+        request,
         'cotizaciones_app/cotizacion_print.html',
         {
             'cotizacion': cotizacion,
