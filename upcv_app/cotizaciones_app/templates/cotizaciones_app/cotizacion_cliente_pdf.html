@@ -14,7 +14,7 @@
     }
     body {
       font-family: Arial, sans-serif;
-      font-size: 10px;
+      font-size: 11px;
       color: #111111;
       margin: 0;
       padding: 0;
@@ -31,6 +31,11 @@
       background: #1f4bd8;
       margin-bottom: 10px;
     }
+    .header-divider {
+      height: 1px;
+      background: #e6e8ef;
+      margin: 10px 0;
+    }
     .footer-band {
       height: 6px;
       background: #1f4bd8;
@@ -46,7 +51,7 @@
     }
     .table th,
     .table td {
-      border: 1px solid #cfd6e4;
+      border: 1px solid #d8dce6;
       padding: 6px 8px;
     }
     .table th {
@@ -67,6 +72,18 @@
       background: #f5f7ff;
       padding: 10px;
       margin-top: 10px;
+    }
+    .total-box {
+      background: #1f4bd8;
+      color: #ffffff;
+      padding: 8px 12px;
+      font-weight: bold;
+      display: inline-block;
+    }
+    .footer-divider {
+      height: 1px;
+      background: #e6e8ef;
+      margin: 10px 0;
     }
   </style>
 </head>
@@ -93,7 +110,9 @@
       </tr>
     </table>
 
-    <table class="table0" style="margin-top: 14px;">
+    <div class="header-divider"></div>
+
+    <table class="table0">
       <tr>
         <td style="width: 55%; vertical-align: top;">
           <div style="font-size: 12px; font-weight: bold; margin-bottom: 4px;">Cliente</div>
@@ -146,9 +165,14 @@
       </tbody>
     </table>
 
-    <div style="margin-top: 10px; font-size: 12px; font-weight: bold; text-align: right;">
-      TOTAL: Q {{ cotizacion.subtotal_venta|floatformat:2 }}
-    </div>
+    <table class="table0" style="margin-top: 10px;">
+      <tr>
+        <td style="width: 70%;"></td>
+        <td style="width: 30%; text-align: right;">
+          <div class="total-box">TOTAL: Q {{ cotizacion.subtotal_venta|floatformat:2 }}</div>
+        </td>
+      </tr>
+    </table>
 
     <div class="payment-box">
       <div style="font-weight: bold; margin-bottom: 4px;">Método de pago</div>
@@ -158,7 +182,9 @@
       </div>
     </div>
 
-    <table class="table0" style="margin-top: 12px;">
+    <div class="footer-divider"></div>
+
+    <table class="table0">
       <tr>
         <td style="width: 70%; vertical-align: top;">
           <div><strong>Web:</strong> www.tecnologiasdeguatemala.com</div>
