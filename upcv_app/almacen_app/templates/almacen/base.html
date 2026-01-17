@@ -67,6 +67,8 @@
 
 <!-- Responsive css-->
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/responsive.css' %}">
+<!-- Custom overrides-->
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 </head>
   <body> 
 
@@ -483,23 +485,30 @@
         <!-- Page Sidebar Ends-->
         
           
-          <main class="main-content">
-            {% block content %}
-            <!-- El contenido de la página se inyectará aquí -->
-            {% endblock %}
+          <main class="page-body main-content">
+            <div class="container-fluid">
+              {% block content %}
+              <!-- El contenido de la página se inyectará aquí -->
+              {% endblock %}
+            </div>
           </main>
 
 
         </div>
 
-        
-
+        <!-- Footer SIEMPRE va fuera de .page-body -->
+        <footer class="footer">
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-md-12 footer-copyright text-center">
+                <p class="mb-0">Copyright <span id="currentYear"></span> © Informatica UPCV</p>
+              </div>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
-    
-  
-</script>
-  
+  </script>
 <!-- latest jquery-->
 <script src="{% static 'assets/js/jquery.min.js' %}"></script>
 <!-- Bootstrap js-->
@@ -535,20 +544,8 @@
 
 <!-- ApexCharts (para las gráficas) -->
 <script src="{% static 'assets/js/chart/apex-chart/apex-chart.js' %}"></script>
-
-<!-- Footer SIEMPRE va fuera de .page-body -->
-  <footer class="footer">
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-md-12 footer-copyright text-center">
-          <p class="mb-0">Copyright <span id="currentYear"></span> © Informatica UPCV</p>
-        </div>
-      </div>
-    </div>
-  </footer>     
- 
-    <script>
-      document.getElementById('currentYear').textContent = new Date().getFullYear();
-    </script>
+  <script>
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+  </script>
   </body>
 </html>
