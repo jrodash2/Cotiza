@@ -1,0 +1,173 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Cotización {{ cotizacion.correlativo }}</title>
+  <style>
+    @page {
+      size: letter;
+      margin: 24pt 28pt;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 10px;
+      color: #111111;
+      margin: 0;
+      padding: 0;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+    .container {
+      width: 100%;
+    }
+    .header-band {
+      height: 6px;
+      background: #1f4bd8;
+      margin-bottom: 10px;
+    }
+    .footer-band {
+      height: 6px;
+      background: #1f4bd8;
+      margin-top: 10px;
+    }
+    .table0 {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .table th,
+    .table td {
+      border: 1px solid #cfd6e4;
+      padding: 6px 8px;
+    }
+    .table th {
+      background: #f5f7fb;
+      font-weight: bold;
+    }
+    .text-right {
+      text-align: right;
+    }
+    .text-center {
+      text-align: center;
+    }
+    .no-wrap {
+      white-space: nowrap;
+    }
+    .payment-box {
+      border: 1px solid #dbe3f4;
+      background: #f5f7ff;
+      padding: 10px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="cotizacion-print" data-correlativo="{{ cotizacion.correlativo }}">
+    <div class="header-band"></div>
+
+    <table class="table0">
+      <tr>
+        <td style="width: 60%; vertical-align: top;">
+          {% if institucion and institucion.logo %}
+            <div style="margin-bottom: 6px;">
+              <img src="{{ institucion.logo.url }}" alt="Logo {{ institucion.nombre }}" style="height: 46px;">
+            </div>
+          {% endif %}
+          <div style="font-size: 14px; font-weight: bold;">Tecnologías de Guatemala</div>
+          <div style="font-size: 11px;">Centro de Soporte El Progreso</div>
+        </td>
+        <td style="width: 40%; text-align: right; vertical-align: top;">
+          <div style="font-size: 16px; font-weight: bold; color: #1f4bd8;">COTIZACIÓN</div>
+          <div class="no-wrap"><strong>No. {{ cotizacion.correlativo }}</strong></div>
+          <div class="no-wrap">Fecha: {{ cotizacion.fecha_emision }}</div>
+        </td>
+      </tr>
+    </table>
+
+    <table class="table0" style="margin-top: 14px;">
+      <tr>
+        <td style="width: 55%; vertical-align: top;">
+          <div style="font-size: 12px; font-weight: bold; margin-bottom: 4px;">Cliente</div>
+          <div><strong>{{ cotizacion.cliente.nombre }}</strong></div>
+          {% if cotizacion.cliente.direccion %}
+            <div>{{ cotizacion.cliente.direccion }}</div>
+          {% endif %}
+          {% if cotizacion.cliente.telefono %}
+            <div>Tel: {{ cotizacion.cliente.telefono }}</div>
+          {% endif %}
+          {% if cotizacion.cliente.nit %}
+            <div>NIT: {{ cotizacion.cliente.nit }}</div>
+          {% endif %}
+        </td>
+        <td style="width: 45%; text-align: right; vertical-align: top;">
+          {% if cotizacion.titulo %}
+            <div style="font-size: 12px; font-weight: bold;">{{ cotizacion.titulo }}</div>
+          {% endif %}
+          {% if cotizacion.garantia_texto %}
+            <div style="margin-top: 6px; color: #b91c1c; font-weight: bold;">{{ cotizacion.garantia_texto }}</div>
+          {% endif %}
+          {% if cotizacion.observaciones %}
+            <div style="margin-top: 6px;">{{ cotizacion.observaciones }}</div>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+
+    <table class="table" style="margin-top: 14px;">
+      <thead>
+        <tr>
+          <th style="width: 55%;">Descripción</th>
+          <th style="width: 15%;" class="text-center">Cantidad</th>
+          <th style="width: 15%;" class="text-right">Precio</th>
+          <th style="width: 15%;" class="text-right">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr>
+            <td>
+              <strong>{{ item.producto_servicio.nombre }}</strong><br>
+              {{ item.descripcion_editable|default:item.producto_servicio.descripcion }}
+            </td>
+            <td class="text-center">{{ item.cantidad }}</td>
+            <td class="text-right no-wrap">Q {{ item.precio_venta_unitario|floatformat:2 }}</td>
+            <td class="text-right no-wrap">Q {{ item.total_linea_venta|floatformat:2 }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div style="margin-top: 10px; font-size: 12px; font-weight: bold;">
+      TOTAL: Q {{ cotizacion.subtotal_venta|floatformat:2 }}
+    </div>
+
+    <div class="payment-box">
+      <div style="font-weight: bold; margin-bottom: 4px;">Método de pago</div>
+      <div>50% para confirmar el servicio y 50% contra entrega o finalización del proyecto.</div>
+      <div style="margin-top: 6px;">Cuenta Banrural: <strong>0000000000000</strong></div>
+    </div>
+
+    <table class="table0" style="margin-top: 12px;">
+      <tr>
+        <td style="width: 70%; vertical-align: top;">
+          <div><strong>Web:</strong> tecnologiadeguatemala.com</div>
+        </td>
+        <td style="width: 30%; text-align: right; vertical-align: top;">
+          <div>QR</div>
+        </td>
+      </tr>
+    </table>
+
+    <div class="footer-band"></div>
+  </div>
+</body>
+</html>
