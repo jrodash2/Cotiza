@@ -44,6 +44,9 @@ class ProductoServicioForm(forms.ModelForm):
             'precio_venta',
             'activo',
         ]
+        widgets = {
+            'descripcion': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
