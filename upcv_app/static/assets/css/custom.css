@@ -1,0 +1,78 @@
+:root {
+  --riho-header-h: 90px;
+}
+
+/* Fix header overlap */
+.page-body {
+  padding-top: var(--riho-header-h);
+}
+
+/* Sticky footer Riho */
+.page-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-body-wrapper {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: row;
+}
+
+.page-body {
+  flex: 1 0 auto;
+}
+
+footer.footer,
+.footer {
+  margin-top: auto;
+}
+
+/* Prevent horizontal overflow */
+html,
+body {
+  overflow-x: hidden;
+}
+
+.page-body,
+.container-fluid {
+  overflow-x: hidden;
+}
+
+/* Form layout */
+.form-page,
+.form-page-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 12px;
+  width: 100%;
+}
+
+.form-page .card,
+.form-page-wrap .card {
+  width: 100%;
+}
+
+.form-page .form-control,
+.form-page .form-select,
+.form-page-wrap .form-control,
+.form-page-wrap .form-select {
+  width: 100%;
+  max-width: 100%;
+}
+
+.form-page textarea,
+.form-page-wrap textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.form-page .row.g-3,
+.form-page-wrap .row.g-3 {
+  row-gap: 16px;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
