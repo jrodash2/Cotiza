@@ -18,7 +18,6 @@
       color: #111111;
       margin: 0;
       padding: 0;
-      background: #eef1f6;
     }
     img {
       max-width: 100%;
@@ -26,17 +25,7 @@
     }
     .page {
       width: 100%;
-      background: #ffffff;
     }
-    {% if download_jpg %}
-    .page {
-      width: 1275px;
-      min-height: 1650px;
-      margin: 0 auto;
-      overflow: hidden;
-      padding: 60px 70px;
-    }
-    {% endif %}
     .page-inner {
       padding: 24px 0 0 0;
     }
@@ -84,7 +73,7 @@
     .items th,
     .items td {
       border: 1px solid #d8dce6;
-      padding: 12px;
+      padding: 10px 12px;
       font-size: 13px;
     }
     .items th {
@@ -123,12 +112,6 @@
       font-weight: 800;
     }
     .payment-box {
-      margin-top: 14px;
-      border: 1px solid #dbe3f4;
-      background: #f3f5f9;
-      padding: 12px 14px;
-    }
-    .costs-box {
       margin-top: 14px;
       border: 1px solid #dbe3f4;
       background: #f3f5f9;
@@ -179,9 +162,6 @@
             {% endif %}
             {% if cotizacion.cliente.telefono %}
               <div>Tel: {{ cotizacion.cliente.telefono }}</div>
-            {% endif %}
-            {% if cotizacion.cliente.email %}
-              <div>Email: {{ cotizacion.cliente.email }}</div>
             {% endif %}
             {% if cotizacion.cliente.nit %}
               <div>NIT: {{ cotizacion.cliente.nit }}</div>
@@ -237,22 +217,6 @@
         </tr>
       </table>
 
-      {% if show_costs %}
-        <div class="costs-box">
-          <div style="font-weight: 700; margin-bottom: 6px;">Costos internos</div>
-          <table class="hdr">
-            <tr>
-              <td style="width: 50%;">
-                Subtotal costo: <strong>Q {{ cotizacion.subtotal_costo|floatformat:2 }}</strong>
-              </td>
-              <td style="width: 50%; text-align: right;">
-                Ganancia total: <strong>Q {{ cotizacion.ganancia_total|floatformat:2 }}</strong>
-              </td>
-            </tr>
-          </table>
-        </div>
-      {% endif %}
-
       <div class="payment-box">
         <div style="font-weight: 700; margin-bottom: 6px;">Método de pago</div>
         <div>50% para confirmar el servicio y 50% contra entrega o finalización del proyecto.</div>
@@ -276,10 +240,5 @@
     </div>
     <div class="band"></div>
   </div>
-
-  {% if download_jpg %}
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script src="{% static 'cotizaciones_app/js/cotizacion_jpg.js' %}"></script>
-  {% endif %}
 </body>
 </html>
