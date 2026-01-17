@@ -85,6 +85,20 @@ class Cotizacion(models.Model):
     def __str__(self) -> str:
         return f"{self.correlativo} - {self.cliente}"
 
+    def clean(self) -> None:
+        super().clean()
+        errors = {}
+        if self.validez_dias is not None and self.validez_dias < 1:
+            errors['validez_dias'] = 'La validez debe ser mayor a 0.'
+        if self.subtotal_venta is not None and self.subtotal_venta < 0:
+            errors['subtotal_venta'] = 'El subtotal no puede ser negativo.'
+        if self.subtotal_costo is not None and self.subtotal_costo < 0:
+            errors['subtotal_costo'] = 'El subtotal no puede ser negativo.'
+        if self.ganancia_total is not None and self.ganancia_total < 0:
+            errors['ganancia_total'] = 'La ganancia no puede ser negativa.'
+        if errors:
+            raise ValidationError(errors)
+
     def _generar_correlativo(self) -> str:
         with transaction.atomic():
             correlativo, _ = CotizacionCorrelativo.objects.select_for_update().get_or_create(id=1)
