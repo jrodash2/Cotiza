@@ -246,6 +246,10 @@ def user_can_view_costs(user):
     return user.is_staff or user.is_superuser
 
 
+def user_can_view_costs(user):
+    return user.is_staff or user.is_superuser
+
+
 class CotizacionDetailView(LoginRequiredMixin, DetailView):
     model = Cotizacion
     context_object_name = 'cotizacion'
