@@ -173,20 +173,24 @@ class CotizacionCreateView(LoginRequiredMixin, CreateView):
 
     def post(self, request, *args, **kwargs):
         self.object = None
-        form = self.get_form()
+        form = CotizacionForm(request.POST)
         formset = CotizacionItemFormSet(
             request.POST,
             form_kwargs={'show_costs': user_can_view_costs(self.request.user)},
             prefix='items',
         )
 
-        # print("POST keys:", [k for k in request.POST.keys() if k.startswith("items-")][:80])
+        # print("=== CREATE POST ===")
+        # print("POST items keys:", [k for k in request.POST.keys() if k.startswith("items-")][:80])
         # print("TOTAL_FORMS:", request.POST.get("items-TOTAL_FORMS"))
-        # print("form valid:", form.is_valid())
-        # print("formset valid:", formset.is_valid())
-        # print("form errors:", form.errors)
-        # print("formset errors:", formset.errors)
-        # print("non_form_errors:", formset.non_form_errors())
+        # print("INITIAL_FORMS:", request.POST.get("items-INITIAL_FORMS"))
+        # print("MIN_NUM_FORMS:", request.POST.get("items-MIN_NUM_FORMS"))
+        # print("MAX_NUM_FORMS:", request.POST.get("items-MAX_NUM_FORMS"))
+        # print("form.is_valid:", form.is_valid())
+        # print("form.errors:", form.errors)
+        # print("formset.is_valid:", formset.is_valid())
+        # print("formset.non_form_errors:", formset.non_form_errors())
+        # print("formset.errors:", formset.errors)
 
         if form.is_valid() and formset.is_valid():
             return self.forms_valid(form, formset)
