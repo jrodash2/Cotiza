@@ -83,9 +83,10 @@
                         <th style="width: 140px;">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody data-formset-prefix="{{ formset.prefix }}" data-price-url="{% url 'cotizaciones:producto_precio' 0 %}">
+                    <tbody data-formset-prefix="items" data-price-url="{% url 'cotizaciones:producto_precio' 0 %}">
                       {% for item_form in formset %}
                         <tr class="item-form">
+                          {{ item_form.id }}
                           <td>
                             {{ item_form.producto_servicio }}
                             {{ item_form.producto_servicio.errors }}
@@ -111,14 +112,16 @@
                             {% endif %}
                           </td>
                           {% for hidden in item_form.hidden_fields %}
-                            {{ hidden }}
+                            {% if hidden.name != 'id' %}
+                              {{ hidden }}
+                            {% endif %}
                           {% endfor %}
                         </tr>
                       {% endfor %}
                     </tbody>
                   </table>
                 </div>
-                <template id="item-row-template">
+                <template id="item-row-template" data-empty-form="{{ formset.empty_form|escapejs }}">
                   <tr class="item-form">
                     <td>{{ formset.empty_form.producto_servicio }}</td>
                     <td>{{ formset.empty_form.cantidad }}</td>
@@ -171,14 +174,15 @@
     const addButton = document.getElementById('add-item-btn');
     const template = document.getElementById('item-row-template');
     if (!tableBody || !addButton || !template) {
-      return;
-    }
+          return;
+        }
 
-    const formsetPrefix = tableBody.dataset.formsetPrefix;
-    const totalFormsInput = document.querySelector(`input[name="${formsetPrefix}-TOTAL_FORMS"]`);
+    const formsetPrefix = 'items';
+    const totalFormsInput = document.getElementById('id_items-TOTAL_FORMS');
     const priceUrlTemplate = tableBody.dataset.priceUrl;
+    const emptyRow = template.dataset.emptyForm;
 
-    const buildPriceUrl = (productId) => priceUrlTemplate.replace('0/', `${productId}/`);
+        const buildPriceUrl = (productId) => priceUrlTemplate.replace('0/', `${productId}/`);
 
     const parsePrice = (value) => {
       const cleaned = value.replace('Q', '').replace(',', '').trim();
@@ -269,15 +273,74 @@
         removeBtn.addEventListener('click', () => {
           const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
           const idInput = row.querySelector('input[name$="-id"]');
-          if (deleteInput && idInput && idInput.value) {
+          if (deleteInput) {
             deleteInput.checked = true;
             row.classList.add('d-none');
             return;
           }
+          if (idInput && idInput.value) {
+            row.classList.add('d-none');
+            return;
+          }
           row.remove();
-          reindexForms();
         });
       }
+    };
+
+    const buildRowFromEmptyForm = (index) => {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = emptyRow.replace(/__prefix__/g, index);
+      const productField = wrapper.querySelector('select[name$="-producto_servicio"]');
+      const qtyField = wrapper.querySelector('input[name$="-cantidad"]');
+      const deleteField = wrapper.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      const hiddenFields = wrapper.querySelectorAll('input[type="hidden"]');
+
+      const row = document.createElement('tr');
+      row.classList.add('item-form');
+
+      const productCell = document.createElement('td');
+      if (productField) {
+        productCell.appendChild(productField);
+      }
+      row.appendChild(productCell);
+
+      const qtyCell = document.createElement('td');
+      if (qtyField) {
+        qtyCell.appendChild(qtyField);
+      }
+      row.appendChild(qtyCell);
+
+      const priceCell = document.createElement('td');
+      priceCell.classList.add('text-nowrap');
+      priceCell.innerHTML = '<span class="js-precio">Q 0.00</span>';
+      row.appendChild(priceCell);
+
+      const subtotalCell = document.createElement('td');
+      subtotalCell.classList.add('text-nowrap');
+      subtotalCell.innerHTML = '<span class="js-subtotal">Q 0.00</span>';
+      row.appendChild(subtotalCell);
+
+      const actionsCell = document.createElement('td');
+      if (deleteField) {
+        const hiddenDelete = document.createElement('span');
+        hiddenDelete.classList.add('d-none');
+        hiddenDelete.appendChild(deleteField);
+        actionsCell.appendChild(hiddenDelete);
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'btn btn-outline-danger btn-sm js-remove';
+        deleteButton.textContent = 'Eliminar';
+        actionsCell.appendChild(deleteButton);
+      }
+      row.appendChild(actionsCell);
+
+      hiddenFields.forEach((field) => {
+        if (field.name && !field.name.endsWith('-DELETE')) {
+          row.appendChild(field);
+        }
+      });
+
+      return row;
     };
 
     const addRow = () => {
@@ -285,10 +348,7 @@
         return;
       }
       const formIndex = parseInt(totalFormsInput.value, 10);
-      const html = template.innerHTML.replace(/__prefix__/g, formIndex);
-      const tempWrapper = document.createElement('tbody');
-      tempWrapper.innerHTML = html.trim();
-      const newRow = tempWrapper.querySelector('tr');
+      const newRow = buildRowFromEmptyForm(formIndex);
       if (!newRow) {
         return;
       }

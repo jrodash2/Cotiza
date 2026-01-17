@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import transaction
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, JsonResponse
@@ -140,7 +141,10 @@ class CotizacionCreateView(LoginRequiredMixin, View):
 
     def get(self, request):
         form = CotizacionForm()
-        formset = CotizacionItemFormSet(form_kwargs={'show_costs': user_can_view_costs(request.user)})
+        formset = CotizacionItemFormSet(
+            form_kwargs={'show_costs': user_can_view_costs(request.user)},
+            prefix='items',
+        )
         return render(
             request,
             self.template_name,
@@ -149,7 +153,11 @@ class CotizacionCreateView(LoginRequiredMixin, View):
 
     def post(self, request):
         form = CotizacionForm(request.POST)
-        formset = CotizacionItemFormSet(request.POST, form_kwargs={'show_costs': user_can_view_costs(request.user)})
+        formset = CotizacionItemFormSet(
+            request.POST,
+            form_kwargs={'show_costs': user_can_view_costs(request.user)},
+            prefix='items',
+        )
         if form.is_valid() and formset.is_valid():
             cotizacion = form.save()
             formset.instance = cotizacion
@@ -181,6 +189,7 @@ class CotizacionUpdateView(LoginRequiredMixin, View):
         formset = CotizacionItemFormSet(
             instance=cotizacion,
             form_kwargs={'show_costs': user_can_view_costs(request.user)},
+            prefix='items',
         )
         return render(
             request,
@@ -195,25 +204,27 @@ class CotizacionUpdateView(LoginRequiredMixin, View):
             request.POST,
             instance=cotizacion,
             form_kwargs={'show_costs': user_can_view_costs(request.user)},
+            prefix='items',
         )
-        if form.is_valid():
-            cotizacion = form.save()
-            formset.instance = cotizacion
-            if formset.is_valid():
-                for item_form in formset:
-                    if not item_form.cleaned_data or item_form.cleaned_data.get('DELETE', False):
-                        continue
-                    item = item_form.save(commit=False)
+        if form.is_valid() and formset.is_valid():
+            # print("TOTAL_FORMS:", request.POST.get("items-TOTAL_FORMS"))
+            # print("keys:", [k for k in request.POST.keys() if k.startswith("items-")][:15])
+            with transaction.atomic():
+                cotizacion = form.save()
+                formset.instance = cotizacion
+                for item in formset.deleted_objects:
+                    item.delete()
+                items = formset.save(commit=False)
+                for item in items:
                     item.cotizacion = cotizacion
                     item.precio_venta_unitario = item.producto_servicio.precio_venta
                     item.precio_costo_unitario = item.producto_servicio.precio_costo
                     if not item.descripcion_editable:
                         item.descripcion_editable = item.producto_servicio.descripcion
                     item.save()
-                for item in formset.deleted_objects:
-                    item.delete()
-                messages.success(request, 'Cotización actualizada correctamente.')
-                return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
+                formset.save_m2m()
+            messages.success(request, 'Cotización actualizada correctamente.')
+            return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
         messages.error(request, 'Revisa los errores en el formulario.')
         return render(
             request,
