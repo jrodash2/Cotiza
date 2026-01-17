@@ -2,57 +2,95 @@
 {% load static %}
 
 {% block content %}
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="mb-0">{% if form.instance.pk %}Editar{% else %}Nuevo{% endif %} producto/servicio</h5>
-        </div>
-        <div class="card-body">
-          <form method="post" novalidate>
-            {% csrf_token %}
-            <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label">Tipo</label>
-                {{ form.tipo }}
-                {{ form.tipo.errors }}
-              </div>
-              <div class="col-md-8">
-                <label class="form-label">Nombre</label>
-                {{ form.nombre }}
-                {{ form.nombre.errors }}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Unidad</label>
-                {{ form.unidad }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Precio costo</label>
-                {{ form.precio_costo }}
-                {{ form.precio_costo.errors }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Precio venta</label>
-                {{ form.precio_venta }}
-                {{ form.precio_venta.errors }}
-              </div>
-              <div class="col-md-12">
-                <label class="form-label">Descripción</label>
-                {{ form.descripcion }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Activo</label>
-                {{ form.activo }}
+<div class="form-page-wrap">
+  <div class="card">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <h5 class="mb-0">{% if form.instance.pk %}Editar{% else %}Nuevo{% endif %} producto/servicio</h5>
+      <a class="btn btn-light" href="{% url 'cotizaciones:producto_list' %}">Volver</a>
+    </div>
+    <div class="card-body">
+      <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="accordion" id="productoFormAccordion">
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="productoHeadingDatos">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#productoSectionDatos" aria-expanded="true" aria-controls="productoSectionDatos">
+                Datos del producto/servicio
+              </button>
+            </h2>
+            <div id="productoSectionDatos" class="accordion-collapse collapse show" aria-labelledby="productoHeadingDatos" data-bs-parent="#productoFormAccordion">
+              <div class="accordion-body">
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">Tipo</label>
+                    {{ form.tipo }}
+                    {{ form.tipo.errors }}
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">Nombre</label>
+                    {{ form.nombre }}
+                    {{ form.nombre.errors }}
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">Unidad</label>
+                    {{ form.unidad }}
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="d-flex gap-2 justify-content-end mt-4">
-              <a class="btn btn-outline-secondary" href="{% url 'cotizaciones:producto_list' %}">Cancelar</a>
-              <button class="btn btn-primary" type="submit">Guardar</button>
+          </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="productoHeadingPrecios">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#productoSectionPrecios" aria-expanded="false" aria-controls="productoSectionPrecios">
+                Precios
+              </button>
+            </h2>
+            <div id="productoSectionPrecios" class="accordion-collapse collapse" aria-labelledby="productoHeadingPrecios" data-bs-parent="#productoFormAccordion">
+              <div class="accordion-body">
+                <div class="row g-3">
+                  <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label">Precio costo</label>
+                    {{ form.precio_costo }}
+                    {{ form.precio_costo.errors }}
+                  </div>
+                  <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label">Precio venta</label>
+                    {{ form.precio_venta }}
+                    {{ form.precio_venta.errors }}
+                  </div>
+                  <div class="col-12">
+                    <div class="form-check mt-2">
+                      {{ form.activo }}
+                      <label class="form-check-label" for="{{ form.activo.id_for_label }}">Activo</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </form>
+          </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="productoHeadingDescripcion">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#productoSectionDescripcion" aria-expanded="false" aria-controls="productoSectionDescripcion">
+                Descripción
+              </button>
+            </h2>
+            <div id="productoSectionDescripcion" class="accordion-collapse collapse" aria-labelledby="productoHeadingDescripcion" data-bs-parent="#productoFormAccordion">
+              <div class="accordion-body">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label">Descripción</label>
+                    {{ form.descripcion }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+        <div class="d-flex gap-2 justify-content-end mt-4">
+          <a class="btn btn-light" href="{% url 'cotizaciones:producto_list' %}">Cancelar</a>
+          <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
