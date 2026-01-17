@@ -196,20 +196,24 @@ class CotizacionUpdateView(LoginRequiredMixin, View):
             instance=cotizacion,
             form_kwargs={'show_costs': user_can_view_costs(request.user)},
         )
-        if form.is_valid() and formset.is_valid():
+        if form.is_valid():
             cotizacion = form.save()
             formset.instance = cotizacion
-            items = formset.save(commit=False)
-            for item in items:
-                item.precio_venta_unitario = item.producto_servicio.precio_venta
-                item.precio_costo_unitario = item.producto_servicio.precio_costo
-                if not item.descripcion_editable:
-                    item.descripcion_editable = item.producto_servicio.descripcion
-                item.save()
-            for item in formset.deleted_objects:
-                item.delete()
-            messages.success(request, 'Cotización actualizada correctamente.')
-            return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
+            if formset.is_valid():
+                for item_form in formset:
+                    if not item_form.cleaned_data or item_form.cleaned_data.get('DELETE', False):
+                        continue
+                    item = item_form.save(commit=False)
+                    item.cotizacion = cotizacion
+                    item.precio_venta_unitario = item.producto_servicio.precio_venta
+                    item.precio_costo_unitario = item.producto_servicio.precio_costo
+                    if not item.descripcion_editable:
+                        item.descripcion_editable = item.producto_servicio.descripcion
+                    item.save()
+                for item in formset.deleted_objects:
+                    item.delete()
+                messages.success(request, 'Cotización actualizada correctamente.')
+                return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
         messages.error(request, 'Revisa los errores en el formulario.')
         return render(
             request,

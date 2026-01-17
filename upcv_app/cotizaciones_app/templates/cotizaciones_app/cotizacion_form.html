@@ -220,6 +220,36 @@
         });
     };
 
+    const reindexForms = () => {
+      const rows = Array.from(tableBody.querySelectorAll('.item-form'));
+      rows.forEach((row, index) => {
+        const elements = row.querySelectorAll('input, select, textarea, label');
+        elements.forEach((element) => {
+          if (element.name) {
+            element.name = element.name.replace(
+              new RegExp(`${formsetPrefix}-\\d+-`),
+              `${formsetPrefix}-${index}-`,
+            );
+          }
+          if (element.id) {
+            element.id = element.id.replace(
+              new RegExp(`id_${formsetPrefix}-\\d+-`),
+              `id_${formsetPrefix}-${index}-`,
+            );
+          }
+          if (element.htmlFor) {
+            element.htmlFor = element.htmlFor.replace(
+              new RegExp(`id_${formsetPrefix}-\\d+-`),
+              `id_${formsetPrefix}-${index}-`,
+            );
+          }
+        });
+      });
+      if (totalFormsInput) {
+        totalFormsInput.value = rows.length;
+      }
+    };
+
     const bindRow = (row) => {
       const productSelect = row.querySelector('select[name$="-producto_servicio"]');
       const qtyInput = row.querySelector('input[name$="-cantidad"]');
@@ -238,20 +268,22 @@
       if (removeBtn) {
         removeBtn.addEventListener('click', () => {
           const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-          if (deleteInput) {
+          const idInput = row.querySelector('input[name$="-id"]');
+          if (deleteInput && idInput && idInput.value) {
             deleteInput.checked = true;
             row.classList.add('d-none');
             return;
           }
           row.remove();
-          if (totalFormsInput) {
-            totalFormsInput.value = Math.max(parseInt(totalFormsInput.value, 10) - 1, 0);
-          }
+          reindexForms();
         });
       }
     };
 
     const addRow = () => {
+      if (!totalFormsInput) {
+        return;
+      }
       const formIndex = parseInt(totalFormsInput.value, 10);
       const html = template.innerHTML.replace(/__prefix__/g, formIndex);
       const tempWrapper = document.createElement('tbody');
