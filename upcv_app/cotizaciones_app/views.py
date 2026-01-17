@@ -150,23 +150,29 @@ class CotizacionCreateView(LoginRequiredMixin, CreateView):
     form_class = CotizacionForm
     template_name = 'cotizaciones_app/cotizacion_form.html'
 
+    def get(self, request, *args, **kwargs):
+        self.object = None
+        return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.request.POST:
-            context['formset'] = CotizacionItemFormSet(
-                self.request.POST,
-                form_kwargs={'show_costs': user_can_view_costs(self.request.user)},
-                prefix='items',
-            )
-        else:
-            context['formset'] = CotizacionItemFormSet(
-                form_kwargs={'show_costs': user_can_view_costs(self.request.user)},
-                prefix='items',
-            )
+        if 'formset' not in context:
+            if self.request.POST:
+                context['formset'] = CotizacionItemFormSet(
+                    self.request.POST,
+                    form_kwargs={'show_costs': user_can_view_costs(self.request.user)},
+                    prefix='items',
+                )
+            else:
+                context['formset'] = CotizacionItemFormSet(
+                    form_kwargs={'show_costs': user_can_view_costs(self.request.user)},
+                    prefix='items',
+                )
         context['show_costs'] = user_can_view_costs(self.request.user)
         return context
 
     def post(self, request, *args, **kwargs):
+        self.object = None
         form = self.get_form()
         formset = CotizacionItemFormSet(
             request.POST,
