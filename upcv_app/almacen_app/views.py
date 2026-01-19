@@ -200,7 +200,7 @@ def dahsboard(request):
             total_count=Count('id'),
             total_amount=Coalesce(
                 Sum('subtotal_venta'),
-                Value(0),
+                Value(Decimal('0.00')),
                 output_field=DecimalField(max_digits=12, decimal_places=2),
             ),
         )
@@ -221,7 +221,7 @@ def dahsboard(request):
         .annotate(
             total_amount=Coalesce(
                 Sum('subtotal_venta'),
-                Value(0),
+                Value(Decimal('0.00')),
                 output_field=DecimalField(max_digits=12, decimal_places=2),
             )
         )
@@ -237,7 +237,7 @@ def dahsboard(request):
         'monto': cotizaciones_qs.aggregate(
             total=Coalesce(
                 Sum('subtotal_venta'),
-                Value(0),
+                Value(Decimal('0.00')),
                 output_field=DecimalField(max_digits=12, decimal_places=2),
             )
         )['total'],
