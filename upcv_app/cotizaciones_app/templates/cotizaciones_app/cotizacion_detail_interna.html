@@ -14,10 +14,7 @@
             </div>
             <div class="d-flex flex-wrap gap-2">
               <a class="btn btn-outline-secondary" href="{% url 'cotizaciones:cotizacion_update' cotizacion.pk %}">Editar</a>
-              <a class="btn btn-outline-success" href="{% url 'cotizaciones:cotizacion_pdf' cotizacion.pk %}">Descargar PDF</a>
-              <a class="btn btn-outline-primary" href="{% url 'cotizaciones:cotizacion_jpg' cotizacion.pk %}" target="_blank">Descargar JPG</a>
-              <a class="btn btn-outline-dark" href="{% url 'cotizaciones:cotizacion_pdf_interno' cotizacion.pk %}">PDF interno</a>
-              <a class="btn btn-outline-dark" href="{% url 'cotizaciones:cotizacion_jpg_interno' cotizacion.pk %}" target="_blank">JPG interno</a>
+              <a class="btn btn-outline-primary" href="{% url 'cotizaciones:cotizacion_jpg' cotizacion.pk %}?download=jpg" target="_blank">Descargar JPG</a>
             </div>
           </div>
         </div>
