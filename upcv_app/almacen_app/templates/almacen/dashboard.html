@@ -24,9 +24,155 @@
         </div>
       </div>
     </div>
+
+    <div class="row justify-content-center">
+      <div class="col-12 col-xxl-10">
+        <div class="row g-3 mb-4">
+          <div class="col-xl-3 col-md-6">
+            <div class="card">
+              <div class="card-body">
+                <p class="text-muted mb-1">Total cotizaciones</p>
+                <h3 class="dashboard-card-title mb-0">{{ totals.cotizaciones }}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6">
+            <div class="card">
+              <div class="card-body">
+                <p class="text-muted mb-1">Clientes</p>
+                <h3 class="dashboard-card-title mb-0">{{ totals.clientes }}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6">
+            <div class="card">
+              <div class="card-body">
+                <p class="text-muted mb-1">Productos / Servicios</p>
+                <h3 class="dashboard-card-title mb-0">{{ totals.productos }}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6">
+            <div class="card">
+              <div class="card-body">
+                <p class="text-muted mb-1">Total cotizado</p>
+                <h3 class="dashboard-card-title mb-0">Q {{ totals.monto|floatformat:2 }}</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-lg-6">
+            <div class="card h-100">
+              <div class="card-header">
+                <h5 class="dashboard-card-title mb-0">Cotizaciones por Mes</h5>
+              </div>
+              <div class="card-body dashboard-chart">
+                <div id="chartCotizacionesMes"></div>
+                <div class="text-muted text-center mt-3 d-none" data-empty="chart-months">Sin datos</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card h-100">
+              <div class="card-header">
+                <h5 class="dashboard-card-title mb-0">Total cotizado por Mes</h5>
+              </div>
+              <div class="card-body dashboard-chart">
+                <div id="chartTotalMes"></div>
+                <div class="text-muted text-center mt-3 d-none" data-empty="chart-totals">Sin datos</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card h-100">
+              <div class="card-header">
+                <h5 class="dashboard-card-title mb-0">Top Clientes</h5>
+              </div>
+              <div class="card-body dashboard-chart">
+                <div id="chartTopClientes"></div>
+                <div class="text-muted text-center mt-3 d-none" data-empty="chart-top">Sin datos</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {{ chart_month_labels|json_script:"chart-month-labels" }}
+        {{ chart_month_counts|json_script:"chart-month-counts" }}
+        {{ chart_month_totals|json_script:"chart-month-totals" }}
+        {{ top_clients_labels|json_script:"chart-top-labels" }}
+        {{ top_clients_totals|json_script:"chart-top-totals" }}
+      </div>
+    </div>
   </div>
+</div>
 
+<script>
+  const labels = JSON.parse(document.getElementById('chart-month-labels').textContent);
+  const counts = JSON.parse(document.getElementById('chart-month-counts').textContent);
+  const totals = JSON.parse(document.getElementById('chart-month-totals').textContent);
+  const topLabels = JSON.parse(document.getElementById('chart-top-labels').textContent);
+  const topTotals = JSON.parse(document.getElementById('chart-top-totals').textContent);
 
-  
-  
+  const brandBlue = '#1f4ed8';
+  const brandBlueLight = '#88a8fb';
+
+  const showEmpty = (key) => {
+    const placeholder = document.querySelector(`[data-empty="${key}"]`);
+    if (placeholder) {
+      placeholder.classList.remove('d-none');
+    }
+  };
+
+  if (!labels.length) {
+    showEmpty('chart-months');
+  } else {
+    new ApexCharts(document.querySelector('#chartCotizacionesMes'), {
+      chart: {
+        type: 'bar',
+        height: 300,
+        toolbar: { show: false },
+      },
+      colors: [brandBlue],
+      series: [{ name: 'Cotizaciones', data: counts }],
+      xaxis: { categories: labels },
+      plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
+      dataLabels: { enabled: false },
+    }).render();
+  }
+
+  if (!totals.length) {
+    showEmpty('chart-totals');
+  } else {
+    new ApexCharts(document.querySelector('#chartTotalMes'), {
+      chart: {
+        type: 'line',
+        height: 300,
+        toolbar: { show: false },
+      },
+      colors: [brandBlue],
+      series: [{ name: 'Total cotizado', data: totals }],
+      xaxis: { categories: labels },
+      stroke: { curve: 'smooth', width: 3 },
+      markers: { size: 4 },
+      fill: { opacity: 0.15 },
+    }).render();
+  }
+
+  if (!topLabels.length) {
+    showEmpty('chart-top');
+  } else {
+    new ApexCharts(document.querySelector('#chartTopClientes'), {
+      chart: {
+        type: 'donut',
+        height: 300,
+      },
+      labels: topLabels,
+      series: topTotals,
+      colors: [brandBlue, '#3c6df0', '#5c89f5', brandBlueLight, '#b3c7ff'],
+      legend: { position: 'bottom' },
+    }).render();
+  }
+</script>
 {% endblock %}

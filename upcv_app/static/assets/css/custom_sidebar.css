@@ -1,0 +1,89 @@
+:root {
+  --menu-bg: #ffffff;
+  --menu-text: #0d6efd;
+  --menu-text-muted: #2b6fe3;
+  --menu-hover-bg: rgba(13, 110, 253, 0.08);
+  --menu-active-bg: rgba(13, 110, 253, 0.14);
+  --menu-border: #e9eef6;
+}
+
+.page-sidebar,
+.sidebar-wrapper,
+.sidebar-main,
+.sidebar-wrapper .logo-wrapper,
+.sidebar-wrapper #sidebar-menu,
+.sidebar-wrapper .sidebar-links {
+  background-color: var(--menu-bg) !important;
+  background-image: none !important;
+  border-right: 1px solid var(--menu-border) !important;
+  box-shadow: none;
+}
+
+.page-sidebar a,
+.sidebar-wrapper a,
+.sidebar-main a,
+.sidebar-wrapper .sidebar-link,
+.sidebar-wrapper .sidebar-submenu li a,
+.sidebar-wrapper .sidebar-main-title h6,
+.sidebar-wrapper .sidebar-main-title div,
+.sidebar-wrapper .sidebar-links span {
+  color: var(--menu-text) !important;
+}
+
+.page-sidebar a:hover,
+.sidebar-wrapper a:hover,
+.sidebar-main a:hover,
+.sidebar-wrapper .sidebar-link:hover,
+.sidebar-wrapper .sidebar-submenu li a:hover,
+.sidebar-wrapper .sidebar-link:focus,
+.sidebar-wrapper .sidebar-submenu li a:focus {
+  background-color: var(--menu-hover-bg) !important;
+  color: #084298 !important;
+}
+
+.page-sidebar .active > a,
+.sidebar-wrapper .active > a,
+.sidebar-main .active > a,
+.sidebar-wrapper .sidebar-list.active > .sidebar-link,
+.sidebar-wrapper .sidebar-link.active {
+  background-color: var(--menu-active-bg) !important;
+  color: #084298 !important;
+  border-left: 4px solid var(--menu-text) !important;
+}
+
+.page-sidebar .submenu a,
+.sidebar-wrapper .submenu a,
+.sidebar-wrapper .sidebar-submenu li a {
+  color: var(--menu-text-muted) !important;
+}
+
+.page-sidebar svg,
+.sidebar-wrapper svg,
+.sidebar-main svg,
+.page-sidebar i,
+.sidebar-wrapper i,
+.sidebar-main i {
+  color: var(--menu-text) !important;
+  fill: var(--menu-text) !important;
+}
+
+.page-sidebar a:hover svg,
+.sidebar-wrapper a:hover svg,
+.sidebar-main a:hover svg,
+.page-sidebar a:hover i,
+.sidebar-wrapper a:hover i,
+.sidebar-main a:hover i {
+  color: #084298 !important;
+  fill: #084298 !important;
+}
+
+.sidebar-wrapper .logo-wrapper {
+  background-color: var(--menu-bg) !important;
+}
+
+.sidebar-wrapper .sidebar-logo {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 6px;
+}

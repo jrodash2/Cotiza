@@ -87,7 +87,6 @@
                         <div class="d-flex flex-wrap gap-2">
                           <a class="btn btn-outline-secondary btn-sm" href="{% url 'cotizaciones:cotizacion_detail' cotizacion.pk %}">Ver</a>
                           <a class="btn btn-outline-primary btn-sm" href="{% url 'cotizaciones:cotizacion_update' cotizacion.pk %}">Editar</a>
-                          <a class="btn btn-outline-success btn-sm" href="{% url 'cotizaciones:cotizacion_pdf' cotizacion.pk %}">PDF</a>
                         </div>
                       {% else %}
                         <span class="text-muted">Sin ID</span>

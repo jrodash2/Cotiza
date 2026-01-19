@@ -93,3 +93,17 @@ body {
 .cotizaciones-list-fix .btn {
   white-space: nowrap;
 }
+
+/* Dashboard charts */
+.dashboard-card-title {
+  font-weight: 600;
+  color: #1f4ed8;
+}
+
+.dashboard-chart {
+  min-height: 280px;
+}
+
+.dashboard-chart canvas {
+  max-height: 320px;
+}

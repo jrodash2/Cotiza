@@ -69,6 +69,7 @@
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/responsive.css' %}">
 <!-- Custom overrides-->
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom_sidebar.css' %}">
 </head>
   <body> 
 
@@ -259,7 +260,7 @@
       <div class="page-body-wrapper">
         <!-- Page Sidebar Start-->
         <div class="sidebar-wrapper" data-layout="stroke-svg">
-          <div class="logo-wrapper"><a href=""><img class="img-fluid" src="{{ institucion.logo.url }}" alt=""></a>
+          <div class="logo-wrapper"><a href=""><img class="img-fluid sidebar-logo" src="{{ institucion.logo.url }}" alt=""></a>
             <div class="back-btn"><i class="fa fa-angle-left"> </i></div>
             <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="grid"> </i></div>
           </div>
