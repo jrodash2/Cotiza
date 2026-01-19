@@ -213,7 +213,7 @@ def dahsboard(request):
     for item in monthly_stats:
         month = item['month']
         month_labels.append(month.strftime('%b %Y') if month else 'Sin fecha')
-        monthly_counts.append(item['total_count'])
+        monthly_counts.append(int(item['total_count'] or 0))
         monthly_amounts.append(float(item['total_amount'] or 0))
 
     top_clients = (
@@ -243,17 +243,13 @@ def dahsboard(request):
         )['total'],
     }
 
-    chart_payload = {
-        'month_labels': month_labels,
-        'monthly_counts': monthly_counts,
-        'monthly_amounts': monthly_amounts,
-        'top_clients_labels': top_clients_labels,
-        'top_clients_amounts': top_clients_amounts,
-    }
-
     context = {
         'totals': totals,
-        'chart_payload': chart_payload,
+        'chart_month_labels': month_labels,
+        'chart_month_counts': monthly_counts,
+        'chart_month_totals': monthly_amounts,
+        'top_clients_labels': top_clients_labels,
+        'top_clients_totals': top_clients_amounts,
     }
 
     return render(request, 'almacen/dashboard.html', context)
