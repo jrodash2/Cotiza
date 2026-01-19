@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const target = document.getElementById('cotizacion-print');
+  const target = document.querySelector('.page');
   if (!target || !window.html2canvas) {
     return;
   }
@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const width = 1275;
   const height = 1650;
   window.html2canvas(target, {
-    scale: 2,
+    scale: 3,
     useCORS: true,
     width,
     height,
