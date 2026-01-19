@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from .form import InstitucionForm, UserCreateForm, UserEditForm, PerfilForm
 from .models import Perfil, Institucion
+from cotizaciones_app.models import Cliente, Cotizacion, ProductoServicio
 from django.views.generic import CreateView
 from django.views.generic import ListView
 from django.urls import reverse_lazy
@@ -21,7 +22,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
 from django.db import models
-from django.db.models import Sum, F, Value, Count, Q, Case, When, OuterRef, Subquery, IntegerField
+from django.db.models import DecimalField, Sum, F, Value, Count, Q, Case, When, OuterRef, Subquery, IntegerField
 from django.contrib.auth.decorators import login_required, user_passes_test
 from collections import defaultdict
 from django.shortcuts import get_object_or_404, redirect
@@ -40,7 +41,7 @@ from django.template.loader import get_template
 from django.http import HttpResponse
 from xhtml2pdf import pisa
 from weasyprint import HTML
-from django.db.models.functions import Cast, TruncWeek
+from django.db.models.functions import Cast, TruncMonth, TruncWeek
 from django.utils import timezone
 from datetime import timedelta
 from reportlab.lib.pagesizes import landscape, letter
@@ -190,9 +191,72 @@ import json
 @login_required
 @grupo_requerido('Administrador', 'Almacen')
 def dahsboard(request):
-  
+    cotizaciones_qs = Cotizacion.objects.select_related('cliente')
 
-    return render(request, 'almacen/dashboard.html')
+    monthly_stats = (
+        cotizaciones_qs.annotate(month=TruncMonth('fecha_emision'))
+        .values('month')
+        .annotate(
+            total_count=Count('id'),
+            total_amount=Coalesce(
+                Sum('subtotal_venta'),
+                Value(0),
+                output_field=DecimalField(max_digits=12, decimal_places=2),
+            ),
+        )
+        .order_by('month')
+    )
+
+    month_labels = []
+    monthly_counts = []
+    monthly_amounts = []
+    for item in monthly_stats:
+        month = item['month']
+        month_labels.append(month.strftime('%b %Y') if month else 'Sin fecha')
+        monthly_counts.append(item['total_count'])
+        monthly_amounts.append(float(item['total_amount'] or 0))
+
+    top_clients = (
+        cotizaciones_qs.values('cliente__nombre')
+        .annotate(
+            total_amount=Coalesce(
+                Sum('subtotal_venta'),
+                Value(0),
+                output_field=DecimalField(max_digits=12, decimal_places=2),
+            )
+        )
+        .order_by('-total_amount')[:5]
+    )
+    top_clients_labels = [item['cliente__nombre'] or 'Sin cliente' for item in top_clients]
+    top_clients_amounts = [float(item['total_amount'] or 0) for item in top_clients]
+
+    totals = {
+        'cotizaciones': cotizaciones_qs.count(),
+        'clientes': Cliente.objects.count(),
+        'productos': ProductoServicio.objects.count(),
+        'monto': cotizaciones_qs.aggregate(
+            total=Coalesce(
+                Sum('subtotal_venta'),
+                Value(0),
+                output_field=DecimalField(max_digits=12, decimal_places=2),
+            )
+        )['total'],
+    }
+
+    chart_payload = {
+        'month_labels': month_labels,
+        'monthly_counts': monthly_counts,
+        'monthly_amounts': monthly_amounts,
+        'top_clients_labels': top_clients_labels,
+        'top_clients_amounts': top_clients_amounts,
+    }
+
+    context = {
+        'totals': totals,
+        'chart_payload': chart_payload,
+    }
+
+    return render(request, 'almacen/dashboard.html', context)
 
 
 
