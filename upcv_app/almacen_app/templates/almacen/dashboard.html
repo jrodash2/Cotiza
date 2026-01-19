@@ -36,21 +36,21 @@
               </div>
             </div>
           </div>
-          <div class="col-xl-3 col-md-6">
-            <div class="card">
-              <div class="card-body">
-                <p class="text-muted mb-1">Clientes</p>
-                <h3 class="dashboard-card-title mb-0">{{ totals.clientes }}</h3>
-              </div>
-            </div>
+        </div>
+      </div>
+      <div class="col-xl-3 col-md-6">
+        <div class="card">
+          <div class="card-body">
+            <p class="text-muted mb-1">Clientes</p>
+            <h3 class="dashboard-card-title mb-0">{{ totals.clientes }}</h3>
           </div>
-          <div class="col-xl-3 col-md-6">
-            <div class="card">
-              <div class="card-body">
-                <p class="text-muted mb-1">Productos / Servicios</p>
-                <h3 class="dashboard-card-title mb-0">{{ totals.productos }}</h3>
-              </div>
-            </div>
+        </div>
+      </div>
+      <div class="col-xl-3 col-md-6">
+        <div class="card">
+          <div class="card-body">
+            <p class="text-muted mb-1">Productos / Servicios</p>
+            <h3 class="dashboard-card-title mb-0">{{ totals.productos }}</h3>
           </div>
           <div class="col-xl-3 col-md-6">
             <div class="card">
@@ -61,6 +61,8 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
 
         <div class="row g-3">
           <div class="col-lg-6">
@@ -126,6 +128,12 @@
         {{ top_products_totals|json_script:"chart-top-products-totals" }}
       </div>
     </div>
+
+    {{ chart_month_labels|json_script:"chart-month-labels" }}
+    {{ chart_month_counts|json_script:"chart-month-counts" }}
+    {{ chart_month_totals|json_script:"chart-month-totals" }}
+    {{ top_clients_labels|json_script:"chart-top-labels" }}
+    {{ top_clients_totals|json_script:"chart-top-totals" }}
   </div>
 </div>
 
