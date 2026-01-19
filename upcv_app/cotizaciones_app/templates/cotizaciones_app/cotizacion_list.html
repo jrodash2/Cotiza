@@ -2,9 +2,10 @@
 {% load static %}
 
 {% block content %}
-<div class="row">
-  <div class="col-10">
-    <div class="cotizaciones-list-fix">
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="cotizaciones-list-fix">
       <div class="card">
         <div class="card-body">
           <div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
@@ -20,6 +21,10 @@
                         <option value="{{ value }}" {% if request.GET.estado == value %}selected{% endif %}>{{ label }}</option>
                       {% endfor %}
                     </select>
+                  </div>
+                  <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label">Cliente</label>
+                    <input type="text" class="form-control w-100" name="q_cliente" placeholder="Nombre, teléfono, email o NIT" value="{{ request.GET.q_cliente }}">
                   </div>
                   <div class="col-12 col-md-6 col-lg-3">
                     <label class="form-label">Fecha inicio</label>
@@ -51,7 +56,7 @@
                   <th class="text-nowrap">Fecha</th>
                   <th>Cliente</th>
                   <th>Estado</th>
-                  <th class="text-nowrap">Total venta</th>
+                  <th class="text-nowrap">Total</th>
                   {% if show_costs %}
                     <th class="text-nowrap">Total costo</th>
                     <th class="text-nowrap">Ganancia</th>
@@ -63,7 +68,13 @@
                 {% for cotizacion in cotizaciones %}
                   <tr>
                     <td class="text-nowrap">{{ cotizacion.correlativo }}</td>
-                    <td class="text-nowrap">{{ cotizacion.fecha|date:"d/m/Y" }}</td>
+                    <td class="text-nowrap">
+                      {% if cotizacion.fecha_emision %}
+                        {{ cotizacion.fecha_emision|date:"d/m/Y" }}
+                      {% else %}
+                        —
+                      {% endif %}
+                    </td>
                     <td>{{ cotizacion.cliente }}</td>
                     <td>{{ cotizacion.estado }}</td>
                     <td class="text-nowrap">Q {{ cotizacion.total_venta|floatformat:2 }}</td>
@@ -76,7 +87,7 @@
                         <div class="d-flex flex-wrap gap-2">
                           <a class="btn btn-outline-secondary btn-sm" href="{% url 'cotizaciones:cotizacion_detail' cotizacion.pk %}">Ver</a>
                           <a class="btn btn-outline-primary btn-sm" href="{% url 'cotizaciones:cotizacion_update' cotizacion.pk %}">Editar</a>
-                          <a class="btn btn-outline-success btn-sm" href="{% url 'cotizaciones:cotizacion_pdf' cotizacion.pk %}">PDF</a>
+                          <a class="btn btn-outline-success btn-sm" href="{% url 'cotizaciones:cotizacion_jpg' cotizacion.pk %}">JPG</a>
                         </div>
                       {% else %}
                         <span class="text-muted">Sin ID</span>
@@ -92,6 +103,7 @@
             </table>
           </div>
         </div>
+      </div>
       </div>
     </div>
   </div>
