@@ -22,7 +22,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
 from django.db import models
-from django.db.models import Sum, F, Value, Count, Q, Case, When, OuterRef, Subquery, IntegerField
+from django.db.models import DecimalField, Sum, F, Value, Count, Q, Case, When, OuterRef, Subquery, IntegerField
 from django.contrib.auth.decorators import login_required, user_passes_test
 from collections import defaultdict
 from django.shortcuts import get_object_or_404, redirect
@@ -198,7 +198,11 @@ def dahsboard(request):
         .values('month')
         .annotate(
             total_count=Count('id'),
-            total_amount=Coalesce(Sum('subtotal_venta'), 0),
+            total_amount=Coalesce(
+                Sum('subtotal_venta'),
+                Value(0),
+                output_field=DecimalField(max_digits=12, decimal_places=2),
+            ),
         )
         .order_by('month')
     )
@@ -214,7 +218,13 @@ def dahsboard(request):
 
     top_clients = (
         cotizaciones_qs.values('cliente__nombre')
-        .annotate(total_amount=Coalesce(Sum('subtotal_venta'), 0))
+        .annotate(
+            total_amount=Coalesce(
+                Sum('subtotal_venta'),
+                Value(0),
+                output_field=DecimalField(max_digits=12, decimal_places=2),
+            )
+        )
         .order_by('-total_amount')[:5]
     )
     top_clients_labels = [item['cliente__nombre'] or 'Sin cliente' for item in top_clients]
@@ -224,7 +234,13 @@ def dahsboard(request):
         'cotizaciones': cotizaciones_qs.count(),
         'clientes': Cliente.objects.count(),
         'productos': ProductoServicio.objects.count(),
-        'monto': cotizaciones_qs.aggregate(total=Coalesce(Sum('subtotal_venta'), 0))['total'],
+        'monto': cotizaciones_qs.aggregate(
+            total=Coalesce(
+                Sum('subtotal_venta'),
+                Value(0),
+                output_field=DecimalField(max_digits=12, decimal_places=2),
+            )
+        )['total'],
     }
 
     chart_payload = {
