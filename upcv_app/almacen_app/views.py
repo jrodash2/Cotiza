@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from .form import InstitucionForm, UserCreateForm, UserEditForm, PerfilForm
 from .models import Perfil, Institucion
-from cotizaciones_app.models import Cliente, Cotizacion, ProductoServicio
+from cotizaciones_app.models import Cliente, Cotizacion, CotizacionItem, ProductoServicio
 from django.views.generic import CreateView
 from django.views.generic import ListView
 from django.urls import reverse_lazy
@@ -22,7 +22,20 @@ from django.views.decorators.http import require_POST
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
 from django.db import models
-from django.db.models import DecimalField, Sum, F, Value, Count, Q, Case, When, OuterRef, Subquery, IntegerField
+from django.db.models import (
+    DecimalField,
+    Sum,
+    F,
+    Value,
+    Count,
+    Q,
+    Case,
+    When,
+    OuterRef,
+    Subquery,
+    IntegerField,
+    ExpressionWrapper,
+)
 from django.contrib.auth.decorators import login_required, user_passes_test
 from collections import defaultdict
 from django.shortcuts import get_object_or_404, redirect
@@ -243,13 +256,48 @@ def dahsboard(request):
         )['total'],
     }
 
+    def fmt_q(value):
+        if value is None:
+            value = Decimal('0.00')
+        return f"Q {value:,.2f}"
+
+    monto_expr = ExpressionWrapper(
+        F('cantidad') * F('precio_venta_unitario'),
+        output_field=DecimalField(max_digits=18, decimal_places=2),
+    )
+    top_productos = (
+        CotizacionItem.objects.select_related('producto_servicio')
+        .values('producto_servicio__nombre')
+        .annotate(
+            total_monto=Coalesce(
+                Sum(monto_expr),
+                Value(Decimal('0.00')),
+                output_field=DecimalField(max_digits=18, decimal_places=2),
+            ),
+            total_cantidad=Coalesce(
+                Sum('cantidad'),
+                Value(Decimal('0.00')),
+                output_field=DecimalField(max_digits=18, decimal_places=2),
+            ),
+        )
+        .order_by('-total_monto')[:10]
+    )
+    top_productos_labels = [
+        item['producto_servicio__nombre'] or 'Sin producto'
+        for item in top_productos
+    ]
+    top_productos_totals = [float(item['total_monto'] or 0) for item in top_productos]
+
     context = {
         'totals': totals,
+        'total_cotizado_fmt': fmt_q(totals['monto']),
         'chart_month_labels': month_labels,
         'chart_month_counts': monthly_counts,
         'chart_month_totals': monthly_amounts,
         'top_clients_labels': top_clients_labels,
         'top_clients_totals': top_clients_amounts,
+        'top_products_labels': top_productos_labels,
+        'top_products_totals': top_productos_totals,
     }
 
     return render(request, 'almacen/dashboard.html', context)
