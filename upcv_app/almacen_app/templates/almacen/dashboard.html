@@ -6,8 +6,8 @@
 {% block content %}
 <div class="page-body pt-3">
   <div class="container-fluid">
-    <div class="row justify-content-center">
-      <div class="col-12 col-xxl-10 col-xl-11">
+    <div class="row">
+      <div class="col-12">
         <div class="page-title">
           <div class="row">
             <div class="col-6">
@@ -28,7 +28,7 @@
         </div>
 
         <div class="row g-3 mb-4">
-          <div class="col-xl-3 col-md-6">
+          <div class="col-12 col-md-6 col-xl-3">
             <div class="card">
               <div class="card-body">
                 <p class="text-muted mb-1">Total cotizaciones</p>
@@ -36,23 +36,23 @@
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div class="col-xl-3 col-md-6">
-        <div class="card">
-          <div class="card-body">
-            <p class="text-muted mb-1">Clientes</p>
-            <h3 class="dashboard-card-title mb-0">{{ totals.clientes }}</h3>
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="card">
+              <div class="card-body">
+                <p class="text-muted mb-1">Clientes</p>
+                <h3 class="dashboard-card-title mb-0">{{ totals.clientes }}</h3>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      <div class="col-xl-3 col-md-6">
-        <div class="card">
-          <div class="card-body">
-            <p class="text-muted mb-1">Productos / Servicios</p>
-            <h3 class="dashboard-card-title mb-0">{{ totals.productos }}</h3>
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="card">
+              <div class="card-body">
+                <p class="text-muted mb-1">Productos / Servicios</p>
+                <h3 class="dashboard-card-title mb-0">{{ totals.productos }}</h3>
+              </div>
+            </div>
           </div>
-          <div class="col-xl-3 col-md-6">
+          <div class="col-12 col-md-6 col-xl-3">
             <div class="card">
               <div class="card-body">
                 <p class="text-muted mb-1">Total cotizado</p>
@@ -65,52 +65,55 @@
     </div>
 
         <div class="row g-3">
-          <div class="col-lg-6">
+          <div class="col-12 col-xl-6">
             <div class="card h-100">
               <div class="card-header">
                 <h5 class="dashboard-card-title mb-0">Cotizaciones por Mes</h5>
               </div>
               <div class="card-body dashboard-chart">
-                <div id="chart-cotizaciones-mes" style="min-height: 320px;"></div>
+                <div id="chart-cotizaciones-mes" style="min-height: 320px; width: 100%;"></div>
                 <div class="text-muted text-center mt-3 d-none" data-empty="chart-months">
                   Sin datos
                 </div>
               </div>
             </div>
           </div>
-          <div class="col-lg-6">
+          <div class="col-12 col-xl-6">
             <div class="card h-100">
               <div class="card-header">
                 <h5 class="dashboard-card-title mb-0">Total cotizado por Mes</h5>
               </div>
               <div class="card-body dashboard-chart">
-                <div id="chart-total-mes" style="min-height: 320px;"></div>
+                <div id="chart-total-mes" style="min-height: 320px; width: 100%;"></div>
                 <div class="text-muted text-center mt-3 d-none" data-empty="chart-totals">
                   Sin datos
                 </div>
               </div>
             </div>
           </div>
-          <div class="col-lg-6">
+        </div>
+
+        <div class="row g-3 mt-0">
+          <div class="col-12 col-xl-6">
             <div class="card h-100">
               <div class="card-header">
                 <h5 class="dashboard-card-title mb-0">Top Clientes</h5>
               </div>
               <div class="card-body dashboard-chart">
-                <div id="chart-top-clientes" style="min-height: 320px;"></div>
+                <div id="chart-top-clientes" style="min-height: 320px; width: 100%;"></div>
                 <div class="text-muted text-center mt-3 d-none" data-empty="chart-top">
                   Sin datos
                 </div>
               </div>
             </div>
           </div>
-          <div class="col-12">
+          <div class="col-12 col-xl-6">
             <div class="card h-100">
               <div class="card-header">
                 <h5 class="dashboard-card-title mb-0">Top Productos / Servicios</h5>
               </div>
               <div class="card-body dashboard-chart">
-                <div id="chart-top-productos" style="min-height: 320px;"></div>
+                <div id="chart-top-productos" style="min-height: 320px; width: 100%;"></div>
                 <div class="text-muted text-center mt-3 d-none" data-empty="chart-products">
                   Sin datos
                 </div>
