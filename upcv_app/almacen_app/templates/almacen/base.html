@@ -70,6 +70,7 @@
 <!-- Custom overrides-->
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom_sidebar.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/app-fixes.css' %}">
 </head>
   <body> 
 
@@ -313,6 +314,7 @@
                   </a>
                   <ul class="sidebar-submenu">
                     <li><a href="{% url 'cotizaciones:cotizacion_list' %}">Cotizaciones</a></li>
+                    <li><a href="{% url 'cotizaciones:venta_list' %}">Ventas</a></li>
                     <li><a href="{% url 'cotizaciones:cliente_list' %}">Clientes</a></li>
                     <li><a href="{% url 'cotizaciones:producto_list' %}">Productos / Servicios</a></li>
                   </ul>
@@ -365,6 +367,7 @@
                   </a>
                   <ul class="sidebar-submenu">
                     <li><a href="{% url 'cotizaciones:cotizacion_list' %}">Cotizaciones</a></li>
+                    <li><a href="{% url 'cotizaciones:venta_list' %}">Ventas</a></li>
                     <li><a href="{% url 'cotizaciones:cliente_list' %}">Clientes</a></li>
                     <li><a href="{% url 'cotizaciones:producto_list' %}">Productos / Servicios</a></li>
                   </ul>

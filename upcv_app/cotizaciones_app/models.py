@@ -1,8 +1,20 @@
+import calendar
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models import Max
 from django.utils import timezone
+
+
+def add_months(date_value, months):
+    if not date_value:
+        return None
+    month = date_value.month - 1 + months
+    year = date_value.year + month // 12
+    month = month % 12 + 1
+    day = min(date_value.day, calendar.monthrange(year, month)[1])
+    return date_value.replace(year=year, month=month, day=day)
 
 
 class Cliente(models.Model):
@@ -164,3 +176,137 @@ class CotizacionItem(models.Model):
         cotizacion = self.cotizacion
         super().delete(*args, **kwargs)
         cotizacion.actualizar_totales()
+
+
+class Venta(models.Model):
+    ESTADO_PENDIENTE = 'PENDIENTE'
+    ESTADO_PARCIAL = 'PARCIAL'
+    ESTADO_PAGADA = 'PAGADA'
+    ESTADO_PAGO_CHOICES = [
+        (ESTADO_PENDIENTE, 'Pendiente'),
+        (ESTADO_PARCIAL, 'Parcial'),
+        (ESTADO_PAGADA, 'Pagada'),
+    ]
+
+    cotizacion = models.OneToOneField(
+        Cotizacion,
+        on_delete=models.PROTECT,
+        related_name='venta',
+    )
+    cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, related_name='ventas')
+    fecha_venta = models.DateField(default=timezone.now)
+    estado_pago = models.CharField(
+        max_length=20,
+        choices=ESTADO_PAGO_CHOICES,
+        default=ESTADO_PENDIENTE,
+    )
+    fecha_pago_total = models.DateField(blank=True, null=True)
+    fecha_inicio_garantia = models.DateField(blank=True, null=True)
+    fecha_fin_garantia = models.DateField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha_venta', '-id']
+
+    def __str__(self) -> str:
+        return f"Venta {self.id} - {self.cliente}"
+
+    @property
+    def total(self):
+        return self.cotizacion.subtotal_venta or Decimal('0.00')
+
+    @property
+    def total_pagado(self):
+        total = self.pagos.aggregate(total=models.Sum('monto'))['total']
+        return total or Decimal('0.00')
+
+    @property
+    def saldo(self):
+        return self.total - self.total_pagado
+
+    @property
+    def porcentaje_avance(self):
+        total = self.total
+        if total <= 0:
+            return Decimal('0.00')
+        return (self.total_pagado / total) * Decimal('100')
+
+    def actualizar_estado_pago(self, save=True):
+        total = self.total
+        pagado = self.total_pagado
+        if total <= 0:
+            estado = self.ESTADO_PENDIENTE
+        elif pagado >= total:
+            estado = self.ESTADO_PAGADA
+        elif pagado > 0:
+            estado = self.ESTADO_PARCIAL
+        else:
+            estado = self.ESTADO_PENDIENTE
+
+        self.estado_pago = estado
+        if estado == self.ESTADO_PAGADA:
+            if not self.fecha_pago_total:
+                self.fecha_pago_total = timezone.now().date()
+            if not self.fecha_inicio_garantia:
+                self.fecha_inicio_garantia = self.fecha_pago_total
+            if not self.fecha_fin_garantia and self.fecha_inicio_garantia:
+                self.fecha_fin_garantia = add_months(self.fecha_inicio_garantia, 6)
+        if save:
+            self.save(
+                update_fields=[
+                    'estado_pago',
+                    'fecha_pago_total',
+                    'fecha_inicio_garantia',
+                    'fecha_fin_garantia',
+                ]
+            )
+
+
+class PagoVenta(models.Model):
+    METODO_TRANSFERENCIA = 'TRANSFERENCIA'
+    METODO_EFECTIVO = 'EFECTIVO'
+    METODO_TARJETA = 'TARJETA'
+    METODO_OTRO = 'OTRO'
+    METODO_PAGO_CHOICES = [
+        (METODO_TRANSFERENCIA, 'Transferencia'),
+        (METODO_EFECTIVO, 'Efectivo'),
+        (METODO_TARJETA, 'Tarjeta'),
+        (METODO_OTRO, 'Otro'),
+    ]
+
+    venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name='pagos')
+    fecha = models.DateField(default=timezone.now)
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+    metodo_pago = models.CharField(max_length=20, choices=METODO_PAGO_CHOICES)
+    referencia = models.CharField(max_length=100, blank=True, null=True)
+    observacion = models.TextField(blank=True, null=True)
+    correlativo_comprobante = models.PositiveIntegerField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at', 'id']
+
+    def __str__(self) -> str:
+        return f"Pago {self.id} - Venta {self.venta_id}"
+
+    def clean(self) -> None:
+        super().clean()
+        if self.monto is not None and self.monto <= 0:
+            raise ValidationError({'monto': 'El monto debe ser mayor a 0.'})
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            if not self.correlativo_comprobante:
+                last_number = (
+                    PagoVenta.objects.filter(venta=self.venta)
+                    .aggregate(max_num=Max('correlativo_comprobante'))
+                    .get('max_num')
+                )
+                self.correlativo_comprobante = (last_number or 0) + 1
+            super().save(*args, **kwargs)
+            self.venta.actualizar_estado_pago()
+
+    def delete(self, *args, **kwargs):
+        venta = self.venta
+        super().delete(*args, **kwargs)
+        venta.actualizar_estado_pago()

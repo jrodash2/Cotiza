@@ -1,0 +1,53 @@
+html,
+body {
+  overflow-x: hidden;
+}
+
+.page-body,
+.page-content,
+.page-body-wrapper,
+.content-wrapper,
+.container-fluid,
+.main-content {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.row > [class*="col-"],
+.d-flex > * {
+  min-width: 0;
+}
+
+.card {
+  max-width: 100%;
+}
+
+.card-body {
+  min-width: 0;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table td,
+.table th {
+  vertical-align: middle;
+}
+
+.text-wrap-force {
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table .btn {
+  white-space: nowrap;
+}

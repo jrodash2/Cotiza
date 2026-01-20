@@ -2,7 +2,13 @@ from django import forms
 from django.utils import timezone
 from django.forms import BaseInlineFormSet, inlineformset_factory
 
-from .models import Cliente, ProductoServicio, Cotizacion, CotizacionItem
+from .models import (
+    Cliente,
+    ProductoServicio,
+    Cotizacion,
+    CotizacionItem,
+    PagoVenta,
+)
 
 
 class ClienteForm(forms.ModelForm):
@@ -170,3 +176,38 @@ CotizacionItemFormSet = inlineformset_factory(
     extra=0,
     can_delete=True,
 )
+
+
+class PagoVentaForm(forms.ModelForm):
+    class Meta:
+        model = PagoVenta
+        fields = [
+            'fecha',
+            'monto',
+            'metodo_pago',
+            'referencia',
+            'observacion',
+        ]
+        widgets = {
+            'fecha': forms.DateInput(attrs={'type': 'date'}),
+            'observacion': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'fecha' in self.fields and not self.initial.get('fecha'):
+            self.initial['fecha'] = timezone.now().date()
+        for field in self.fields.values():
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs['class'] = 'form-check-input'
+            elif isinstance(field.widget, (forms.Select, forms.SelectMultiple)):
+                field.widget.attrs['class'] = 'form-select'
+            else:
+                existing_class = field.widget.attrs.get('class', '')
+                field.widget.attrs['class'] = f'{existing_class} form-control'.strip()
+
+    def clean_monto(self):
+        monto = self.cleaned_data.get('monto')
+        if monto is not None and monto <= 0:
+            raise forms.ValidationError('El monto debe ser mayor a 0.')
+        return monto

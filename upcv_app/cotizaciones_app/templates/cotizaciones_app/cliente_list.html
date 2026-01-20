@@ -8,7 +8,7 @@
       <div class="card">
         <div class="card-header">
           <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
-            <h5 class="mb-0">Clientes</h5>
+            <h5 class="mb-0 text-truncate">Clientes</h5>
             <div class="d-flex flex-wrap gap-2 align-items-center">
               <form method="get" class="d-flex flex-wrap gap-2">
                 <input type="text" class="form-control" name="q" placeholder="Buscar por nombre, teléfono, email" value="{{ request.GET.q }}">
@@ -26,19 +26,19 @@
                 <tr>
                   <th>Nombre</th>
                   <th>Contacto</th>
-                  <th>Teléfono</th>
+                  <th class="text-nowrap">Teléfono</th>
                   <th>Email</th>
-                  <th>Acciones</th>
+                  <th class="text-nowrap">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {% for cliente in clientes %}
                   <tr>
-                    <td>{{ cliente.nombre }}</td>
-                    <td>{{ cliente.contacto }}</td>
-                    <td>{{ cliente.telefono }}</td>
-                    <td>{{ cliente.email }}</td>
-                    <td>
+                    <td class="text-wrap-force">{{ cliente.nombre }}</td>
+                    <td class="text-wrap-force">{{ cliente.contacto }}</td>
+                    <td class="text-nowrap">{{ cliente.telefono }}</td>
+                    <td class="text-wrap-force">{{ cliente.email }}</td>
+                    <td class="text-nowrap">
                       <a class="btn btn-outline-primary btn-sm" href="{% url 'cotizaciones:cliente_update' cliente.pk %}">Editar</a>
                     </td>
                   </tr>
