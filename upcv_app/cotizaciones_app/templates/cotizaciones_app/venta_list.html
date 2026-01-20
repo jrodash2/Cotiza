@@ -1,0 +1,66 @@
+{% extends 'almacen/base.html' %}
+{% load money %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+            <h5 class="mb-0">Ventas</h5>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Fecha</th>
+                  <th>Cliente</th>
+                  <th>Cotización</th>
+                  <th>Total</th>
+                  <th>Pagado</th>
+                  <th>Saldo</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for venta in ventas %}
+                  <tr>
+                    <td>{{ venta.id }}</td>
+                    <td>{{ venta.fecha_venta|date:"d/m/Y" }}</td>
+                    <td>{{ venta.cliente.nombre }}</td>
+                    <td>{{ venta.cotizacion.correlativo }}</td>
+                    <td>{{ venta.total|money_q }}</td>
+                    <td>{{ venta.total_pagado|money_q }}</td>
+                    <td>{{ venta.saldo|money_q }}</td>
+                    <td>
+                      {% if venta.estado_pago == 'PAGADA' %}
+                        <span class="badge bg-success">Pagada</span>
+                      {% elif venta.estado_pago == 'PARCIAL' %}
+                        <span class="badge bg-warning text-dark">Parcial</span>
+                      {% else %}
+                        <span class="badge bg-secondary">Pendiente</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <a class="btn btn-outline-primary btn-sm" href="{% url 'cotizaciones:venta_detail' venta.pk %}">Ver</a>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="9" class="text-center">No hay ventas registradas.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

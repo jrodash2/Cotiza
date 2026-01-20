@@ -1,5 +1,6 @@
 {% extends 'almacen/base.html' %}
 {% load static %}
+{% load money %}
 
 {% block content %}
 <div class="container-fluid form-page-wrap">
@@ -104,12 +105,12 @@
                           </td>
                           <td class="text-nowrap">
                             <span class="js-precio" data-value="0">
-                              Q {{ item_form.instance.precio_venta_unitario|default_if_none:"0.00"|floatformat:2 }}
+                              {{ item_form.instance.precio_venta_unitario|money_q }}
                             </span>
                           </td>
                           <td class="text-nowrap">
                             <span class="js-subtotal" data-value="0">
-                              Q {{ item_form.instance.total_linea_venta|default_if_none:"0.00"|floatformat:2 }}
+                              {{ item_form.instance.total_linea_venta|money_q }}
                             </span>
                           </td>
                           <td class="text-nowrap">
@@ -137,8 +138,8 @@
                     <td class="w-25">
                       {{ formset.empty_form.cantidad }}
                     </td>
-                    <td class="text-nowrap"><span class="js-precio" data-value="0">Q 0.00</span></td>
-                    <td class="text-nowrap"><span class="js-subtotal" data-value="0">Q 0.00</span></td>
+                    <td class="text-nowrap"><span class="js-precio" data-value="0">Q0.00</span></td>
+                    <td class="text-nowrap"><span class="js-subtotal" data-value="0">Q0.00</span></td>
                     <td class="text-nowrap">
                       {% if formset.can_delete %}
                         {{ formset.empty_form.DELETE }}
@@ -203,7 +204,7 @@
       const subtotalSpan = row.querySelector('.js-subtotal');
       const quantity = Number.parseFloat(qtyInput?.value || '0');
       const subtotal = (Number.isNaN(quantity) ? 0 : quantity) * price;
-      subtotalSpan.textContent = `Q ${subtotal.toFixed(2)}`;
+      subtotalSpan.textContent = `Q${subtotal.toFixed(2)}`;
     };
 
     const updateRowPrice = (row) => {
@@ -214,7 +215,7 @@
       }
       const productId = productSelect.value;
       if (!productId) {
-        priceSpan.textContent = 'Q 0.00';
+        priceSpan.textContent = 'Q0.00';
         updateSubtotal(row, 0);
         return;
       }
@@ -223,11 +224,11 @@
         .then((data) => {
           const price = Number.parseFloat(data.precio_venta || '0');
           const safePrice = Number.isNaN(price) ? 0 : price;
-          priceSpan.textContent = `Q ${safePrice.toFixed(2)}`;
+          priceSpan.textContent = `Q${safePrice.toFixed(2)}`;
           updateSubtotal(row, safePrice);
         })
         .catch(() => {
-          priceSpan.textContent = 'Q 0.00';
+          priceSpan.textContent = 'Q0.00';
           updateSubtotal(row, 0);
         });
     };

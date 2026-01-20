@@ -1,5 +1,6 @@
 {% extends 'almacen/base.html' %}
 {% load static %}
+{% load money %}
 
 {% block content %}
 <div class="container-fluid">
@@ -77,10 +78,10 @@
                     </td>
                     <td>{{ cotizacion.cliente }}</td>
                     <td>{{ cotizacion.estado }}</td>
-                    <td class="text-nowrap">Q {{ cotizacion.total_venta|floatformat:2 }}</td>
+                    <td class="text-nowrap">{{ cotizacion.total_venta|money_q }}</td>
                     {% if show_costs %}
-                      <td class="text-nowrap">Q {{ cotizacion.subtotal_costo|floatformat:2 }}</td>
-                      <td class="text-nowrap">Q {{ cotizacion.ganancia_total|floatformat:2 }}</td>
+                      <td class="text-nowrap">{{ cotizacion.subtotal_costo|money_q }}</td>
+                      <td class="text-nowrap">{{ cotizacion.ganancia_total|money_q }}</td>
                     {% endif %}
                     <td>
                       {% if cotizacion.pk %}

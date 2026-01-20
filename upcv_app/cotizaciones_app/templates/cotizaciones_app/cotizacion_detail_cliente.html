@@ -1,5 +1,6 @@
 {% extends 'almacen/base.html' %}
 {% load static %}
+{% load money %}
 
 {% block content %}
 <div class="container-fluid">
@@ -14,6 +15,14 @@
             </div>
             <div class="d-flex flex-wrap gap-2">
               <a class="btn btn-outline-primary" href="{% url 'cotizaciones:cotizacion_jpg' cotizacion.pk %}?download=jpg" target="_blank">Descargar JPG</a>
+              {% if can_convert %}
+                <form method="post" action="{% url 'cotizaciones:cotizacion_convertir_venta' cotizacion.pk %}">
+                  {% csrf_token %}
+                  <button class="btn btn-success" type="submit">Convertir a venta</button>
+                </form>
+              {% elif venta %}
+                <a class="btn btn-outline-success" href="{% url 'cotizaciones:venta_detail' venta.pk %}">Ver venta</a>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -63,8 +72,8 @@
                       {{ item.descripcion_editable|default:item.producto_servicio.descripcion }}
                     </td>
                     <td>{{ item.cantidad }}</td>
-                    <td>Q {{ item.precio_venta_unitario|floatformat:2 }}</td>
-                    <td>Q {{ item.total_linea_venta|floatformat:2 }}</td>
+                    <td>{{ item.precio_venta_unitario|money_q }}</td>
+                    <td>{{ item.total_linea_venta|money_q }}</td>
                   </tr>
                 {% empty %}
                   <tr>
@@ -78,18 +87,23 @@
           <div class="row justify-content-end">
             <div class="col-md-4">
               <div class="border rounded p-3 bg-light">
-                <p class="mb-1"><strong>Subtotal:</strong> Q {{ cotizacion.subtotal_venta|floatformat:2 }}</p>
-                <p class="mb-0"><strong>Total:</strong> Q {{ cotizacion.subtotal_venta|floatformat:2 }}</p>
+                <p class="mb-1"><strong>Subtotal:</strong> {{ cotizacion.subtotal_venta|money_q }}</p>
+                <p class="mb-0"><strong>Total:</strong> {{ cotizacion.subtotal_venta|money_q }}</p>
               </div>
             </div>
           </div>
 
           <div class="mt-4">
             <h6>Datos de la empresa</h6>
-            <p class="mb-1"><strong>Tecnologías de Guatemala</strong></p>
-            <p class="mb-1">WhatsApp: +502 4917-3791</p>
-            <p class="mb-1">Cuenta Banrural: 0000000000000</p>
-            <p class="mb-0">Web: tecnologiadeguatemala.com</p>
+            {% if institucion %}
+              <p class="mb-1"><strong>{{ institucion.nombre }}</strong></p>
+              {% if institucion.telefono %}
+                <p class="mb-1">Tel: {{ institucion.telefono }}</p>
+              {% endif %}
+              {% if institucion.pagina_web %}
+                <p class="mb-0">Web: {{ institucion.pagina_web }}</p>
+              {% endif %}
+            {% endif %}
           </div>
         </div>
       </div>
