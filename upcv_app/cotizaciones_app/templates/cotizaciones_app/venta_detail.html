@@ -10,7 +10,7 @@
         <div class="card-header">
           <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
             <div>
-              <h5 class="mb-1">Venta #{{ venta.id }}</h5>
+              <h5 class="mb-1 text-truncate">Venta #{{ venta.id }}</h5>
               <small class="text-muted">
                 Fecha: {{ venta.fecha_venta|date:"d/m/Y" }} · Cotización {{ venta.cotizacion.correlativo }}
               </small>
@@ -24,7 +24,7 @@
           <div class="row mb-4">
             <div class="col-md-6">
               <h6 class="text-muted">Cliente</h6>
-              <p class="mb-1"><strong>{{ venta.cliente.nombre }}</strong></p>
+              <p class="mb-1 text-wrap-force"><strong>{{ venta.cliente.nombre }}</strong></p>
               {% if venta.cliente.direccion %}
                 <p class="mb-1">{{ venta.cliente.direccion }}</p>
               {% endif %}
@@ -91,7 +91,7 @@
               <tbody>
                 {% for item in items %}
                   <tr>
-                    <td>
+                    <td class="text-wrap-force">
                       <strong>{{ item.producto_servicio.nombre }}</strong><br>
                       {{ item.descripcion_editable|default:item.producto_servicio.descripcion }}
                     </td>
@@ -173,9 +173,9 @@
                         {% for pago in pagos %}
                           <tr>
                             <td>{{ pago.correlativo_comprobante }}</td>
-                            <td>{{ pago.fecha|date:"d/m/Y" }}</td>
-                            <td>{{ pago.monto|money_q }}</td>
-                            <td>{{ pago.get_metodo_pago_display }}</td>
+                            <td class="text-nowrap">{{ pago.fecha|date:"d/m/Y" }}</td>
+                            <td class="text-nowrap">{{ pago.monto|money_q }}</td>
+                            <td class="text-nowrap">{{ pago.get_metodo_pago_display }}</td>
                             <td>
                               <a class="btn btn-outline-primary btn-sm" href="{% url 'cotizaciones:venta_comprobante_jpg' venta.pk pago.pk %}?download=jpg" target="_blank">JPG</a>
                             </td>

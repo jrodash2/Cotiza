@@ -11,7 +11,7 @@
         <div class="card-body">
           <div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
             <div class="flex-grow-1">
-              <h5 class="mb-2">Cotizaciones</h5>
+              <h5 class="mb-2 text-truncate">Cotizaciones</h5>
               <form method="get">
                 <div class="row g-3">
                   <div class="col-12 col-md-6 col-lg-3">
@@ -56,7 +56,7 @@
                   <th class="text-nowrap">Correlativo</th>
                   <th class="text-nowrap">Fecha</th>
                   <th>Cliente</th>
-                  <th>Estado</th>
+                  <th class="text-nowrap">Estado</th>
                   <th class="text-nowrap">Total</th>
                   {% if show_costs %}
                     <th class="text-nowrap">Total costo</th>
@@ -76,14 +76,14 @@
                         —
                       {% endif %}
                     </td>
-                    <td>{{ cotizacion.cliente }}</td>
-                    <td>{{ cotizacion.estado }}</td>
+                    <td class="text-wrap-force">{{ cotizacion.cliente }}</td>
+                    <td class="text-nowrap">{{ cotizacion.estado }}</td>
                     <td class="text-nowrap">{{ cotizacion.total_venta|money_q }}</td>
                     {% if show_costs %}
                       <td class="text-nowrap">{{ cotizacion.subtotal_costo|money_q }}</td>
                       <td class="text-nowrap">{{ cotizacion.ganancia_total|money_q }}</td>
                     {% endif %}
-                    <td>
+                    <td class="text-nowrap">
                       {% if cotizacion.pk %}
                         <div class="d-flex flex-wrap gap-2">
                           <a class="btn btn-outline-secondary btn-sm" href="{% url 'cotizaciones:cotizacion_detail' cotizacion.pk %}">Ver</a>

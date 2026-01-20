@@ -99,35 +99,37 @@
               </form>
 
               <div class="mt-4">
-                <h5>Usuarios Creados</h5>
+                <h5 class="text-truncate">Usuarios Creados</h5>
+                <div class="table-responsive">
                 <table class="table table-striped">
                   <thead>
                     <tr>
-                      <th>ID</th>
+                      <th class="text-nowrap">ID</th>
                       <th>Nombre de Usuario</th>
                       <th>Nombre</th>
                       <th>Apellido</th>
                       <th>Correo Electrónico</th>
                       <th>Grupo</th>
-                      <th>Acciones</th>
+                      <th class="text-nowrap">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {% for user in users %}
                     <tr>
-                      <td>{{ user.id }}</td>
-                      <td>{{ user.username }}</td>
-                      <td>{{ user.first_name }}</td>
-                      <td>{{ user.last_name }}</td>
-                      <td>{{ user.email }}</td>
-                      <td>{{ user.groups.all|join:", " }}</td>
-                      <td>
+                      <td class="text-nowrap">{{ user.id }}</td>
+                      <td class="text-wrap-force">{{ user.username }}</td>
+                      <td class="text-wrap-force">{{ user.first_name }}</td>
+                      <td class="text-wrap-force">{{ user.last_name }}</td>
+                      <td class="text-wrap-force">{{ user.email }}</td>
+                      <td class="text-wrap-force">{{ user.groups.all|join:", " }}</td>
+                      <td class="text-nowrap">
                         <a href="{% url 'almacen:user_edit' user.id %}" class="btn btn-primary btn-sm">Editar</a>
                       </td>
                     </tr>
                     {% endfor %}
                   </tbody>
                 </table>
+                </div>
               </div>
 
             </div>
