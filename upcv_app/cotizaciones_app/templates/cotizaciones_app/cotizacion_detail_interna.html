@@ -1,5 +1,6 @@
 {% extends 'almacen/base.html' %}
 {% load static %}
+{% load money %}
 
 {% block content %}
 <div class="container-fluid">
@@ -9,12 +10,20 @@
         <div class="card-header">
           <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
             <div>
-              <h5 class="mb-1">Cotización {{ cotizacion.correlativo }}</h5>
+              <h5 class="mb-1 text-truncate">Cotización {{ cotizacion.correlativo }}</h5>
               <small class="text-muted">Fecha: {{ cotizacion.fecha_emision }} · {{ cotizacion.get_estado_display }}</small>
             </div>
             <div class="d-flex flex-wrap gap-2">
               <a class="btn btn-outline-secondary" href="{% url 'cotizaciones:cotizacion_update' cotizacion.pk %}">Editar</a>
               <a class="btn btn-outline-primary" href="{% url 'cotizaciones:cotizacion_jpg' cotizacion.pk %}?download=jpg" target="_blank">Descargar JPG</a>
+              {% if can_convert %}
+                <form method="post" action="{% url 'cotizaciones:cotizacion_convertir_venta' cotizacion.pk %}">
+                  {% csrf_token %}
+                  <button class="btn btn-success" type="submit">Convertir a venta</button>
+                </form>
+              {% elif venta %}
+                <a class="btn btn-outline-success" href="{% url 'cotizaciones:venta_detail' venta.pk %}">Ver venta</a>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -49,21 +58,21 @@
               <tbody>
                 {% for item in items %}
                   <tr>
-                    <td>
+                    <td class="text-wrap-force">
                       <strong>{{ item.producto_servicio.nombre }}</strong><br>
                       {{ item.descripcion_editable|default:item.producto_servicio.descripcion }}
                     </td>
                     <td>{{ item.cantidad }}</td>
-                    <td>Q {{ item.precio_venta_unitario|floatformat:2 }}</td>
-                    <td>Q {{ item.total_linea_venta|floatformat:2 }}</td>
+                    <td>{{ item.precio_venta_unitario|money_q }}</td>
+                    <td>{{ item.total_linea_venta|money_q }}</td>
                   </tr>
                   {% if show_costs %}
                     <tr class="table-secondary">
                       <td colspan="4">
                         <div class="d-flex flex-wrap gap-4">
-                          <span><strong>Precio costo:</strong> Q {{ item.precio_costo_unitario|floatformat:2 }}</span>
-                          <span><strong>Total costo:</strong> Q {{ item.total_linea_costo|floatformat:2 }}</span>
-                          <span><strong>Ganancia:</strong> Q {{ item.ganancia_linea|floatformat:2 }}</span>
+                          <span><strong>Precio costo:</strong> {{ item.precio_costo_unitario|money_q }}</span>
+                          <span><strong>Total costo:</strong> {{ item.total_linea_costo|money_q }}</span>
+                          <span><strong>Ganancia:</strong> {{ item.ganancia_linea|money_q }}</span>
                         </div>
                       </td>
                     </tr>
@@ -80,10 +89,10 @@
           <div class="row justify-content-end">
             <div class="col-md-4">
               <div class="border rounded p-3 bg-light">
-                <p class="mb-1"><strong>Subtotal:</strong> Q {{ cotizacion.subtotal_venta|floatformat:2 }}</p>
+                <p class="mb-1"><strong>Subtotal:</strong> {{ cotizacion.subtotal_venta|money_q }}</p>
                 {% if show_costs %}
-                  <p class="mb-1"><strong>Subtotal costo:</strong> Q {{ cotizacion.subtotal_costo|floatformat:2 }}</p>
-                  <p class="mb-0"><strong>Ganancia total:</strong> Q {{ cotizacion.ganancia_total|floatformat:2 }}</p>
+                  <p class="mb-1"><strong>Subtotal costo:</strong> {{ cotizacion.subtotal_costo|money_q }}</p>
+                  <p class="mb-0"><strong>Ganancia total:</strong> {{ cotizacion.ganancia_total|money_q }}</p>
                 {% endif %}
               </div>
             </div>
@@ -92,16 +101,21 @@
           {% if cotizacion.observaciones %}
             <div class="mt-4">
               <h6>Observaciones</h6>
-              <p class="mb-0">{{ cotizacion.observaciones }}</p>
+              <p class="mb-0 text-wrap-force">{{ cotizacion.observaciones }}</p>
             </div>
           {% endif %}
 
           <div class="mt-4">
             <h6>Datos de la empresa</h6>
-            <p class="mb-1"><strong>Tecnologías de Guatemala</strong></p>
-            <p class="mb-1">WhatsApp: +502 4917-3791</p>
-            <p class="mb-1">Cuenta Banrural: 0000000000000</p>
-            <p class="mb-0">Web: tecnologiadeguatemala.com</p>
+            {% if institucion %}
+              <p class="mb-1"><strong>{{ institucion.nombre }}</strong></p>
+              {% if institucion.telefono %}
+                <p class="mb-1">Tel: {{ institucion.telefono }}</p>
+              {% endif %}
+              {% if institucion.pagina_web %}
+                <p class="mb-0">Web: {{ institucion.pagina_web }}</p>
+              {% endif %}
+            {% endif %}
           </div>
         </div>
       </div>

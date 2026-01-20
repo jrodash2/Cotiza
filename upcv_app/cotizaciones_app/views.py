@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.dateparse import parse_date
+from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from almacen_app.models import Institucion
@@ -16,8 +17,9 @@ from .forms import (
     ProductoServicioForm,
     CotizacionForm,
     CotizacionItemFormSet,
+    PagoVentaForm,
 )
-from .models import Cliente, ProductoServicio, Cotizacion
+from .models import Cliente, ProductoServicio, Cotizacion, Venta, PagoVenta
 
 
 class ClienteListView(LoginRequiredMixin, ListView):
@@ -297,6 +299,15 @@ class CotizacionDetailView(LoginRequiredMixin, DetailView):
         context['items'] = self.object.items.select_related('producto_servicio')
         context['show_costs'] = user_can_view_costs(self.request.user)
         context['institucion'] = Institucion.objects.first()
+        try:
+            venta = self.object.venta
+        except Venta.DoesNotExist:
+            venta = None
+        context['venta'] = venta
+        context['can_convert'] = (
+            venta is None
+            and self.object.estado in {Cotizacion.ESTADO_BORRADOR, Cotizacion.ESTADO_EMITIDA}
+        )
         return context
 
 
@@ -305,6 +316,22 @@ def _get_cotizacion_context(pk):
     items = cotizacion.items.select_related('producto_servicio')
     institucion = Institucion.objects.first()
     return cotizacion, items, institucion
+
+
+@login_required
+@require_POST
+def convertir_cotizacion_venta(request, pk):
+    cotizacion = get_object_or_404(Cotizacion.objects.select_related('cliente'), pk=pk)
+    if cotizacion.estado not in {Cotizacion.ESTADO_BORRADOR, Cotizacion.ESTADO_EMITIDA}:
+        messages.error(request, 'La cotización no puede convertirse a venta en su estado actual.')
+        return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
+    venta, created = Venta.objects.get_or_create(
+        cotizacion=cotizacion,
+        defaults={'cliente': cotizacion.cliente, 'fecha_venta': timezone.now().date()},
+    )
+    if created:
+        messages.success(request, 'Cotización convertida a venta correctamente.')
+    return redirect('cotizaciones:venta_detail', pk=venta.pk)
 
 
 @login_required
@@ -321,6 +348,129 @@ def cotizacion_cliente_jpg(request, pk):
             'account_number': '123-456789-0',
             'bank_name': None,
             'show_costs': False,
+            'download_jpg': download_jpg,
+            'export_mode': download_jpg,
+        },
+    )
+
+
+class VentaListView(LoginRequiredMixin, ListView):
+    model = Venta
+    template_name = 'cotizaciones_app/venta_list.html'
+    context_object_name = 'ventas'
+    paginate_by = 20
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .select_related('cliente', 'cotizacion')
+            .order_by('-fecha_venta', '-id')
+        )
+
+
+class VentaDetailView(LoginRequiredMixin, DetailView):
+    model = Venta
+    template_name = 'cotizaciones_app/venta_detail.html'
+    context_object_name = 'venta'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('cliente', 'cotizacion')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        venta = self.object
+        context['items'] = venta.cotizacion.items.select_related('producto_servicio')
+        context['pagos'] = venta.pagos.all()
+        context['institucion'] = Institucion.objects.first()
+        context['pago_form'] = kwargs.get('pago_form') or PagoVentaForm()
+        porcentaje = venta.porcentaje_avance
+        context['porcentaje_avance'] = porcentaje if porcentaje <= 100 else 100
+        return context
+
+
+@login_required
+@require_POST
+def pago_venta_create(request, pk):
+    venta = get_object_or_404(Venta, pk=pk)
+    form = PagoVentaForm(request.POST)
+    if form.is_valid():
+        pago = form.save(commit=False)
+        pago.venta = venta
+        pago.save()
+        messages.success(request, 'Pago registrado correctamente.')
+        return redirect('cotizaciones:venta_detail', pk=venta.pk)
+    items = venta.cotizacion.items.select_related('producto_servicio')
+    institucion = Institucion.objects.first()
+    return render(
+        request,
+        'cotizaciones_app/venta_detail.html',
+        {
+            'venta': venta,
+            'items': items,
+            'pagos': venta.pagos.all(),
+            'institucion': institucion,
+            'pago_form': form,
+            'porcentaje_avance': (
+                venta.porcentaje_avance if venta.porcentaje_avance <= 100 else 100
+            ),
+        },
+    )
+
+
+@login_required
+def venta_comprobante_jpg(request, venta_id, pago_id):
+    venta = get_object_or_404(Venta.objects.select_related('cliente', 'cotizacion'), pk=venta_id)
+    pago = get_object_or_404(PagoVenta, pk=pago_id, venta=venta)
+    institucion = Institucion.objects.first()
+    download_jpg = request.GET.get('download') == 'jpg'
+    return render(
+        request,
+        'cotizaciones_app/venta_comprobante_jpg.html',
+        {
+            'venta': venta,
+            'pago': pago,
+            'institucion': institucion,
+            'download_jpg': download_jpg,
+            'export_mode': download_jpg,
+        },
+    )
+
+
+@login_required
+def venta_comprobante_total_jpg(request, venta_id):
+    venta = get_object_or_404(Venta.objects.select_related('cliente', 'cotizacion'), pk=venta_id)
+    if venta.estado_pago != Venta.ESTADO_PAGADA:
+        messages.error(request, 'La venta aún no está totalmente pagada.')
+        return redirect('cotizaciones:venta_detail', pk=venta.pk)
+    institucion = Institucion.objects.first()
+    download_jpg = request.GET.get('download') == 'jpg'
+    return render(
+        request,
+        'cotizaciones_app/venta_comprobante_total_jpg.html',
+        {
+            'venta': venta,
+            'institucion': institucion,
+            'download_jpg': download_jpg,
+            'export_mode': download_jpg,
+        },
+    )
+
+
+@login_required
+def venta_certificado_garantia_jpg(request, venta_id):
+    venta = get_object_or_404(Venta.objects.select_related('cliente', 'cotizacion'), pk=venta_id)
+    if venta.estado_pago != Venta.ESTADO_PAGADA:
+        messages.error(request, 'La venta aún no está totalmente pagada.')
+        return redirect('cotizaciones:venta_detail', pk=venta.pk)
+    institucion = Institucion.objects.first()
+    download_jpg = request.GET.get('download') == 'jpg'
+    return render(
+        request,
+        'cotizaciones_app/venta_certificado_garantia_jpg.html',
+        {
+            'venta': venta,
+            'institucion': institucion,
             'download_jpg': download_jpg,
             'export_mode': download_jpg,
         },

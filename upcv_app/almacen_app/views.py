@@ -259,7 +259,7 @@ def dahsboard(request):
     def fmt_q(value):
         if value is None:
             value = Decimal('0.00')
-        return f"Q {value:,.2f}"
+        return f"Q{value:,.2f}"
 
     monto_expr = ExpressionWrapper(
         F('cantidad') * F('precio_venta_unitario'),
