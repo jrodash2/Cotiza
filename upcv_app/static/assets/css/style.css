@@ -115,7 +115,7 @@
 
  */
 :root {
-  --theme-deafult: #007fbf;
+  --theme-deafult: #1e0551;
   --theme-secondary: #FE6A49;
   --light-background: rgba(242, 243, 247, 0.7);
   --body-font-color: #86909C;
@@ -28648,7 +28648,7 @@ html:hover .cursor {
   transition: all 0.3s ease;
 }
 .feature-box:hover {
-  background-color: #006666;
+  background-color: #1e0551;
 }
 .feature-box:hover h5 {
   color: #fff;
