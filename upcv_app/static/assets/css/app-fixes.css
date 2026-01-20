@@ -6,11 +6,23 @@ body {
 .page-body,
 .page-content,
 .page-body-wrapper,
-.content-wrapper,
-.container-fluid,
-.main-content {
+.content-wrapper {
+  width: 100%;
   max-width: 100%;
   overflow-x: hidden;
+}
+
+.page-body > .container,
+.page-content > .container {
+  max-width: 100% !important;
+}
+
+@media (min-width: 992px) {
+  .page-body .container-fluid,
+  .page-body .container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
 }
 
 .row > [class*="col-"],
@@ -19,6 +31,7 @@ body {
 }
 
 .card {
+  width: 100%;
   max-width: 100%;
 }
 
@@ -27,8 +40,13 @@ body {
 }
 
 .table-responsive {
+  width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  width: 100% !important;
 }
 
 .table td,
