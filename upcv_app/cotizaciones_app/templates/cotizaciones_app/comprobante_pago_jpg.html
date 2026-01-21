@@ -207,11 +207,11 @@
           </tr>
           <tr>
             <td class="label">Total pagado</td>
-            <td class="text-right">{{ venta.total_pagado|money_q }}</td>
+            <td class="text-right">{{ pagado_hasta|money_q }}</td>
           </tr>
           <tr>
             <td class="label">Saldo pendiente</td>
-            <td class="text-right">{{ venta.saldo|money_q }}</td>
+            <td class="text-right">{{ saldo_hasta|money_q }}</td>
           </tr>
         </table>
       </div>
