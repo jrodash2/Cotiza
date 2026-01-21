@@ -4,7 +4,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Comprobante de pago final</title>
+  <title>Comprobante de pago</title>
   <style>
     *{ box-sizing:border-box; }
 
@@ -115,23 +115,6 @@
       width:50%;
     }
 
-    .payments-table{
-      width:100%;
-      border-collapse:collapse;
-      table-layout:fixed;
-      margin-top:16px;
-    }
-    .payments-table th,.payments-table td{
-      border:1px solid #d8dce6;
-      padding:10px 12px;
-      font-size:14px;
-    }
-    .payments-table th{
-      background:#f5f7fb;
-      font-weight:700;
-      font-size:15px;
-    }
-
     .footer{ margin-top:12px; }
     .bottom-line{ height:4px; background:#1f4ed8; margin-top:12px; }
 
@@ -142,7 +125,7 @@
 
 <body class="{% if export_mode %}export-mode{% endif %}">
   <div class="sheet">
-    <div class="page" data-filename="comprobante_total_venta_{{ venta.id }}">
+    <div class="page" data-filename="comprobante_pago_{{ venta.id }}_{{ pago.correlativo_comprobante }}">
 
       <div class="band"></div>
 
@@ -166,9 +149,8 @@
                 <div>Tel: {{ institucion.telefono }}</div>
               {% endif %}
               <div class="no-wrap"><strong>Proyecto #{{ venta.id }}</strong></div>
-              {% if venta.fecha_pago_total %}
-                <div class="no-wrap">Fecha: {{ venta.fecha_pago_total|date:"d/m/Y" }}</div>
-              {% endif %}
+              <div class="no-wrap">Comprobante #{{ pago.correlativo_comprobante }}</div>
+              <div class="no-wrap">Fecha: {{ pago.fecha|date:"d/m/Y" }}</div>
             </td>
           </tr>
         </table>
@@ -185,53 +167,28 @@
               {% if venta.cliente.nit %}<div>NIT: {{ venta.cliente.nit }}</div>{% endif %}
             </td>
             <td style="width:45%; text-align:right;">
-              <div class="h1">COMPROBANTE DE PAGO FINAL</div>
-              <div class="h2" style="margin-top:6px;">Pago total</div>
+              <div class="h1">COMPROBANTE DE PAGO</div>
+              {% if venta.cotizacion.titulo %}
+                <div class="h2" style="margin-top:6px;">{{ venta.cotizacion.titulo }}</div>
+              {% endif %}
             </td>
           </tr>
         </table>
 
         <div class="payment-box">
-          <div class="h3">Detalle de pago final</div>
-          {% if venta.fecha_pago_total %}
-            <p><strong>Fecha de pago:</strong> {{ venta.fecha_pago_total|date:"d/m/Y" }}</p>
+          <div class="h3">Detalle de pago</div>
+          <p><strong>Método:</strong> {{ pago.get_metodo_pago_display }}</p>
+          {% if pago.referencia %}
+            <p><strong>Referencia:</strong> {{ pago.referencia }}</p>
           {% endif %}
-          <p><strong>Tipo:</strong> Pago final</p>
+          <p><strong>Fecha de pago:</strong> {{ pago.fecha|date:"d/m/Y" }}</p>
+          <p><strong>Tipo:</strong> {{ tipo_pago_label }}</p>
 
           <div class="amount-highlight">
-            <div class="lbl">MONTO PAGADO FINAL</div>
-            <div class="amt">{{ venta.total_pagado|money_q }}</div>
+            <div class="lbl">MONTO PAGADO</div>
+            <div class="amt">{{ pago.monto|money_q }}</div>
           </div>
         </div>
-
-        <div class="divider"></div>
-
-        <div class="h3">Historial de pagos</div>
-        <table class="payments-table">
-          <thead>
-            <tr>
-              <th style="width:8%;">#</th>
-              <th style="width:20%;">Fecha</th>
-              <th style="width:22%;">Método</th>
-              <th style="width:30%;">Referencia</th>
-              <th style="width:20%;" class="text-right">Monto</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for pago in pagos_visibles %}
-              <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ pago.fecha|date:"d/m/Y" }}</td>
-                <td>{{ pago.get_metodo_pago_display }}</td>
-                <td>{% if pago.referencia %}{{ pago.referencia }}{% else %}—{% endif %}</td>
-                <td class="text-right">{{ pago.monto|money_q }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% if pagos_extra > 0 %}
-          <div class="muted" style="margin-top:8px;">Y {{ pagos_extra }} pagos más.</div>
-        {% endif %}
 
         <div class="divider"></div>
 
@@ -242,18 +199,12 @@
           </tr>
           <tr>
             <td class="label">Total pagado</td>
-            <td class="text-right">{{ venta.total_pagado|money_q }}</td>
+            <td class="text-right">{{ pagado_hasta|money_q }}</td>
           </tr>
           <tr>
-            <td class="label">Saldo</td>
-            <td class="text-right">{{ venta.saldo|money_q }}</td>
+            <td class="label">Saldo pendiente</td>
+            <td class="text-right">{{ saldo_hasta|money_q }}</td>
           </tr>
-          {% if pago_final %}
-            <tr>
-              <td class="label">Fecha de pago final</td>
-              <td class="text-right">{{ pago_final.fecha|date:"d/m/Y" }}</td>
-            </tr>
-          {% endif %}
         </table>
       </div>
 
