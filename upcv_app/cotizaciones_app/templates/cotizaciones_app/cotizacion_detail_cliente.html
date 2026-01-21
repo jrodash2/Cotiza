@@ -18,10 +18,10 @@
               {% if can_convert %}
                 <form method="post" action="{% url 'cotizaciones:cotizacion_convertir_venta' cotizacion.pk %}">
                   {% csrf_token %}
-                  <button class="btn btn-success" type="submit">Convertir a venta</button>
+                  <button class="btn btn-success" type="submit">Convertir a proyecto</button>
                 </form>
               {% elif venta %}
-                <a class="btn btn-outline-success" href="{% url 'cotizaciones:venta_detail' venta.pk %}">Ver venta</a>
+                <a class="btn btn-outline-success" href="{% url 'cotizaciones:venta_detail' venta.pk %}">Ver proyecto</a>
               {% endif %}
             </div>
           </div>

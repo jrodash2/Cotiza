@@ -142,7 +142,7 @@
               {% if institucion and institucion.telefono %}
                 <div>Tel: {{ institucion.telefono }}</div>
               {% endif %}
-              <div class="no-wrap"><strong>Venta #{{ venta.id }}</strong></div>
+              <div class="no-wrap"><strong>Proyecto #{{ venta.id }}</strong></div>
               <div class="no-wrap">Fecha: {{ venta.fecha_venta|date:"d/m/Y" }}</div>
             </td>
           </tr>
@@ -176,7 +176,7 @@
         <table class="info-grid">
           <tr>
             <td style="width:50%;">
-              <p><strong>Venta asociada:</strong> #{{ venta.id }} (Cotización {{ venta.cotizacion.correlativo }})</p>
+              <p><strong>Proyecto asociado:</strong> #{{ venta.id }} (Cotización {{ venta.cotizacion.correlativo }})</p>
               <p><strong>Cliente:</strong> {{ venta.cliente.nombre }}</p>
             </td>
             <td style="width:50%;">

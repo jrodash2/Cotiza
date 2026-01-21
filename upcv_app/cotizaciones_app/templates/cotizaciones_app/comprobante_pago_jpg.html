@@ -148,7 +148,7 @@
               {% if institucion and institucion.telefono %}
                 <div>Tel: {{ institucion.telefono }}</div>
               {% endif %}
-              <div class="no-wrap"><strong>Venta #{{ venta.id }}</strong></div>
+              <div class="no-wrap"><strong>Proyecto #{{ venta.id }}</strong></div>
               <div class="no-wrap">Comprobante #{{ pago.correlativo_comprobante }}</div>
               <div class="no-wrap">Fecha: {{ pago.fecha|date:"d/m/Y" }}</div>
             </td>
@@ -202,7 +202,7 @@
 
         <table class="summary-grid">
           <tr>
-            <td class="label">Total de la venta</td>
+            <td class="label">Total del proyecto</td>
             <td class="text-right">{{ venta.total|money_q }}</td>
           </tr>
           <tr>
