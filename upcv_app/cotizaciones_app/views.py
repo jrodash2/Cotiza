@@ -311,11 +311,45 @@ class CotizacionDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-def _get_cotizacion_context(pk):
+def _get_logo_url(request, institucion):
+    if not institucion or not institucion.logo:
+        return None
+    return request.build_absolute_uri(institucion.logo.url)
+
+
+def _get_cotizacion_context(request, pk):
     cotizacion = get_object_or_404(Cotizacion.objects.select_related('cliente'), pk=pk)
     items = cotizacion.items.select_related('producto_servicio')
     institucion = Institucion.objects.first()
-    return cotizacion, items, institucion
+    logo_url = _get_logo_url(request, institucion)
+    return cotizacion, items, institucion, logo_url
+
+
+@login_required
+@require_POST
+def cotizacion_clone(request, pk):
+    original = get_object_or_404(Cotizacion.objects.select_related('cliente'), pk=pk)
+    with transaction.atomic():
+        nueva = Cotizacion(
+            cliente=original.cliente,
+            titulo=original.titulo,
+            validez_dias=original.validez_dias,
+            observaciones=original.observaciones,
+            garantia_texto=original.garantia_texto,
+            estado=Cotizacion.ESTADO_BORRADOR,
+            fecha_emision=timezone.now().date(),
+        )
+        nueva.save()
+        for item in original.items.select_related('producto_servicio'):
+            CotizacionItem.objects.create(
+                cotizacion=nueva,
+                producto_servicio=item.producto_servicio,
+                descripcion_editable=item.descripcion_editable,
+                cantidad=item.cantidad,
+                precio_venta_unitario=item.precio_venta_unitario,
+                precio_costo_unitario=item.precio_costo_unitario,
+            )
+    return redirect('cotizaciones:cotizacion_update', pk=nueva.pk)
 
 
 @login_required
@@ -363,7 +397,7 @@ def convertir_cotizacion_venta(request, pk):
 
 @login_required
 def cotizacion_cliente_jpg(request, pk):
-    cotizacion, items, institucion = _get_cotizacion_context(pk)
+    cotizacion, items, institucion, logo_url = _get_cotizacion_context(request, pk)
     download_jpg = request.GET.get('download') == 'jpg'
     return render(
         request,
@@ -372,6 +406,7 @@ def cotizacion_cliente_jpg(request, pk):
             'cotizacion': cotizacion,
             'items': items,
             'institucion': institucion,
+            'logo_url': logo_url,
             'account_number': '123-456789-0',
             'bank_name': None,
             'show_costs': False,
@@ -459,6 +494,7 @@ def venta_comprobante_jpg(request, venta_id, pago_id):
     venta = get_object_or_404(Venta.objects.select_related('cliente', 'cotizacion'), pk=venta_id)
     pago = get_object_or_404(PagoVenta, pk=pago_id, venta=venta)
     institucion = Institucion.objects.first()
+    logo_url = _get_logo_url(request, institucion)
     download_jpg = request.GET.get('download') == 'jpg'
     pagos_queryset = venta.pagos.all().order_by('created_at', 'id')
     pagado_hasta = (
@@ -487,6 +523,7 @@ def venta_comprobante_jpg(request, venta_id, pago_id):
             'saldo_hasta': saldo_hasta,
             'tipo_pago_label': tipo_pago_label,
             'institucion': institucion,
+            'logo_url': logo_url,
             'download_jpg': download_jpg,
             'export_mode': download_jpg,
         },
@@ -500,6 +537,7 @@ def venta_comprobante_total_jpg(request, venta_id):
         messages.error(request, 'La venta aún no está totalmente pagada.')
         return redirect('cotizaciones:venta_detail', pk=venta.pk)
     institucion = Institucion.objects.first()
+    logo_url = _get_logo_url(request, institucion)
     download_jpg = request.GET.get('download') == 'jpg'
     pagos = venta.pagos.all().order_by('created_at', 'id')
     pago_final = pagos.last()
@@ -517,6 +555,7 @@ def venta_comprobante_total_jpg(request, venta_id):
             'pagos_extra': pagos_extra,
             'pago_final': pago_final,
             'institucion': institucion,
+            'logo_url': logo_url,
             'download_jpg': download_jpg,
             'export_mode': download_jpg,
         },
@@ -530,6 +569,7 @@ def venta_certificado_garantia_jpg(request, venta_id):
         messages.error(request, 'La venta aún no está totalmente pagada.')
         return redirect('cotizaciones:venta_detail', pk=venta.pk)
     institucion = Institucion.objects.first()
+    logo_url = _get_logo_url(request, institucion)
     download_jpg = request.GET.get('download') == 'jpg'
     return render(
         request,
@@ -537,6 +577,7 @@ def venta_certificado_garantia_jpg(request, venta_id):
         {
             'venta': venta,
             'institucion': institucion,
+            'logo_url': logo_url,
             'download_jpg': download_jpg,
             'export_mode': download_jpg,
         },

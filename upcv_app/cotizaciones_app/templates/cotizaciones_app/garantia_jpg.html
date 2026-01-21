@@ -127,8 +127,8 @@
         <table class="header-grid">
           <tr>
             <td style="width:25%;">
-              {% if institucion and institucion.logo %}
-                <img src="{{ institucion.logo.url }}" alt="Logo {{ institucion.nombre }}" style="height:70px;">
+              {% if logo_url %}
+                <img src="{{ logo_url }}" alt="Logo {{ institucion.nombre }}" style="height:70px;" crossorigin="anonymous">
               {% endif %}
             </td>
             <td style="width:45%; text-align:center;">
