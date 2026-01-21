@@ -15,6 +15,10 @@
             </div>
             <div class="d-flex flex-wrap gap-2">
               <a class="btn btn-outline-primary" href="{% url 'cotizaciones:cotizacion_jpg' cotizacion.pk %}?download=jpg" target="_blank">Descargar JPG</a>
+              <form method="post" action="{% url 'cotizaciones:cotizacion_clone' object.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-outline-primary btn-sm" type="submit">Cotizar nuevamente</button>
+              </form>
               {% if can_convert %}
                 <form method="post" action="{% url 'cotizaciones:cotizacion_convertir_venta' cotizacion.pk %}">
                   {% csrf_token %}
