@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -424,12 +424,32 @@ def venta_comprobante_jpg(request, venta_id, pago_id):
     pago = get_object_or_404(PagoVenta, pk=pago_id, venta=venta)
     institucion = Institucion.objects.first()
     download_jpg = request.GET.get('download') == 'jpg'
+    pagos_queryset = venta.pagos.all().order_by('created_at', 'id')
+    pagado_hasta = (
+        pagos_queryset.filter(
+            Q(created_at__lt=pago.created_at)
+            | (Q(created_at=pago.created_at) & Q(id__lte=pago.id))
+        )
+        .aggregate(total=Sum('monto'))
+        .get('total')
+        or 0
+    )
+    saldo_hasta = venta.total - pagado_hasta
+    if saldo_hasta <= 0:
+        tipo_pago_label = 'Pago final'
+    elif pago.correlativo_comprobante == 1:
+        tipo_pago_label = 'Anticipo'
+    else:
+        tipo_pago_label = 'Pago parcial'
     return render(
         request,
-        'cotizaciones_app/venta_comprobante_jpg.html',
+        'cotizaciones_app/comprobante_pago_jpg.html',
         {
             'venta': venta,
             'pago': pago,
+            'pagado_hasta': pagado_hasta,
+            'saldo_hasta': saldo_hasta,
+            'tipo_pago_label': tipo_pago_label,
             'institucion': institucion,
             'download_jpg': download_jpg,
             'export_mode': download_jpg,
@@ -445,11 +465,21 @@ def venta_comprobante_total_jpg(request, venta_id):
         return redirect('cotizaciones:venta_detail', pk=venta.pk)
     institucion = Institucion.objects.first()
     download_jpg = request.GET.get('download') == 'jpg'
+    pagos = venta.pagos.all().order_by('created_at', 'id')
+    pago_final = pagos.last()
+    limite_pagos = 8
+    pagos_count = pagos.count()
+    pagos_visibles = pagos[:limite_pagos]
+    pagos_extra = max(pagos_count - limite_pagos, 0)
     return render(
         request,
         'cotizaciones_app/venta_comprobante_total_jpg.html',
         {
             'venta': venta,
+            'pagos': pagos,
+            'pagos_visibles': pagos_visibles,
+            'pagos_extra': pagos_extra,
+            'pago_final': pago_final,
             'institucion': institucion,
             'download_jpg': download_jpg,
             'export_mode': download_jpg,
@@ -467,7 +497,7 @@ def venta_certificado_garantia_jpg(request, venta_id):
     download_jpg = request.GET.get('download') == 'jpg'
     return render(
         request,
-        'cotizaciones_app/venta_certificado_garantia_jpg.html',
+        'cotizaciones_app/garantia_jpg.html',
         {
             'venta': venta,
             'institucion': institucion,
