@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -19,7 +19,7 @@ from .forms import (
     CotizacionItemFormSet,
     PagoVentaForm,
 )
-from .models import Cliente, ProductoServicio, Cotizacion, Venta, PagoVenta
+from .models import Cliente, ProductoServicio, Cotizacion, CotizacionItem, Venta, PagoVenta
 
 
 class ClienteListView(LoginRequiredMixin, ListView):
@@ -311,11 +311,45 @@ class CotizacionDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-def _get_cotizacion_context(pk):
+def _get_logo_url(request, institucion):
+    if not institucion or not institucion.logo:
+        return None
+    return request.build_absolute_uri(institucion.logo.url)
+
+
+def _get_cotizacion_context(request, pk):
     cotizacion = get_object_or_404(Cotizacion.objects.select_related('cliente'), pk=pk)
     items = cotizacion.items.select_related('producto_servicio')
     institucion = Institucion.objects.first()
-    return cotizacion, items, institucion
+    logo_url = _get_logo_url(request, institucion)
+    return cotizacion, items, institucion, logo_url
+
+
+@login_required
+@require_POST
+def cotizacion_clone(request, pk):
+    original = get_object_or_404(Cotizacion.objects.select_related('cliente'), pk=pk)
+    with transaction.atomic():
+        nueva = Cotizacion(
+            cliente=original.cliente,
+            titulo=original.titulo,
+            validez_dias=original.validez_dias,
+            observaciones=original.observaciones,
+            garantia_texto=original.garantia_texto,
+            estado=Cotizacion.ESTADO_BORRADOR,
+            fecha_emision=timezone.now().date(),
+        )
+        nueva.save()
+        for item in original.items.select_related('producto_servicio'):
+            CotizacionItem.objects.create(
+                cotizacion=nueva,
+                producto_servicio=item.producto_servicio,
+                descripcion_editable=item.descripcion_editable,
+                cantidad=item.cantidad,
+                precio_venta_unitario=item.precio_venta_unitario,
+                precio_costo_unitario=item.precio_costo_unitario,
+            )
+    return redirect('cotizaciones:cotizacion_update', pk=nueva.pk)
 
 
 @login_required
@@ -336,7 +370,7 @@ def convertir_cotizacion_venta(request, pk):
 
 @login_required
 def cotizacion_cliente_jpg(request, pk):
-    cotizacion, items, institucion = _get_cotizacion_context(pk)
+    cotizacion, items, institucion, logo_url = _get_cotizacion_context(request, pk)
     download_jpg = request.GET.get('download') == 'jpg'
     return render(
         request,
@@ -345,6 +379,7 @@ def cotizacion_cliente_jpg(request, pk):
             'cotizacion': cotizacion,
             'items': items,
             'institucion': institucion,
+            'logo_url': logo_url,
             'account_number': '123-456789-0',
             'bank_name': None,
             'show_costs': False,
@@ -361,12 +396,21 @@ class VentaListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return (
+        queryset = (
             super()
             .get_queryset()
             .select_related('cliente', 'cotizacion')
             .order_by('-fecha_venta', '-id')
         )
+        cliente = self.request.GET.get('cliente', '').strip()
+        if cliente:
+            queryset = queryset.filter(
+                Q(cliente__nombre__icontains=cliente)
+                | Q(cliente__telefono__icontains=cliente)
+                | Q(cliente__email__icontains=cliente)
+                | Q(cliente__nit__icontains=cliente)
+            )
+        return queryset
 
 
 class VentaDetailView(LoginRequiredMixin, DetailView):
@@ -423,14 +467,36 @@ def venta_comprobante_jpg(request, venta_id, pago_id):
     venta = get_object_or_404(Venta.objects.select_related('cliente', 'cotizacion'), pk=venta_id)
     pago = get_object_or_404(PagoVenta, pk=pago_id, venta=venta)
     institucion = Institucion.objects.first()
+    logo_url = _get_logo_url(request, institucion)
     download_jpg = request.GET.get('download') == 'jpg'
+    pagos_queryset = venta.pagos.all().order_by('created_at', 'id')
+    pagado_hasta = (
+        pagos_queryset.filter(
+            Q(created_at__lt=pago.created_at)
+            | (Q(created_at=pago.created_at) & Q(id__lte=pago.id))
+        )
+        .aggregate(total=Sum('monto'))
+        .get('total')
+        or 0
+    )
+    saldo_hasta = venta.total - pagado_hasta
+    if saldo_hasta <= 0:
+        tipo_pago_label = 'Pago final'
+    elif pago.correlativo_comprobante == 1:
+        tipo_pago_label = 'Anticipo'
+    else:
+        tipo_pago_label = 'Pago parcial'
     return render(
         request,
-        'cotizaciones_app/venta_comprobante_jpg.html',
+        'cotizaciones_app/comprobante_pago_jpg.html',
         {
             'venta': venta,
             'pago': pago,
+            'pagado_hasta': pagado_hasta,
+            'saldo_hasta': saldo_hasta,
+            'tipo_pago_label': tipo_pago_label,
             'institucion': institucion,
+            'logo_url': logo_url,
             'download_jpg': download_jpg,
             'export_mode': download_jpg,
         },
@@ -444,13 +510,25 @@ def venta_comprobante_total_jpg(request, venta_id):
         messages.error(request, 'La venta aún no está totalmente pagada.')
         return redirect('cotizaciones:venta_detail', pk=venta.pk)
     institucion = Institucion.objects.first()
+    logo_url = _get_logo_url(request, institucion)
     download_jpg = request.GET.get('download') == 'jpg'
+    pagos = venta.pagos.all().order_by('created_at', 'id')
+    pago_final = pagos.last()
+    limite_pagos = 8
+    pagos_count = pagos.count()
+    pagos_visibles = pagos[:limite_pagos]
+    pagos_extra = max(pagos_count - limite_pagos, 0)
     return render(
         request,
         'cotizaciones_app/venta_comprobante_total_jpg.html',
         {
             'venta': venta,
+            'pagos': pagos,
+            'pagos_visibles': pagos_visibles,
+            'pagos_extra': pagos_extra,
+            'pago_final': pago_final,
             'institucion': institucion,
+            'logo_url': logo_url,
             'download_jpg': download_jpg,
             'export_mode': download_jpg,
         },
@@ -464,13 +542,15 @@ def venta_certificado_garantia_jpg(request, venta_id):
         messages.error(request, 'La venta aún no está totalmente pagada.')
         return redirect('cotizaciones:venta_detail', pk=venta.pk)
     institucion = Institucion.objects.first()
+    logo_url = _get_logo_url(request, institucion)
     download_jpg = request.GET.get('download') == 'jpg'
     return render(
         request,
-        'cotizaciones_app/venta_certificado_garantia_jpg.html',
+        'cotizaciones_app/garantia_jpg.html',
         {
             'venta': venta,
             'institucion': institucion,
+            'logo_url': logo_url,
             'download_jpg': download_jpg,
             'export_mode': download_jpg,
         },

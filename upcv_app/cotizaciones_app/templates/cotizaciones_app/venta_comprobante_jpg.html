@@ -46,6 +46,7 @@
     .header-grid td,.info-grid td{ vertical-align:top; }
     .muted{ color:#6b7280; font-size:15px; }
     .h1{ font-size:26px; font-weight:700; margin:0; }
+    .institution-name{ font-size:32px; font-weight:800; margin:0; }
     .divider{ height:1px; background:#e5e7eb; margin:20px 0; }
     .badge{ display:inline-block; padding:6px 10px; background:#1f4ed8; color:#ffffff; border-radius:8px; }
     .totals{ margin-top:20px; }
@@ -58,19 +59,22 @@
       <table class="header-grid">
         <tr>
           <td style="width:25%;">
-            {% if institucion and institucion.logo %}
-              <img src="{{ institucion.logo.url }}" alt="Logo {{ institucion.nombre }}" style="height:70px;">
+            {% if logo_url %}
+              <img src="{{ logo_url }}" alt="Logo {{ institucion.nombre }}" style="height:70px;" crossorigin="anonymous">
             {% endif %}
           </td>
-          <td style="width:50%; text-align:center;">
+          <td style="width:45%; text-align:center;">
             {% if institucion %}
-              <div class="h1">{{ institucion.nombre }}</div>
+              <div class="institution-name">{{ institucion.nombre }}</div>
               {% if institucion.direccion %}
                 <div class="muted">{{ institucion.direccion }}</div>
               {% endif %}
             {% endif %}
           </td>
-          <td style="width:25%; text-align:right;">
+          <td style="width:30%; text-align:right;">
+            {% if institucion and institucion.telefono %}
+              <div class="muted">Tel: {{ institucion.telefono }}</div>
+            {% endif %}
             <div class="badge">Comprobante de pago</div>
             <div class="muted">Venta #{{ venta.id }}</div>
             <div class="muted">Pago #{{ pago.correlativo_comprobante }}</div>
@@ -116,7 +120,7 @@
 
       <div class="divider"></div>
       {% if institucion and institucion.pagina_web %}
-        <div class="muted">Web: {{ institucion.pagina_web }}</div>
+        <div class="muted">Web: {{ institucion.pagina_web|strip_http }}</div>
       {% endif %}
       {% if institucion and institucion.telefono %}
         <div class="muted">Tel: {{ institucion.telefono }}</div>
