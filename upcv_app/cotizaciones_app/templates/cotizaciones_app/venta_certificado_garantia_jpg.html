@@ -105,7 +105,7 @@
 
       <div class="divider"></div>
       {% if institucion and institucion.pagina_web %}
-        <div class="muted">Web: {{ institucion.pagina_web }}</div>
+        <div class="muted">Web: {{ institucion.pagina_web|strip_http }}</div>
       {% endif %}
       {% if institucion and institucion.telefono %}
         <div class="muted">Tel: {{ institucion.telefono }}</div>

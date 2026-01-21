@@ -33,6 +33,7 @@ urlpatterns = [
     path('', views.CotizacionListView.as_view(), name='cotizacion_list'),
     path('nueva/', views.CotizacionCreateView.as_view(), name='cotizacion_create'),
     path('<int:pk>/convertir-a-venta/', views.convertir_cotizacion_venta, name='cotizacion_convertir_venta'),
+    path('<int:pk>/clonar/', views.cotizacion_clone, name='cotizacion_clone'),
     path('<int:pk>/', views.CotizacionDetailView.as_view(), name='cotizacion_detail'),
     path('<int:pk>/editar/', views.CotizacionUpdateView.as_view(), name='cotizacion_update'),
     path('producto-precio/<int:pk>/', views.producto_precio, name='producto_precio'),
