@@ -77,7 +77,7 @@
                     </td>
                     <td class="text-wrap-force">{{ cotizacion.cliente }}</td>
                     <td class="text-nowrap">{{ cotizacion.estado }}</td>
-                    <td class="text-nowrap">{{ cotizacion.total_venta|money_q }}</td>
+                    <td class="text-nowrap">{{ cotizacion.subtotal_venta|money_q }}</td>
                     {% if show_costs %}
                       <td class="text-nowrap">{{ cotizacion.subtotal_costo|money_q }}</td>
                       <td class="text-nowrap">{{ cotizacion.ganancia_total|money_q }}</td>

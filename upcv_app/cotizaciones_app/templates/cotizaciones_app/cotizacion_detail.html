@@ -18,7 +18,7 @@
               <a class="btn btn-outline-primary" href="{% url 'cotizaciones:cotizacion_jpg' cotizacion.pk %}?download=jpg" target="_blank">Descargar JPG</a>
               <form method="post" action="{% url 'cotizaciones:cotizacion_clone' cotizacion.pk %}">
                 {% csrf_token %}
-                <button class="btn btn-outline-primary" type="submit">Cotizar nuevamente</button>
+                <button class="btn btn-outline-primary" type="submit">Clonar cotización</button>
               </form>
               {% if can_convert %}
                 <form method="post" action="{% url 'cotizaciones:cotizacion_convertir_venta' cotizacion.pk %}">
