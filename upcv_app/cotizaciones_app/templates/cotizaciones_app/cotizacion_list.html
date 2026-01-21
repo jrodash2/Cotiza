@@ -55,6 +55,7 @@
                   <th class="text-nowrap">Correlativo</th>
                   <th class="text-nowrap">Fecha</th>
                   <th>Cliente</th>
+                  <th>Título</th>
                   <th class="text-nowrap">Estado</th>
                   <th class="text-nowrap">Total</th>
                   {% if show_costs %}
@@ -76,6 +77,7 @@
                       {% endif %}
                     </td>
                     <td class="text-wrap-force">{{ cotizacion.cliente }}</td>
+                    <td class="text-truncate" style="max-width: 240px;">{{ cotizacion.titulo }}</td>
                     <td class="text-nowrap">{{ cotizacion.estado }}</td>
                     <td class="text-nowrap">{{ cotizacion.subtotal_venta|money_q }}</td>
                     {% if show_costs %}
