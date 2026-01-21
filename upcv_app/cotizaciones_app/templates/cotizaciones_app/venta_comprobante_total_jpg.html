@@ -149,12 +149,13 @@
       <div class="content">
         <table class="header-grid">
           <tr>
-            <td style="width:25%;"></td>
+            <td style="width:25%;">
+              {% if institucion and institucion.logo %}
+                <img src="{{ institucion.logo.url }}" alt="Logo {{ institucion.nombre }}" style="height:70px;">
+              {% endif %}
+            </td>
             <td style="width:45%; text-align:center;">
               {% if institucion %}
-                {% if institucion.logo %}
-                  <img src="{{ institucion.logo.url }}" alt="Logo {{ institucion.nombre }}" style="height:70px;">
-                {% endif %}
                 <div class="institution-name">{{ institucion.nombre }}</div>
                 {% if institucion.direccion %}
                   <div class="muted">{{ institucion.direccion }}</div>
