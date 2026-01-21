@@ -19,7 +19,7 @@ from .forms import (
     CotizacionItemFormSet,
     PagoVentaForm,
 )
-from .models import Cliente, ProductoServicio, Cotizacion, Venta, PagoVenta
+from .models import Cliente, ProductoServicio, Cotizacion, CotizacionItem, Venta, PagoVenta
 
 
 class ClienteListView(LoginRequiredMixin, ListView):
@@ -320,6 +320,33 @@ def _get_cotizacion_context(pk):
 
 @login_required
 @require_POST
+def cotizacion_clone(request, pk):
+    original = get_object_or_404(Cotizacion.objects.select_related('cliente'), pk=pk)
+    with transaction.atomic():
+        nueva = Cotizacion(
+            cliente=original.cliente,
+            titulo=original.titulo,
+            validez_dias=original.validez_dias,
+            observaciones=original.observaciones,
+            garantia_texto=original.garantia_texto,
+            estado=Cotizacion.ESTADO_BORRADOR,
+            fecha_emision=timezone.now().date(),
+        )
+        nueva.save()
+        for item in original.items.select_related('producto_servicio'):
+            CotizacionItem.objects.create(
+                cotizacion=nueva,
+                producto_servicio=item.producto_servicio,
+                descripcion_editable=item.descripcion_editable,
+                cantidad=item.cantidad,
+                precio_venta_unitario=item.precio_venta_unitario,
+                precio_costo_unitario=item.precio_costo_unitario,
+            )
+    return redirect('cotizaciones:cotizacion_update', pk=nueva.pk)
+
+
+@login_required
+@require_POST
 def convertir_cotizacion_venta(request, pk):
     cotizacion = get_object_or_404(Cotizacion.objects.select_related('cliente'), pk=pk)
     if cotizacion.estado not in {Cotizacion.ESTADO_BORRADOR, Cotizacion.ESTADO_EMITIDA}:
@@ -361,12 +388,21 @@ class VentaListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return (
+        queryset = (
             super()
             .get_queryset()
             .select_related('cliente', 'cotizacion')
             .order_by('-fecha_venta', '-id')
         )
+        cliente = self.request.GET.get('cliente', '').strip()
+        if cliente:
+            queryset = queryset.filter(
+                Q(cliente__nombre__icontains=cliente)
+                | Q(cliente__telefono__icontains=cliente)
+                | Q(cliente__email__icontains=cliente)
+                | Q(cliente__nit__icontains=cliente)
+            )
+        return queryset
 
 
 class VentaDetailView(LoginRequiredMixin, DetailView):
