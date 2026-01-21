@@ -115,7 +115,7 @@
                           </td>
                           <td class="text-nowrap">
                             {% if formset.can_delete %}
-                              {{ item_form.DELETE }}
+                              <span class="d-none">{{ item_form.DELETE }}</span>
                             {% endif %}
                             <button type="button" class="btn btn-outline-danger btn-sm js-remove">Eliminar</button>
                           </td>
@@ -142,7 +142,7 @@
                     <td class="text-nowrap"><span class="js-subtotal" data-value="0">Q0.00</span></td>
                     <td class="text-nowrap">
                       {% if formset.can_delete %}
-                        {{ formset.empty_form.DELETE }}
+                        <span class="d-none">{{ formset.empty_form.DELETE }}</span>
                       {% endif %}
                       <button type="button" class="btn btn-outline-danger btn-sm js-remove">Eliminar</button>
                     </td>

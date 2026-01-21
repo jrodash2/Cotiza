@@ -4,7 +4,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Comprobante de pago final</title>
+  <title>Certificado de garantía</title>
   <style>
     *{ box-sizing:border-box; }
 
@@ -67,12 +67,12 @@
     .h3{ font-size:19px; font-weight:700; margin:0 0 8px; }
     .institution-name{ font-size:32px; font-weight:800; margin:10px 0 4px; }
 
-    .header-grid,.info-grid,.footer-grid,.summary-grid{
+    .header-grid,.info-grid,.footer-grid{
       width:100%;
       border-collapse:collapse;
       table-layout:fixed;
     }
-    .header-grid td,.info-grid td,.footer-grid td,.summary-grid td{
+    .header-grid td,.info-grid td,.footer-grid td{
       vertical-align:top;
       word-wrap:break-word;
       overflow-wrap:break-word;
@@ -83,66 +83,43 @@
 
     .divider{ height:1px; background:#e6e8ef; margin:18px 0; }
 
-    .payment-box{
+    .certificate-box{
       border:1px solid #dbe3f4;
       background:#f3f5f9;
-      padding:18px 20px;
-      border-radius:12px;
-      margin-top:16px;
-    }
-    .payment-box p{ margin:0; }
-    .payment-box p + p{ margin-top:10px; }
-
-    .amount-highlight{
-      background:#1f4ed8;
-      color:#ffffff;
-      padding:16px 18px;
+      padding:22px 24px;
       border-radius:12px;
       text-align:center;
-      margin-top:12px;
+      margin:18px 0;
     }
-    .amount-highlight .lbl{ font-size:14px; letter-spacing:1px; }
-    .amount-highlight .amt{ font-size:28px; font-weight:800; }
+    .certificate-box p{ margin:6px 0; }
 
-    .summary-grid td{
-      border:1px solid #d8dce6;
-      padding:12px 14px;
-      font-size:16px;
-    }
-    .summary-grid .label{
-      background:#f5f7fb;
-      font-weight:700;
-      width:50%;
-    }
+    .section-title{ font-size:18px; font-weight:700; margin:16px 0 8px; }
+    .list{ margin:0; padding-left:20px; }
+    .list li{ margin-bottom:6px; }
 
-    .payments-table{
-      width:100%;
-      border-collapse:collapse;
-      table-layout:fixed;
-      margin-top:16px;
+    .signature-box{
+      margin-top:24px;
+      display:flex;
+      justify-content:flex-end;
     }
-    .payments-table th,.payments-table td{
-      border:1px solid #d8dce6;
-      padding:10px 12px;
-      font-size:14px;
-    }
-    .payments-table th{
-      background:#f5f7fb;
-      font-weight:700;
+    .signature-line{
+      width:240px;
+      text-align:center;
+      border-top:2px solid #1f4ed8;
+      padding-top:8px;
       font-size:15px;
     }
 
     .footer{ margin-top:12px; }
     .bottom-line{ height:4px; background:#1f4ed8; margin-top:12px; }
 
-    .text-right{ text-align:right; }
     .no-wrap{ white-space:nowrap; }
   </style>
 </head>
 
 <body class="{% if export_mode %}export-mode{% endif %}">
   <div class="sheet">
-    <div class="page" data-filename="comprobante_total_venta_{{ venta.id }}">
+    <div class="page" data-filename="certificado_garantia_venta_{{ venta.id }}">
 
       <div class="band"></div>
 
@@ -166,9 +143,7 @@
                 <div>Tel: {{ institucion.telefono }}</div>
               {% endif %}
               <div class="no-wrap"><strong>Proyecto #{{ venta.id }}</strong></div>
-              {% if venta.fecha_pago_total %}
-                <div class="no-wrap">Fecha: {{ venta.fecha_pago_total|date:"d/m/Y" }}</div>
-              {% endif %}
+              <div class="no-wrap">Fecha: {{ venta.fecha_venta|date:"d/m/Y" }}</div>
             </td>
           </tr>
         </table>
@@ -185,76 +160,54 @@
               {% if venta.cliente.nit %}<div>NIT: {{ venta.cliente.nit }}</div>{% endif %}
             </td>
             <td style="width:45%; text-align:right;">
-              <div class="h1">COMPROBANTE DE PAGO FINAL</div>
-              <div class="h2" style="margin-top:6px;">Pago total</div>
+              <div class="h1">CERTIFICADO DE GARANTÍA</div>
+              <div class="h2" style="margin-top:6px;">Garantía 6 meses</div>
             </td>
           </tr>
         </table>
 
-        <div class="payment-box">
-          <div class="h3">Detalle de pago final</div>
-          {% if venta.fecha_pago_total %}
-            <p><strong>Fecha de pago:</strong> {{ venta.fecha_pago_total|date:"d/m/Y" }}</p>
-          {% endif %}
-          <p><strong>Tipo:</strong> Pago final</p>
-
-          <div class="amount-highlight">
-            <div class="lbl">MONTO PAGADO FINAL</div>
-            <div class="amt">{{ venta.total_pagado|money_q }}</div>
-          </div>
+        <div class="certificate-box">
+          <p class="h2">Este documento certifica una garantía de 6 meses</p>
+          <p>sobre los equipos e instalación realizada.</p>
         </div>
 
         <div class="divider"></div>
 
-        <div class="h3">Historial de pagos</div>
-        <table class="payments-table">
-          <thead>
-            <tr>
-              <th style="width:8%;">#</th>
-              <th style="width:20%;">Fecha</th>
-              <th style="width:22%;">Método</th>
-              <th style="width:30%;">Referencia</th>
-              <th style="width:20%;" class="text-right">Monto</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for pago in pagos_visibles %}
-              <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ pago.fecha|date:"d/m/Y" }}</td>
-                <td>{{ pago.get_metodo_pago_display }}</td>
-                <td>{% if pago.referencia %}{{ pago.referencia }}{% else %}—{% endif %}</td>
-                <td class="text-right">{{ pago.monto|money_q }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
+        <table class="info-grid">
+          <tr>
+            <td style="width:50%;">
+              <p><strong>Proyecto asociado:</strong> #{{ venta.id }} (Cotización {{ venta.cotizacion.correlativo }})</p>
+              <p><strong>Cliente:</strong> {{ venta.cliente.nombre }}</p>
+            </td>
+            <td style="width:50%;">
+              {% if venta.fecha_inicio_garantia %}
+                <p><strong>Inicio garantía:</strong> {{ venta.fecha_inicio_garantia|date:"d/m/Y" }}</p>
+              {% endif %}
+              {% if venta.fecha_fin_garantia %}
+                <p><strong>Fin garantía:</strong> {{ venta.fecha_fin_garantia|date:"d/m/Y" }}</p>
+              {% endif %}
+            </td>
+          </tr>
         </table>
-        {% if pagos_extra > 0 %}
-          <div class="muted" style="margin-top:8px;">Y {{ pagos_extra }} pagos más.</div>
-        {% endif %}
 
         <div class="divider"></div>
 
-        <table class="summary-grid">
-          <tr>
-            <td class="label">Total del proyecto</td>
-            <td class="text-right">{{ venta.total|money_q }}</td>
-          </tr>
-          <tr>
-            <td class="label">Total pagado</td>
-            <td class="text-right">{{ venta.total_pagado|money_q }}</td>
-          </tr>
-          <tr>
-            <td class="label">Saldo</td>
-            <td class="text-right">{{ venta.saldo|money_q }}</td>
-          </tr>
-          {% if pago_final %}
-            <tr>
-              <td class="label">Fecha de pago final</td>
-              <td class="text-right">{{ pago_final.fecha|date:"d/m/Y" }}</td>
-            </tr>
-          {% endif %}
-        </table>
+        <div class="section-title">Cubierto por garantía</div>
+        <ul class="list">
+          <li>Equipos</li>
+          <li>Instalación</li>
+        </ul>
+
+        <div class="section-title">No cubierto por garantía</div>
+        <ul class="list">
+          <li>Daños físicos</li>
+          <li>Manipulación indebida</li>
+          <li>Variaciones eléctricas</li>
+        </ul>
+
+        <div class="signature-box">
+          <div class="signature-line">Firma / Sello</div>
+        </div>
       </div>
 
       <div class="footer">
