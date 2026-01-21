@@ -182,15 +182,7 @@
             <p><strong>Referencia:</strong> {{ pago.referencia }}</p>
           {% endif %}
           <p><strong>Fecha de pago:</strong> {{ pago.fecha|date:"d/m/Y" }}</p>
-          <p><strong>Tipo:</strong>
-            {% if venta.saldo == 0 %}
-              Pago final
-            {% elif pago.correlativo_comprobante == 1 %}
-              Anticipo
-            {% else %}
-              Pago parcial
-            {% endif %}
-          </p>
+          <p><strong>Tipo:</strong> {{ tipo_pago_label }}</p>
 
           <div class="amount-highlight">
             <div class="lbl">MONTO PAGADO</div>
@@ -223,7 +215,7 @@
           <tr>
             <td style="width:70%;">
               {% if institucion and institucion.pagina_web %}
-                <div><strong>Web:</strong> {{ institucion.pagina_web }}</div>
+                <div><strong>Web:</strong> {{ institucion.pagina_web|strip_http }}</div>
               {% endif %}
               {% if institucion and institucion.telefono %}
                 <div><strong>Tel:</strong> {{ institucion.telefono }}</div>

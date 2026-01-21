@@ -101,7 +101,7 @@
                 <p class="mb-1">Tel: {{ institucion.telefono }}</p>
               {% endif %}
               {% if institucion.pagina_web %}
-                <p class="mb-0">Web: {{ institucion.pagina_web }}</p>
+                <p class="mb-0">Web: {{ institucion.pagina_web|strip_http }}</p>
               {% endif %}
             {% endif %}
           </div>

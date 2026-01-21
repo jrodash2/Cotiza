@@ -435,6 +435,12 @@ def venta_comprobante_jpg(request, venta_id, pago_id):
         or 0
     )
     saldo_hasta = venta.total - pagado_hasta
+    if saldo_hasta <= 0:
+        tipo_pago_label = 'Pago final'
+    elif pago.correlativo_comprobante == 1:
+        tipo_pago_label = 'Anticipo'
+    else:
+        tipo_pago_label = 'Pago parcial'
     return render(
         request,
         'cotizaciones_app/comprobante_pago_jpg.html',
@@ -443,6 +449,7 @@ def venta_comprobante_jpg(request, venta_id, pago_id):
             'pago': pago,
             'pagado_hasta': pagado_hasta,
             'saldo_hasta': saldo_hasta,
+            'tipo_pago_label': tipo_pago_label,
             'institucion': institucion,
             'download_jpg': download_jpg,
             'export_mode': download_jpg,

@@ -272,7 +272,7 @@
           <tr>
             <td style="width:70%;">
               {% if institucion and institucion.pagina_web %}
-                <div><strong>Web:</strong> {{ institucion.pagina_web }}</div>
+                <div><strong>Web:</strong> {{ institucion.pagina_web|strip_http }}</div>
               {% endif %}
             </td>
             <td style="width:30%; text-align:right;">
