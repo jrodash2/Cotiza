@@ -426,7 +426,7 @@ def venta_comprobante_jpg(request, venta_id, pago_id):
     download_jpg = request.GET.get('download') == 'jpg'
     return render(
         request,
-        'cotizaciones_app/venta_comprobante_jpg.html',
+        'cotizaciones_app/comprobante_pago_jpg.html',
         {
             'venta': venta,
             'pago': pago,
@@ -467,7 +467,7 @@ def venta_certificado_garantia_jpg(request, venta_id):
     download_jpg = request.GET.get('download') == 'jpg'
     return render(
         request,
-        'cotizaciones_app/venta_certificado_garantia_jpg.html',
+        'cotizaciones_app/garantia_jpg.html',
         {
             'venta': venta,
             'institucion': institucion,
