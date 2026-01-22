@@ -15,7 +15,11 @@
     </div>
     <div class="logo-icon-wrapper">
       <a href="{% url 'almacen:dahsboard' %}">
-        <img class="img-fluid" src="{% static 'assets/images/logo/logo-icon.png' %}" alt="logo-icon">
+        {% if institucion and institucion.logo %}
+          <img class="img-fluid" src="{{ institucion.logo.url }}" alt="{{ institucion.nombre }}" style="height: 38px; width: auto;">
+        {% elif institucion %}
+          <span class="fw-bold text-dark">{{ institucion.nombre }}</span>
+        {% endif %}
       </a>
     </div>
 
@@ -27,7 +31,11 @@
         <ul class="sidebar-links" id="simple-bar">
           <li class="back-btn">
             <a href="{% url 'almacen:dahsboard' %}">
-              <img class="img-fluid" src="{% static 'assets/images/logo/logo-icon.png' %}" alt="logo-icon">
+              {% if institucion and institucion.logo %}
+                <img class="img-fluid" src="{{ institucion.logo.url }}" alt="{{ institucion.nombre }}" style="height: 38px; width: auto;">
+              {% elif institucion %}
+                <span class="fw-bold text-dark">{{ institucion.nombre }}</span>
+              {% endif %}
             </a>
             <div class="mobile-back text-end">
               <span>Back</span>
