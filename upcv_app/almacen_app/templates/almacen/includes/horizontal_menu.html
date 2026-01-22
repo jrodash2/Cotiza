@@ -100,10 +100,9 @@
             </a>
           </li>
           {% if es_administrador %}
-            {% with is_config=current_url == 'user_create' or current_url == 'editar_institucion' %}
-              <li class="sidebar-list{% if is_config %} active{% endif %}">
+              <li class="sidebar-list{% if current_url == 'user_create' or current_url == 'editar_institucion' %} active{% endif %}">
                 <i class="fa fa-thumb-tack"></i>
-                <a class="sidebar-link sidebar-title{% if is_config %} active{% endif %}" href="#">
+                <a class="sidebar-link sidebar-title{% if current_url == 'user_create' or current_url == 'editar_institucion' %} active{% endif %}" href="#">
                   <svg class="stroke-icon">
                     <use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-layout"></use>
                   </svg>
@@ -121,7 +120,6 @@
                   </li>
                 </ul>
               </li>
-            {% endwith %}
           {% endif %}
         </ul>
       </div>
