@@ -4,7 +4,11 @@
   <div>
     <div class="logo-wrapper">
       <a href="{% url 'almacen:dahsboard' %}">
-        <img class="img-fluid" src="{% static 'assets/images/logo/logo.png' %}" alt="logo">
+        {% if institucion and institucion.logo %}
+          <img class="img-fluid" src="{{ institucion.logo.url }}" alt="{{ institucion.nombre }}" style="height: 38px; width: auto;">
+        {% else %}
+          <span class="fw-bold text-dark">Inicio</span>
+        {% endif %}
       </a>
       <div class="back-btn">
         <i class="fa fa-angle-left"></i>
