@@ -38,3 +38,10 @@ def datos_institucion(request):
     return {
         'institucion': institucion
     }
+
+
+def institucion_global(request):
+    institucion = Institucion.objects.first()
+    return {
+        'institucion': institucion
+    }
