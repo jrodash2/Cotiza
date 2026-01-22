@@ -71,13 +71,6 @@
     .h2{ font-size:20px; font-weight:700; margin:0; }
     .h3{ font-size:18px; font-weight:700; margin:0 0 8px; }
     .institution-name{ font-size:32px; font-weight:800; margin:10px 0 4px; }
-    .cuenta-bancaria{ margin-top:8px; }
-    .cuenta-bancaria .label{ font-size:16px; }
-    .cuenta-numero{
-      font-size:20px;
-      font-weight:700;
-      letter-spacing:1px;
-    }
 
     .header-grid,.info-grid,.footer-grid{
       width:100%;
@@ -161,8 +154,64 @@
       padding:16px 18px;
       border-radius:10px;
     }
-    .payment-box p{ margin:0; }
-    .payment-box p + p{ margin-top:10px; }
+
+    /* ✅ NUEVO: distribución profesional (izq / der) */
+    .payment-grid{
+      display:flex;
+      justify-content:space-between;
+      gap:24px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+    .payment-left{
+      flex: 1 1 520px;
+      min-width: 360px;
+    }
+    .payment-right{
+      flex: 0 0 360px;
+      min-width: 320px;
+      text-align:right;
+    }
+
+    .payment-text{
+      margin:0;
+      color:#111827;
+      line-height:1.45;
+      font-size:15px;
+    }
+
+    .bank-label{
+      font-size:14px;
+      color:#374151;
+      margin:0 0 6px;
+      font-weight:700;
+    }
+
+    .bank-number{
+      font-size:28px;
+      font-weight:900;
+      letter-spacing:1.6px;
+      line-height:1.05;
+      margin:0;
+      color:#111827;
+    }
+    .bank-owner{
+      margin-top:6px;
+      font-weight:800;
+      color:#111827;
+      font-size:16px;
+    }
+
+    /* En móvil que quede uno debajo del otro bien */
+    @media (max-width: 768px){
+      .payment-left, .payment-right{
+        flex: 1 1 100%;
+        min-width: 100%;
+        text-align:left;
+      }
+      .payment-right{ margin-top:10px; }
+      .bank-number{ font-size:24px; }
+    }
 
     .bottom-line{ height:4px; background:#1f4ed8; margin-top:12px; }
   </style>
@@ -269,12 +318,21 @@
       <!-- ✅ PIE DE PÁGINA FIJO (desde “Método de pago” hacia abajo) -->
       <div class="footer">
         <div class="payment-box">
-          <p class="h3">Método de pago</p>
-          <p>50% para confirmar el servicio y 50% contra entrega o entrega satisfactoria del proyecto.</p>
-          <div class="cuenta-bancaria">
-            <span class="label">Cuenta Banrural:</span><br>
-            <span class="cuenta-numero">3356033880</span><br>
-            <strong>Tecnologías de Guatemala</strong>
+          <div class="payment-grid">
+            <!-- IZQUIERDA -->
+            <div class="payment-left">
+              <div class="h3">Método de pago</div>
+              <p class="payment-text">
+                50% para confirmar el servicio y 50% contra entrega o entrega satisfactoria del proyecto.
+              </p>
+            </div>
+
+            <!-- DERECHA -->
+            <div class="payment-right">
+              <div class="bank-label">Cuenta Banrural</div>
+              <div class="bank-number">3356033880</div>
+              <div class="bank-owner">Tecnologías de Guatemala</div>
+            </div>
           </div>
         </div>
 
