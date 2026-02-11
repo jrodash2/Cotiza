@@ -32,31 +32,44 @@
           <div class="col-md-3"><strong>Usuario:</strong> {{ venta.usuario.get_full_name|default:venta.usuario.username }}</div>
           <div class="col-md-3"><strong>Estado:</strong> {{ venta.get_estado_display }}</div>
           <div class="col-md-3"><strong>Total:</strong> Q {{ venta.total|floatformat:2|intcomma }}</div>
+          <div class="col-12"><strong>Observaciones:</strong> {{ venta.observaciones|default:'—' }}</div>
         </div>
 
         <div class="table-responsive">
           <table class="table table-striped align-middle">
             <thead>
               <tr>
-                <th>Artículo</th>
+                <th>Tipo</th>
+                <th>Ítem</th>
                 <th>Cantidad</th>
                 <th>Precio unitario</th>
                 <th>Subtotal</th>
               </tr>
             </thead>
             <tbody>
-              {% for detalle in venta.detalles.all %}
+              {% for detalle in venta.detalles_articulos.all %}
               <tr>
+                <td>Artículo</td>
                 <td>{{ detalle.articulo.nombre }}</td>
                 <td>{{ detalle.cantidad }}</td>
                 <td>Q {{ detalle.precio_unitario|floatformat:2|intcomma }}</td>
                 <td>Q {{ detalle.subtotal|floatformat:2|intcomma }}</td>
               </tr>
-              {% empty %}
+              {% endfor %}
+              {% for detalle in venta.detalles_servicios.all %}
               <tr>
-                <td colspan="4" class="text-center text-muted">Venta sin detalles.</td>
+                <td>Servicio</td>
+                <td>{{ detalle.servicio.nombre }}</td>
+                <td>{{ detalle.cantidad }}</td>
+                <td>Q {{ detalle.precio_unitario|floatformat:2|intcomma }}</td>
+                <td>Q {{ detalle.subtotal|floatformat:2|intcomma }}</td>
               </tr>
               {% endfor %}
+              {% if not venta.detalles_articulos.exists and not venta.detalles_servicios.exists %}
+              <tr>
+                <td colspan="5" class="text-center text-muted">Venta sin detalles.</td>
+              </tr>
+              {% endif %}
             </tbody>
           </table>
         </div>
