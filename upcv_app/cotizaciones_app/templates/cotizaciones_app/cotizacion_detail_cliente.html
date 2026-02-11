@@ -91,8 +91,16 @@
           <div class="row justify-content-end">
             <div class="col-md-4">
               <div class="border rounded p-3 bg-light">
-                <p class="mb-1"><strong>Subtotal:</strong> {{ cotizacion.subtotal_venta|money_q }}</p>
-                <p class="mb-0"><strong>Total:</strong> {{ cotizacion.subtotal_venta|money_q }}</p>
+                <p class="mb-1"><strong>Subtotal:</strong> {{ cotizacion.subtotal|money_q }}</p>
+                <p class="mb-1"><strong>Descuento:</strong> {{ cotizacion.total_descuento|money_q }} {% if cotizacion.descuento_porcentaje > 0 %}({{ cotizacion.descuento_porcentaje }}%){% endif %}</p>
+                <p class="mb-1"><strong>Base imponible:</strong> {{ cotizacion.base_imponible|money_q }}</p>
+                <p class="mb-1"><strong>IVA ({{ cotizacion.iva_porcentaje }}%):</strong> {{ cotizacion.total_iva|money_q }}</p>
+                <p class="mb-0"><strong>Total:</strong> {{ cotizacion.total|money_q }}</p>
+                {% if cotizacion.precios_sin_iva %}
+                  <p id="texto-iva-legal" class="text-muted small mt-2 mb-0">*Precios no incluyen IVA.*</p>
+                {% else %}
+                  <p id="texto-iva-legal" class="text-muted small mt-2 mb-0">*Precios con IVA incluido.*</p>
+                {% endif %}
               </div>
             </div>
           </div>
