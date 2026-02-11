@@ -197,9 +197,9 @@
                       </div>
                       <p class="text-muted small mt-2 mb-2" id="texto-iva-legal">
                         {% if form.incluye_iva.value %}
-                          Precios no incluyen IVA.
-                        {% else %}
                           Precios con IVA incluido.
+                        {% else %}
+                          Precios no incluyen IVA.
                         {% endif %}
                       </p>
                       <hr>
@@ -321,8 +321,8 @@
         return;
       }
       texto.innerText = checkbox.checked
-        ? 'Precios no incluyen IVA.'
-        : 'Precios con IVA incluido.';
+        ? 'Precios con IVA incluido.'
+        : 'Precios no incluyen IVA.';
     }
 
     const cotizacionResumenRecalcular = () => {
@@ -368,7 +368,7 @@
       }
 
       const baseValue = Math.max(subtotalValue - totalDescuento, 0);
-      const totalIvaValue = incluyeIva.checked ? (baseValue * (ivaPorcentajeValue / 100)) : 0;
+      const totalIvaValue = incluyeIva.checked ? 0 : (baseValue * (ivaPorcentajeValue / 100));
       const totalValue = baseValue + totalIvaValue;
 
       subtotal.textContent = formatMoney(subtotalValue);
