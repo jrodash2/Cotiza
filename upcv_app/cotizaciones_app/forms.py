@@ -80,6 +80,7 @@ class ProductoServicioForm(forms.ModelForm):
 
 
 class CotizacionForm(forms.ModelForm):
+    incluye_iva = forms.BooleanField(required=False, label='Incluye IVA')
     class Meta:
         model = Cotizacion
         fields = [
@@ -90,7 +91,6 @@ class CotizacionForm(forms.ModelForm):
             'descuento_porcentaje',
             'descuento_monto',
             'iva_porcentaje',
-            'precios_sin_iva',
             'observaciones',
             'garantia_texto',
             'estado',
@@ -109,6 +109,7 @@ class CotizacionForm(forms.ModelForm):
         if not self.instance.pk and 'fecha_emision' in self.fields:
             self.fields['fecha_emision'].initial = timezone.now().date()
             self.fields['fecha_emision'].required = False
+        self.fields['incluye_iva'].initial = not bool(getattr(self.instance, 'precios_sin_iva', True))
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs['class'] = 'form-check-input'
@@ -117,6 +118,20 @@ class CotizacionForm(forms.ModelForm):
             else:
                 existing_class = field.widget.attrs.get('class', '')
                 field.widget.attrs['class'] = f'{existing_class} form-control'.strip()
+
+
+    def clean(self):
+        cleaned_data = super().clean()
+        incluye_iva = cleaned_data.get('incluye_iva', False)
+        cleaned_data['precios_sin_iva'] = not incluye_iva
+        return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.precios_sin_iva = self.cleaned_data.get('precios_sin_iva', True)
+        if commit:
+            instance.save()
+        return instance
 
 
 class CotizacionItemForm(forms.ModelForm):

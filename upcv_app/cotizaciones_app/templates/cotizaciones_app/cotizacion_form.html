@@ -186,8 +186,8 @@
                         </div>
                         <div class="col-6">
                           <div class="form-check mt-4">
-                            {{ form.precios_sin_iva }}
-                            <label class="form-check-label" for="{{ form.precios_sin_iva.id_for_label }}">Precios no incluyen IVA</label>
+                            {{ form.incluye_iva }}
+                            <label class="form-check-label" for="{{ form.incluye_iva.id_for_label }}">Incluye IVA</label>
                           </div>
                         </div>
                       </div>
@@ -196,10 +196,10 @@
                         <strong id="resumen-iva">{{ cotizacion.total_iva|default:form.instance.total_iva|money_q }}</strong>
                       </div>
                       <p class="text-muted small mt-2 mb-2" id="texto-iva-legal">
-                        {% if form.precios_sin_iva.value == False or form.precios_sin_iva.value == 'False' or form.precios_sin_iva.value == 'false' %}
-                          *Precios con IVA incluido.*
+                        {% if form.incluye_iva.value %}
+                          Precios con IVA incluido.
                         {% else %}
-                          *Precios no incluyen IVA.*
+                          Precios no incluyen IVA.
                         {% endif %}
                       </p>
                       <hr>
@@ -310,24 +310,24 @@
       descuentoPorcentaje: document.getElementById('id_descuento_porcentaje'),
       descuentoMonto: document.getElementById('id_descuento_monto'),
       ivaPorcentaje: document.getElementById('id_iva_porcentaje'),
-      aplicarIva: document.getElementById('id_precios_sin_iva'),
+      incluyeIva: document.getElementById('id_incluye_iva'),
     };
 
 
     function actualizarTextoIVA() {
-      const checkbox = document.getElementById('id_precios_sin_iva');
+      const checkbox = document.getElementById('id_incluye_iva');
       const texto = document.getElementById('texto-iva-legal');
       if (!checkbox || !texto) {
         return;
       }
       texto.innerText = checkbox.checked
-        ? '*Precios no incluyen IVA.*'
-        : '*Precios con IVA incluido.*';
+        ? 'Precios con IVA incluido.'
+        : 'Precios no incluyen IVA.';
     }
 
     const cotizacionResumenRecalcular = () => {
-      const { subtotal, descuento, base, iva, total, feedback, descuentoPorcentaje, descuentoMonto, ivaPorcentaje, aplicarIva } = cotizacionResumenElements;
-      if (!subtotal || !descuento || !base || !iva || !total || !descuentoPorcentaje || !descuentoMonto || !ivaPorcentaje || !aplicarIva) {
+      const { subtotal, descuento, base, iva, total, feedback, descuentoPorcentaje, descuentoMonto, ivaPorcentaje, incluyeIva } = cotizacionResumenElements;
+      if (!subtotal || !descuento || !base || !iva || !total || !descuentoPorcentaje || !descuentoMonto || !ivaPorcentaje || !incluyeIva) {
         return;
       }
 
@@ -368,7 +368,7 @@
       }
 
       const baseValue = Math.max(subtotalValue - totalDescuento, 0);
-      const totalIvaValue = aplicarIva.checked ? (baseValue * (ivaPorcentajeValue / 100)) : 0;
+      const totalIvaValue = incluyeIva.checked ? 0 : (baseValue * (ivaPorcentajeValue / 100));
       const totalValue = baseValue + totalIvaValue;
 
       subtotal.textContent = formatMoney(subtotalValue);
@@ -455,8 +455,8 @@
     if (cotizacionResumenElements.ivaPorcentaje) {
       cotizacionResumenElements.ivaPorcentaje.addEventListener('input', cotizacionResumenRecalcular);
     }
-    if (cotizacionResumenElements.aplicarIva) {
-      cotizacionResumenElements.aplicarIva.addEventListener('change', () => {
+    if (cotizacionResumenElements.incluyeIva) {
+      cotizacionResumenElements.incluyeIva.addEventListener('change', () => {
         cotizacionResumenRecalcular();
         actualizarTextoIVA();
       });
