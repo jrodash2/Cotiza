@@ -195,11 +195,11 @@
                         <span>Total IVA</span>
                         <strong id="resumen-iva">{{ cotizacion.total_iva|default:form.instance.total_iva|money_q }}</strong>
                       </div>
-                      <p class="text-muted small mt-2 mb-2" id="texto-iva">
-                        {% if form.instance.precios_sin_iva %}
-                          *Precios no incluyen IVA.*
-                        {% else %}
+                      <p class="text-muted small mt-2 mb-2" id="texto-iva-legal">
+                        {% if form.precios_sin_iva.value == False or form.precios_sin_iva.value == 'False' or form.precios_sin_iva.value == 'false' %}
                           *Precios con IVA incluido.*
+                        {% else %}
+                          *Precios no incluyen IVA.*
                         {% endif %}
                       </p>
                       <hr>
@@ -316,7 +316,7 @@
 
     function actualizarTextoIVA() {
       const checkbox = document.getElementById('id_precios_sin_iva');
-      const texto = document.getElementById('texto-iva');
+      const texto = document.getElementById('texto-iva-legal');
       if (!checkbox || !texto) {
         return;
       }

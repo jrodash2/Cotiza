@@ -97,9 +97,9 @@
                 <p class="mb-1"><strong>IVA ({{ cotizacion.iva_porcentaje }}%):</strong> {{ cotizacion.total_iva|money_q }}</p>
                 <p class="mb-0"><strong>Total:</strong> {{ cotizacion.total|money_q }}</p>
                 {% if cotizacion.precios_sin_iva %}
-                  <p class="text-muted small mt-2 mb-0">*Precios no incluyen IVA.*</p>
+                  <p id="texto-iva-legal" class="text-muted small mt-2 mb-0">*Precios no incluyen IVA.*</p>
                 {% else %}
-                  <p class="text-muted small mt-2 mb-0">*Precios con IVA incluido.*</p>
+                  <p id="texto-iva-legal" class="text-muted small mt-2 mb-0">*Precios con IVA incluido.*</p>
                 {% endif %}
               </div>
             </div>
