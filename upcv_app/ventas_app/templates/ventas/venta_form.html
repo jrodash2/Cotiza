@@ -1,0 +1,315 @@
+{% extends 'almacen/base.html' %}
+{% load static %}
+{% load money %}
+
+{% block content %}
+<div class="container-fluid form-page-wrap">
+  <div class="card">
+    <div class="card-header d-flex flex-wrap gap-2 align-items-center justify-content-between">
+      <h5 class="mb-0">Nueva venta</h5>
+      <a class="btn btn-light" href="{% url 'ventas:lista_ventas' %}">Volver</a>
+    </div>
+    <div class="card-body">
+      <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="accordion" id="ventaFormAccordion">
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="ventaHeadingEncabezado">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#ventaSectionEncabezado" aria-expanded="true" aria-controls="ventaSectionEncabezado">
+                Encabezado
+              </button>
+            </h2>
+            <div id="ventaSectionEncabezado" class="accordion-collapse collapse show" aria-labelledby="ventaHeadingEncabezado" data-bs-parent="#ventaFormAccordion">
+              <div class="accordion-body">
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">Cliente</label>
+                    {{ form.cliente }}
+                    {{ form.cliente.errors }}
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <label class="form-label">Fecha emisión</label>
+                    <p class="form-control-plaintext mb-0">{{ fecha_emision|date:'Y-m-d H:i' }}</p>
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <label class="form-label">Estado</label>
+                    {{ form.estado }}
+                    {{ form.estado.errors }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="ventaHeadingItems">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ventaSectionItems" aria-expanded="false" aria-controls="ventaSectionItems">
+                Detalle / Ítems
+              </button>
+            </h2>
+            <div id="ventaSectionItems" class="accordion-collapse collapse" aria-labelledby="ventaHeadingItems" data-bs-parent="#ventaFormAccordion">
+              <div class="accordion-body">
+                {% if formset.non_form_errors %}
+                  <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+                {% endif %}
+                {% for item_form in formset %}
+                  {% if item_form.errors %}
+                    <div class="alert alert-danger">{{ item_form.errors }}</div>
+                  {% endif %}
+                {% endfor %}
+
+                <div class="row g-2 mb-3">
+                  <div class="col-12 col-md-8 position-relative">
+                    <input type="text" id="search-item" class="form-control" autocomplete="off" placeholder="Escribe código o nombre">
+                    <div id="search-results" class="list-group position-absolute w-100 shadow-sm" style="z-index: 1000;"></div>
+                  </div>
+                  <div class="col-12 col-md-4 d-flex justify-content-md-end">
+                    <button type="button" class="btn btn-primary" id="add-item-btn">+ Agregar ítem</button>
+                  </div>
+                </div>
+
+                {{ formset.management_form }}
+                <div class="table-responsive">
+                  <table class="table table-sm table-bordered align-middle" id="items-table">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="w-50">Producto/Servicio</th>
+                        <th class="text-nowrap">Stock</th>
+                        <th class="text-nowrap">Cantidad</th>
+                        <th class="text-nowrap">Precio</th>
+                        <th class="text-nowrap">Subtotal</th>
+                        <th class="text-nowrap">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody id="items-tbody" data-formset-prefix="items" data-search-url="{% url 'ventas:buscar_items' %}">
+                      {% for item_form in formset %}
+                      <tr class="item-form">
+                        <td class="w-50">
+                          {{ item_form.item_type }}
+                          {{ item_form.item_id }}
+                          {{ item_form.item_label }}
+                        </td>
+                        <td class="js-stock text-nowrap">—</td>
+                        <td class="w-25">{{ item_form.cantidad }}</td>
+                        <td class="text-nowrap">{{ item_form.precio_unitario }}</td>
+                        <td class="text-nowrap"><span class="js-subtotal" data-value="0">Q0.00</span></td>
+                        <td class="text-nowrap">
+                          <span class="d-none">{{ item_form.DELETE }}</span>
+                          <span class="d-none">{{ item_form.stock }}</span>
+                          <button type="button" class="btn btn-outline-danger btn-sm js-remove">Eliminar</button>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <th colspan="4" class="text-end">Total</th>
+                        <th id="items-total">Q0.00</th>
+                        <th></th>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                <template id="item-row-template" data-empty-form="{{ formset.empty_form|escape }}">
+                  <tr class="item-form">
+                    <td class="w-50">
+                      {{ formset.empty_form.item_type }}
+                      {{ formset.empty_form.item_id }}
+                      {{ formset.empty_form.item_label }}
+                    </td>
+                    <td class="js-stock text-nowrap">—</td>
+                    <td class="w-25">{{ formset.empty_form.cantidad }}</td>
+                    <td class="text-nowrap">{{ formset.empty_form.precio_unitario }}</td>
+                    <td class="text-nowrap"><span class="js-subtotal" data-value="0">Q0.00</span></td>
+                    <td class="text-nowrap">
+                      <span class="d-none">{{ formset.empty_form.DELETE }}</span>
+                      <span class="d-none">{{ formset.empty_form.stock }}</span>
+                      <button type="button" class="btn btn-outline-danger btn-sm js-remove">Eliminar</button>
+                    </td>
+                  </tr>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="ventaHeadingObservaciones">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ventaSectionObservaciones" aria-expanded="false" aria-controls="ventaSectionObservaciones">
+                Observaciones
+              </button>
+            </h2>
+            <div id="ventaSectionObservaciones" class="accordion-collapse collapse" aria-labelledby="ventaHeadingObservaciones" data-bs-parent="#ventaFormAccordion">
+              <div class="accordion-body">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label">Observaciones</label>
+                    {{ form.observaciones }}
+                    {{ form.observaciones.errors }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 justify-content-end mt-4">
+          <a class="btn btn-light" href="{% url 'ventas:lista_ventas' %}">Cancelar</a>
+          <button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const tableBody = document.getElementById('items-tbody');
+  const addButton = document.getElementById('add-item-btn');
+  const template = document.getElementById('item-row-template');
+  const searchInput = document.getElementById('search-item');
+  const searchResults = document.getElementById('search-results');
+  if (!tableBody || !addButton || !template) return;
+
+  const totalFormsInput = document.getElementById('id_items-TOTAL_FORMS');
+  const searchUrl = tableBody.dataset.searchUrl;
+  const formsetPrefix = tableBody.dataset.formsetPrefix;
+  let cachedResults = [];
+  let debounceTimer = null;
+
+  const money = (value) => `Q${Number(value || 0).toFixed(2)}`;
+
+  const updateTotals = () => {
+    let total = 0;
+    Array.from(tableBody.querySelectorAll('.item-form')).forEach((row) => {
+      const qty = Number.parseFloat(row.querySelector('input[name$="-cantidad"]').value || '0') || 0;
+      const price = Number.parseFloat(row.querySelector('input[name$="-precio_unitario"]').value || '0') || 0;
+      const subtotal = qty * price;
+      row.querySelector('.js-subtotal').textContent = money(subtotal);
+      total += subtotal;
+    });
+    document.getElementById('items-total').textContent = money(total);
+  };
+
+  const reindexForms = () => {
+    const rows = Array.from(tableBody.querySelectorAll('.item-form'));
+    rows.forEach((row, index) => {
+      row.querySelectorAll('input, select, textarea, label').forEach((element) => {
+        if (element.name) {
+          element.name = element.name.replace(new RegExp(`${formsetPrefix}-\\d+-`), `${formsetPrefix}-${index}-`);
+        }
+        if (element.id) {
+          element.id = element.id.replace(new RegExp(`id_${formsetPrefix}-\\d+-`), `id_${formsetPrefix}-${index}-`);
+        }
+        if (element.htmlFor) {
+          element.htmlFor = element.htmlFor.replace(new RegExp(`id_${formsetPrefix}-\\d+-`), `id_${formsetPrefix}-${index}-`);
+        }
+      });
+    });
+    totalFormsInput.value = rows.length;
+  };
+
+  const bindRow = (row) => {
+    row.querySelector('.js-remove').addEventListener('click', () => {
+      row.remove();
+      reindexForms();
+      updateTotals();
+    });
+
+    row.querySelector('input[name$="-cantidad"]').addEventListener('input', updateTotals);
+    row.querySelector('input[name$="-precio_unitario"]').addEventListener('input', updateTotals);
+  };
+
+  const createRow = (item) => {
+    const parser = new DOMParser();
+    const html = template.dataset.emptyForm.replace(/__prefix__/g, totalFormsInput.value);
+    const doc = parser.parseFromString(`<table><tbody>${html}</tbody></table>`, 'text/html');
+    const row = doc.querySelector('tr');
+
+    row.querySelector('input[name$="-item_type"]').value = item.type;
+    row.querySelector('input[name$="-item_id"]').value = item.id;
+    row.querySelector('input[name$="-item_label"]').value = `${item.codigo} - ${item.nombre}`;
+    row.querySelector('input[name$="-cantidad"]').value = '1.00';
+    row.querySelector('input[name$="-precio_unitario"]').value = Number(item.precio || 0).toFixed(2);
+
+    const stockValue = Number(item.stock || 0);
+    row.querySelector('input[name$="-stock"]').value = stockValue.toFixed(2);
+    row.querySelector('.js-stock').textContent = item.type === 'articulo' ? stockValue.toFixed(2) : '—';
+
+    tableBody.appendChild(row);
+    reindexForms();
+    bindRow(row);
+    updateTotals();
+  };
+
+  const renderResults = (results) => {
+    searchResults.innerHTML = '';
+    cachedResults = results;
+    results.forEach((item) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'list-group-item list-group-item-action';
+      const stock = item.type === 'articulo' ? ` | Stock: ${Number(item.stock || 0).toFixed(2)}` : '';
+      btn.textContent = `[${item.type}] ${item.codigo} - ${item.nombre}${stock}`;
+      btn.addEventListener('click', () => {
+        createRow(item);
+        searchInput.value = '';
+        searchResults.innerHTML = '';
+      });
+      searchResults.appendChild(btn);
+    });
+  };
+
+  searchInput.addEventListener('input', function () {
+    const q = this.value.trim();
+    clearTimeout(debounceTimer);
+    if (!q) {
+      searchResults.innerHTML = '';
+      return;
+    }
+    debounceTimer = setTimeout(async () => {
+      try {
+        const response = await fetch(`${searchUrl}?q=${encodeURIComponent(q)}`);
+        const data = await response.json();
+        renderResults(data.results || []);
+      } catch {
+        searchResults.innerHTML = '';
+      }
+    }, 250);
+  });
+
+  addButton.addEventListener('click', () => {
+    if (cachedResults.length > 0) {
+      createRow(cachedResults[0]);
+      searchInput.value = '';
+      searchResults.innerHTML = '';
+    }
+  });
+
+  Array.from(tableBody.querySelectorAll('.item-form')).forEach((row) => bindRow(row));
+  updateTotals();
+
+  document.querySelector('form').addEventListener('submit', (e) => {
+    const rows = Array.from(tableBody.querySelectorAll('.item-form'));
+    if (!rows.length) {
+      e.preventDefault();
+      alert('Debes agregar al menos un ítem para guardar la venta.');
+      return;
+    }
+
+    const invalid = rows.some((row) => {
+      const itemType = row.querySelector('input[name$="-item_type"]').value;
+      const qty = Number.parseFloat(row.querySelector('input[name$="-cantidad"]').value || '0') || 0;
+      const price = Number.parseFloat(row.querySelector('input[name$="-precio_unitario"]').value || '0') || 0;
+      const stock = Number.parseFloat(row.querySelector('input[name$="-stock"]').value || '0') || 0;
+      return qty <= 0 || price < 0 || (itemType === 'articulo' && qty > stock);
+    });
+
+    if (invalid) {
+      e.preventDefault();
+      alert('Verifica cantidades, precios y stock disponible antes de guardar.');
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -32,6 +32,7 @@
           <div class="col-md-3"><strong>Usuario:</strong> {{ venta.usuario.get_full_name|default:venta.usuario.username }}</div>
           <div class="col-md-3"><strong>Estado:</strong> {{ venta.get_estado_display }}</div>
           <div class="col-md-3"><strong>Total:</strong> Q {{ venta.total|floatformat:2|intcomma }}</div>
+          <div class="col-12"><strong>Observaciones:</strong> {{ venta.observaciones|default:'—' }}</div>
         </div>
 
         <div class="table-responsive">
