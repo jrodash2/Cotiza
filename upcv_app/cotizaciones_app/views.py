@@ -208,6 +208,8 @@ class CotizacionCreateView(LoginRequiredMixin, CreateView):
                 for item in formset.deleted_objects:
                     item.delete()
 
+            cotizacion.recalcular_totales(save=True)
+
         messages.success(self.request, 'Cotización creada correctamente.')
         return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
 
@@ -275,6 +277,8 @@ class CotizacionUpdateView(LoginRequiredMixin, UpdateView):
                 if not item.descripcion_editable:
                     item.descripcion_editable = item.producto_servicio.descripcion
                 item.save()
+
+            cotizacion.recalcular_totales(save=True)
         messages.success(self.request, 'Cotización actualizada correctamente.')
         return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
 
