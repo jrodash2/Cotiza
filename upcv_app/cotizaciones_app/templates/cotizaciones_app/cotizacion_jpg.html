@@ -309,7 +309,11 @@
             <div class="line"><span>IVA ({{ cotizacion.iva_porcentaje }}%)</span><span>{{ cotizacion.total_iva|money_q }}</span></div>
             <div class="lbl">TOTAL</div>
             <div class="amt">{{ cotizacion.total|money_q }}</div>
+            {% if cotizacion.precios_sin_iva %}
             <div class="iva-note">*Precios no incluyen IVA.*</div>
+            {% else %}
+            <div class="iva-note">*Precios con IVA incluido.*</div>
+            {% endif %}
           </div>
         </div>
 

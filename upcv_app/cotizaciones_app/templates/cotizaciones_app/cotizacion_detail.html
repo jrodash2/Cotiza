@@ -98,6 +98,11 @@
                 <p class="mb-1"><strong>Base imponible:</strong> {{ cotizacion.base_imponible|money_q }}</p>
                 <p class="mb-1"><strong>IVA ({{ cotizacion.iva_porcentaje }}%):</strong> {{ cotizacion.total_iva|money_q }}</p>
                 <p class="mb-1"><strong>Total:</strong> {{ cotizacion.total|money_q }}</p>
+                {% if cotizacion.precios_sin_iva %}
+                  <p class="text-muted small mt-2 mb-0">*Precios no incluyen IVA.*</p>
+                {% else %}
+                  <p class="text-muted small mt-2 mb-0">*Precios con IVA incluido.*</p>
+                {% endif %}
                 {% if show_costs %}
                   <p class="mb-1"><strong>Subtotal costo:</strong> {{ cotizacion.subtotal_costo|money_q }}</p>
                   <p class="mb-0"><strong>Ganancia total:</strong> {{ cotizacion.ganancia_total|money_q }}</p>

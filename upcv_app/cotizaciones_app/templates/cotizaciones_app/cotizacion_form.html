@@ -187,7 +187,7 @@
                         <div class="col-6">
                           <div class="form-check mt-4">
                             {{ form.precios_sin_iva }}
-                            <label class="form-check-label" for="{{ form.precios_sin_iva.id_for_label }}">Aplicar IVA</label>
+                            <label class="form-check-label" for="{{ form.precios_sin_iva.id_for_label }}">Precios no incluyen IVA</label>
                           </div>
                         </div>
                       </div>
@@ -195,6 +195,13 @@
                         <span>Total IVA</span>
                         <strong id="resumen-iva">{{ cotizacion.total_iva|default:form.instance.total_iva|money_q }}</strong>
                       </div>
+                      <p class="text-muted small mt-2 mb-2" id="texto-iva">
+                        {% if form.instance.precios_sin_iva %}
+                          *Precios no incluyen IVA.*
+                        {% else %}
+                          *Precios con IVA incluido.*
+                        {% endif %}
+                      </p>
                       <hr>
                       <div class="d-flex justify-content-between">
                         <span class="fw-bold">Total</span>
@@ -305,6 +312,18 @@
       ivaPorcentaje: document.getElementById('id_iva_porcentaje'),
       aplicarIva: document.getElementById('id_precios_sin_iva'),
     };
+
+
+    function actualizarTextoIVA() {
+      const checkbox = document.getElementById('id_precios_sin_iva');
+      const texto = document.getElementById('texto-iva');
+      if (!checkbox || !texto) {
+        return;
+      }
+      texto.innerText = checkbox.checked
+        ? '*Precios no incluyen IVA.*'
+        : '*Precios con IVA incluido.*';
+    }
 
     const cotizacionResumenRecalcular = () => {
       const { subtotal, descuento, base, iva, total, feedback, descuentoPorcentaje, descuentoMonto, ivaPorcentaje, aplicarIva } = cotizacionResumenElements;
@@ -437,10 +456,15 @@
       cotizacionResumenElements.ivaPorcentaje.addEventListener('input', cotizacionResumenRecalcular);
     }
     if (cotizacionResumenElements.aplicarIva) {
-      cotizacionResumenElements.aplicarIva.addEventListener('change', cotizacionResumenRecalcular);
+      cotizacionResumenElements.aplicarIva.addEventListener('change', () => {
+        cotizacionResumenRecalcular();
+        actualizarTextoIVA();
+      });
     }
 
+    document.addEventListener('change', actualizarTextoIVA);
     cotizacionResumenRecalcular();
+    actualizarTextoIVA();
   });
 </script>
 {% endblock %}

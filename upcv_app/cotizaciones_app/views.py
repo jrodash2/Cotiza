@@ -193,6 +193,7 @@ class CotizacionCreateView(LoginRequiredMixin, CreateView):
         with transaction.atomic():
             cotizacion = form.save(commit=False)
             cotizacion.fecha_emision = timezone.now().date()
+            cotizacion.precios_sin_iva = form.cleaned_data.get('precios_sin_iva', True)
             cotizacion.save()
 
             formset.instance = cotizacion
@@ -263,6 +264,7 @@ class CotizacionUpdateView(LoginRequiredMixin, UpdateView):
         with transaction.atomic():
             cotizacion = form.save(commit=False)
             cotizacion.fecha_emision = timezone.now().date()
+            cotizacion.precios_sin_iva = form.cleaned_data.get('precios_sin_iva', True)
             cotizacion.save()
             for item_form in formset.forms:
                 if not item_form.cleaned_data:
