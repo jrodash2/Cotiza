@@ -193,6 +193,7 @@ class CotizacionCreateView(LoginRequiredMixin, CreateView):
         with transaction.atomic():
             cotizacion = form.save(commit=False)
             cotizacion.fecha_emision = timezone.now().date()
+            cotizacion.precios_sin_iva = form.cleaned_data.get('precios_sin_iva', True)
             cotizacion.save()
 
             formset.instance = cotizacion
@@ -207,6 +208,8 @@ class CotizacionCreateView(LoginRequiredMixin, CreateView):
             if hasattr(formset, 'deleted_objects'):
                 for item in formset.deleted_objects:
                     item.delete()
+
+            cotizacion.recalcular_totales(save=True)
 
         messages.success(self.request, 'Cotización creada correctamente.')
         return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
@@ -261,6 +264,7 @@ class CotizacionUpdateView(LoginRequiredMixin, UpdateView):
         with transaction.atomic():
             cotizacion = form.save(commit=False)
             cotizacion.fecha_emision = timezone.now().date()
+            cotizacion.precios_sin_iva = form.cleaned_data.get('precios_sin_iva', True)
             cotizacion.save()
             for item_form in formset.forms:
                 if not item_form.cleaned_data:
@@ -275,6 +279,8 @@ class CotizacionUpdateView(LoginRequiredMixin, UpdateView):
                 if not item.descripcion_editable:
                     item.descripcion_editable = item.producto_servicio.descripcion
                 item.save()
+
+            cotizacion.recalcular_totales(save=True)
         messages.success(self.request, 'Cotización actualizada correctamente.')
         return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
 
