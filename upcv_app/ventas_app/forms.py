@@ -9,7 +9,7 @@ from .models import Venta
 class VentaForm(forms.ModelForm):
     class Meta:
         model = Venta
-        fields = ['cliente', 'estado', 'observaciones']
+        fields = ['cliente', 'estado', 'titulo', 'observaciones']
         widgets = {
             'observaciones': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
         }
