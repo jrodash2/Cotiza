@@ -10,14 +10,21 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
 from .forms import VentaForm
-from .models import Articulo, DetalleVenta, Kardex, Venta
+from .models import (
+    Articulo,
+    DetalleVentaArticulo,
+    DetalleVentaServicio,
+    Kardex,
+    Servicio,
+    Venta,
+)
 
 
 @login_required
 def lista_ventas(request):
     ventas = (
-        Venta.objects.select_related('cliente', 'usuario')
-        .prefetch_related('detalles__articulo')
+        Venta.objects.select_related('cliente', 'usuario', 'origen_cotizacion')
+        .prefetch_related('detalles_articulos__articulo', 'detalles_servicios__servicio')
         .all()
     )
     return render(request, 'ventas/lista.html', {'ventas': ventas})
@@ -39,12 +46,8 @@ def crear_venta(request):
                 detalles_payload = []
 
             if not detalles_payload:
-                messages.error(request, 'Debes agregar al menos un artículo para crear la venta.')
-                return render(
-                    request,
-                    'ventas/crear.html',
-                    {'form': form, 'articulos': Articulo.objects.filter(activo=True).order_by('nombre')},
-                )
+                messages.error(request, 'Debes agregar al menos un artículo o servicio para crear la venta.')
+                return render(request, 'ventas/crear.html', {'form': form})
 
             venta = form.save(commit=False)
             venta.usuario = request.user
@@ -53,36 +56,53 @@ def crear_venta(request):
 
             errores = []
             for idx, item in enumerate(detalles_payload, start=1):
+                tipo = str(item.get('type', '')).strip().lower()
                 try:
-                    articulo_id = int(item.get('articulo_id'))
+                    item_id = int(item.get('id'))
                     cantidad = Decimal(str(item.get('cantidad')))
                     precio = Decimal(str(item.get('precio_unitario')))
                 except (TypeError, ValueError, InvalidOperation):
                     errores.append(f'Línea {idx}: datos inválidos.')
                     continue
 
-                articulo = Articulo.objects.filter(pk=articulo_id, activo=True).first()
-                if not articulo:
-                    errores.append(f'Línea {idx}: artículo inexistente.')
-                    continue
                 if cantidad <= 0:
                     errores.append(f'Línea {idx}: cantidad inválida.')
                     continue
                 if precio < 0:
                     errores.append(f'Línea {idx}: precio inválido.')
                     continue
-                if cantidad > articulo.stock:
-                    errores.append(
-                        f'Línea {idx}: stock insuficiente para {articulo.nombre}. Disponible: {articulo.stock}.'
+
+                if tipo == 'articulo':
+                    articulo = Articulo.objects.select_for_update().filter(pk=item_id, activo=True).first()
+                    if not articulo:
+                        errores.append(f'Línea {idx}: artículo inexistente.')
+                        continue
+                    if cantidad > articulo.stock:
+                        errores.append(
+                            f'Línea {idx}: stock insuficiente para {articulo.nombre}. Disponible: {articulo.stock}.'
+                        )
+                        continue
+                    detalle = DetalleVentaArticulo(
+                        venta=venta,
+                        articulo=articulo,
+                        cantidad=cantidad,
+                        precio_unitario=precio,
                     )
+                elif tipo == 'servicio':
+                    servicio = Servicio.objects.filter(pk=item_id, activo=True).first()
+                    if not servicio:
+                        errores.append(f'Línea {idx}: servicio inexistente.')
+                        continue
+                    detalle = DetalleVentaServicio(
+                        venta=venta,
+                        servicio=servicio,
+                        cantidad=cantidad,
+                        precio_unitario=precio,
+                    )
+                else:
+                    errores.append(f'Línea {idx}: tipo de ítem inválido.')
                     continue
 
-                detalle = DetalleVenta(
-                    venta=venta,
-                    articulo=articulo,
-                    cantidad=cantidad,
-                    precio_unitario=precio,
-                )
                 detalle.full_clean()
                 detalle.save()
 
@@ -90,11 +110,7 @@ def crear_venta(request):
                 transaction.set_rollback(True)
                 for error in errores:
                     messages.error(request, error)
-                return render(
-                    request,
-                    'ventas/crear.html',
-                    {'form': form, 'articulos': Articulo.objects.filter(activo=True).order_by('nombre')},
-                )
+                return render(request, 'ventas/crear.html', {'form': form})
 
             venta.actualizar_total()
             messages.success(request, f'Venta {venta.correlativo} creada en borrador correctamente.')
@@ -102,14 +118,16 @@ def crear_venta(request):
     else:
         form = VentaForm()
 
-    articulos = Articulo.objects.filter(activo=True).order_by('nombre')
-    return render(request, 'ventas/crear.html', {'form': form, 'articulos': articulos})
+    return render(request, 'ventas/crear.html', {'form': form})
 
 
 @login_required
 def detalle_venta(request, id):
     venta = get_object_or_404(
-        Venta.objects.select_related('cliente', 'usuario').prefetch_related('detalles__articulo'),
+        Venta.objects.select_related('cliente', 'usuario', 'origen_cotizacion').prefetch_related(
+            'detalles_articulos__articulo',
+            'detalles_servicios__servicio',
+        ),
         id=id,
     )
     return render(request, 'ventas/detalle.html', {'venta': venta})
@@ -119,18 +137,22 @@ def detalle_venta(request, id):
 @require_POST
 @transaction.atomic
 def confirmar_venta(request, id):
-    venta = get_object_or_404(Venta.objects.select_for_update().prefetch_related('detalles__articulo'), id=id)
+    venta = get_object_or_404(
+        Venta.objects.select_for_update().prefetch_related('detalles_articulos__articulo'),
+        id=id,
+    )
 
     if venta.estado != Venta.ESTADO_BORRADOR:
         messages.error(request, 'Solo se pueden confirmar ventas en borrador.')
         return redirect('ventas:detalle_venta', id=venta.id)
 
-    detalles = list(venta.detalles.select_related('articulo'))
-    if not detalles:
+    detalles_articulos = list(venta.detalles_articulos.select_related('articulo'))
+    detalles_servicios = list(venta.detalles_servicios.select_related('servicio'))
+    if not detalles_articulos and not detalles_servicios:
         messages.error(request, 'No puedes confirmar una venta sin detalles.')
         return redirect('ventas:detalle_venta', id=venta.id)
 
-    for detalle in detalles:
+    for detalle in detalles_articulos:
         articulo = Articulo.objects.select_for_update().get(id=detalle.articulo_id)
         if detalle.cantidad > articulo.stock:
             messages.error(
@@ -139,7 +161,7 @@ def confirmar_venta(request, id):
             )
             return redirect('ventas:detalle_venta', id=venta.id)
 
-    for detalle in detalles:
+    for detalle in detalles_articulos:
         Articulo.objects.filter(id=detalle.articulo_id).update(stock=F('stock') - detalle.cantidad)
         Kardex.objects.create(
             articulo_id=detalle.articulo_id,
@@ -160,14 +182,17 @@ def confirmar_venta(request, id):
 @require_POST
 @transaction.atomic
 def anular_venta(request, id):
-    venta = get_object_or_404(Venta.objects.select_for_update().prefetch_related('detalles__articulo'), id=id)
+    venta = get_object_or_404(
+        Venta.objects.select_for_update().prefetch_related('detalles_articulos__articulo'),
+        id=id,
+    )
 
     if venta.estado == Venta.ESTADO_ANULADA:
         messages.warning(request, 'La venta ya fue anulada previamente.')
         return redirect('ventas:detalle_venta', id=venta.id)
 
     if venta.estado == Venta.ESTADO_CONFIRMADA:
-        for detalle in venta.detalles.select_related('articulo'):
+        for detalle in venta.detalles_articulos.select_related('articulo'):
             Articulo.objects.filter(id=detalle.articulo_id).update(stock=F('stock') + detalle.cantidad)
             Kardex.objects.create(
                 articulo_id=detalle.articulo_id,
@@ -186,20 +211,65 @@ def anular_venta(request, id):
 
 @login_required
 @require_GET
-def buscar_articulos(request):
+def buscar_items(request):
     term = request.GET.get('q', '').strip()
+
     articulos = Articulo.objects.filter(activo=True)
+    servicios = Servicio.objects.filter(activo=True)
     if term:
         articulos = articulos.filter(Q(nombre__icontains=term) | Q(codigo__icontains=term))
+        servicios = servicios.filter(Q(nombre__icontains=term) | Q(codigo__icontains=term))
 
-    data = [
+    data_articulos = [
         {
+            'type': 'articulo',
             'id': articulo.id,
             'codigo': articulo.codigo,
             'nombre': articulo.nombre,
             'stock': float(articulo.stock),
-            'precio_venta': float(articulo.precio_venta),
+            'precio': float(articulo.precio_venta),
         }
         for articulo in articulos.order_by('nombre')[:20]
     ]
-    return JsonResponse({'results': data})
+    data_servicios = [
+        {
+            'type': 'servicio',
+            'id': servicio.id,
+            'codigo': servicio.codigo,
+            'nombre': servicio.nombre,
+            'precio': float(servicio.precio_venta),
+        }
+        for servicio in servicios.order_by('nombre')[:20]
+    ]
+    return JsonResponse({'results': data_articulos + data_servicios})
+
+
+@login_required
+@require_GET
+def item_detail(request, item_type, item_id):
+    item_type = item_type.strip().lower()
+    if item_type == 'articulo':
+        articulo = get_object_or_404(Articulo, pk=item_id, activo=True)
+        data = {
+            'type': 'articulo',
+            'id': articulo.id,
+            'codigo': articulo.codigo,
+            'nombre': articulo.nombre,
+            'stock': float(articulo.stock),
+            'precio': float(articulo.precio_venta),
+            'descripcion': articulo.descripcion,
+        }
+    elif item_type == 'servicio':
+        servicio = get_object_or_404(Servicio, pk=item_id, activo=True)
+        data = {
+            'type': 'servicio',
+            'id': servicio.id,
+            'codigo': servicio.codigo,
+            'nombre': servicio.nombre,
+            'precio': float(servicio.precio_venta),
+            'descripcion': servicio.descripcion,
+        }
+    else:
+        return JsonResponse({'error': 'Tipo de ítem inválido.'}, status=400)
+
+    return JsonResponse(data)
