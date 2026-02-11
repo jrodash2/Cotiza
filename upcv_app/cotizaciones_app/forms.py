@@ -109,7 +109,7 @@ class CotizacionForm(forms.ModelForm):
         if not self.instance.pk and 'fecha_emision' in self.fields:
             self.fields['fecha_emision'].initial = timezone.now().date()
             self.fields['fecha_emision'].required = False
-        self.fields['incluye_iva'].initial = not bool(getattr(self.instance, 'precios_sin_iva', True))
+        self.fields['incluye_iva'].initial = bool(getattr(self.instance, 'precios_sin_iva', True))
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs['class'] = 'form-check-input'
@@ -123,7 +123,7 @@ class CotizacionForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         incluye_iva = cleaned_data.get('incluye_iva', False)
-        cleaned_data['precios_sin_iva'] = not incluye_iva
+        cleaned_data['precios_sin_iva'] = incluye_iva
         return cleaned_data
 
     def save(self, commit=True):
