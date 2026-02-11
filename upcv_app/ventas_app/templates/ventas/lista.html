@@ -21,6 +21,7 @@
             <th>Cliente</th>
             <th>Estado</th>
             <th>Total</th>
+            <th>Origen</th>
             <th>Usuario</th>
             <th>Acciones</th>
           </tr>
@@ -37,12 +38,13 @@
               </span>
             </td>
             <td>Q {{ venta.total|floatformat:2|intcomma }}</td>
+            <td>{% if venta.origen_cotizacion %}Cotización {{ venta.origen_cotizacion.correlativo }}{% else %}Manual{% endif %}</td>
             <td>{{ venta.usuario.get_full_name|default:venta.usuario.username }}</td>
             <td><a class="btn btn-sm btn-outline-primary" href="{% url 'ventas:detalle_venta' venta.id %}">Ver</a></td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="7" class="text-center text-muted">No hay ventas registradas.</td>
+            <td colspan="8" class="text-center text-muted">No hay ventas registradas.</td>
           </tr>
           {% endfor %}
         </tbody>
