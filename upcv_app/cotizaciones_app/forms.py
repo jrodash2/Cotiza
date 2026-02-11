@@ -87,12 +87,19 @@ class CotizacionForm(forms.ModelForm):
             'cliente',
             'titulo',
             'validez_dias',
+            'descuento_porcentaje',
+            'descuento_monto',
+            'iva_porcentaje',
+            'precios_sin_iva',
             'observaciones',
             'garantia_texto',
             'estado',
         ]
         widgets = {
             'fecha_emision': forms.DateInput(attrs={'type': 'date'}),
+            'descuento_porcentaje': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'descuento_monto': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'iva_porcentaje': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
             'observaciones': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
             'garantia_texto': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
         }
