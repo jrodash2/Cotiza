@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+     'django.contrib.humanize',
     'almacen_app.apps.AlmacenAppConfig',  # ✅ solo esta línea
     'cotizaciones_app.apps.CotizacionesAppConfig',
     'ventas_app.apps.VentasAppConfig',
@@ -94,7 +94,7 @@ WSGI_APPLICATION = 'upcv_app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'Alma_P',  # Cambia esto por el nombre de tu base de datos
+        'NAME': 'Cotiza',  # Cambia esto por el nombre de tu base de datos
         'USER': 'postgres',
         'PASSWORD': 'Jrodash2#',  # La contraseña que configuraste
         'HOST': 'localhost',
