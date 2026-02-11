@@ -1,0 +1,67 @@
+{% extends 'almacen/base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="mb-0">Venta {{ venta.correlativo }}</h5>
+          <small class="text-muted">{{ venta.fecha|date:'d/m/Y H:i' }}</small>
+        </div>
+        <div class="d-flex gap-2">
+          {% if venta.estado == 'BORRADOR' %}
+          <form method="post" action="{% url 'ventas:confirmar_venta' venta.id %}">
+            {% csrf_token %}
+            <button class="btn btn-success" type="submit">Confirmar</button>
+          </form>
+          {% endif %}
+          {% if venta.estado != 'ANULADA' %}
+          <form method="post" action="{% url 'ventas:anular_venta' venta.id %}">
+            {% csrf_token %}
+            <button class="btn btn-danger" type="submit">Anular</button>
+          </form>
+          {% endif %}
+          <a href="{% url 'ventas:lista_ventas' %}" class="btn btn-outline-secondary">Volver</a>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-md-3"><strong>Cliente:</strong> {{ venta.cliente.nombre|default:'Consumidor final' }}</div>
+          <div class="col-md-3"><strong>Usuario:</strong> {{ venta.usuario.get_full_name|default:venta.usuario.username }}</div>
+          <div class="col-md-3"><strong>Estado:</strong> {{ venta.get_estado_display }}</div>
+          <div class="col-md-3"><strong>Total:</strong> Q {{ venta.total|floatformat:2|intcomma }}</div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-striped align-middle">
+            <thead>
+              <tr>
+                <th>Artículo</th>
+                <th>Cantidad</th>
+                <th>Precio unitario</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for detalle in venta.detalles.all %}
+              <tr>
+                <td>{{ detalle.articulo.nombre }}</td>
+                <td>{{ detalle.cantidad }}</td>
+                <td>Q {{ detalle.precio_unitario|floatformat:2|intcomma }}</td>
+                <td>Q {{ detalle.subtotal|floatformat:2|intcomma }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted">Venta sin detalles.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
