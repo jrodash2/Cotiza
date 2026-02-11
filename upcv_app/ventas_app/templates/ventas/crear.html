@@ -1,0 +1,160 @@
+{% extends 'almacen/base.html' %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Nueva Venta</h5>
+        <a href="{% url 'ventas:lista_ventas' %}" class="btn btn-outline-secondary btn-sm">Volver</a>
+      </div>
+      <div class="card-body">
+        <form method="post" id="venta-form">
+          {% csrf_token %}
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Cliente</label>
+              {{ form.cliente }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Buscar artículo</label>
+              <input id="search-articulo" type="text" class="form-control" list="articulos-list" placeholder="Escribe código o nombre">
+              <datalist id="articulos-list">
+                {% for articulo in articulos %}
+                <option value="{{ articulo.codigo }} - {{ articulo.nombre }}" data-id="{{ articulo.id }}" data-precio="{{ articulo.precio_venta }}" data-stock="{{ articulo.stock }}"></option>
+                {% endfor %}
+              </datalist>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle" id="detalle-table">
+              <thead class="table-light">
+                <tr>
+                  <th>Artículo</th>
+                  <th>Stock disponible</th>
+                  <th>Cantidad</th>
+                  <th>Precio Unitario</th>
+                  <th>Subtotal</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot>
+                <tr>
+                  <th colspan="4" class="text-end">Total</th>
+                  <th id="total-display">Q 0.00</th>
+                  <th></th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <input type="hidden" name="detalles_json" id="detalles-json">
+
+          <div class="d-flex justify-content-end gap-2 mt-3">
+            <button type="submit" class="btn btn-primary">Guardar Venta</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const articulos = {
+    {% for articulo in articulos %}
+    "{{ articulo.id }}": {
+      id: {{ articulo.id }},
+      texto: "{{ articulo.codigo|escapejs }} - {{ articulo.nombre|escapejs }}",
+      stock: parseFloat("{{ articulo.stock }}"),
+      precio: parseFloat("{{ articulo.precio_venta }}")
+    },
+    {% endfor %}
+  };
+
+  const detalles = [];
+  const detalleTableBody = document.querySelector('#detalle-table tbody');
+  const totalDisplay = document.getElementById('total-display');
+  const detallesJsonInput = document.getElementById('detalles-json');
+
+  function refreshTable() {
+    detalleTableBody.innerHTML = '';
+    let total = 0;
+
+    detalles.forEach((item, idx) => {
+      item.subtotal = item.cantidad * item.precio_unitario;
+      total += item.subtotal;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.articulo_texto}</td>
+        <td>${item.stock.toFixed(2)}</td>
+        <td><input type="number" min="0.01" step="0.01" value="${item.cantidad}" class="form-control form-control-sm cantidad-input" data-idx="${idx}"></td>
+        <td><input type="number" min="0" step="0.01" value="${item.precio_unitario}" class="form-control form-control-sm precio-input" data-idx="${idx}"></td>
+        <td>Q ${item.subtotal.toFixed(2)}</td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger remove-item" data-idx="${idx}">Quitar</button></td>
+      `;
+      detalleTableBody.appendChild(tr);
+    });
+
+    totalDisplay.textContent = `Q ${total.toFixed(2)}`;
+    detallesJsonInput.value = JSON.stringify(detalles.map(item => ({
+      articulo_id: item.articulo_id,
+      cantidad: item.cantidad,
+      precio_unitario: item.precio_unitario
+    })));
+  }
+
+  document.getElementById('search-articulo').addEventListener('change', function () {
+    const selectedText = this.value;
+    const articulo = Object.values(articulos).find(a => a.texto === selectedText);
+    if (!articulo) return;
+
+    const already = detalles.find(d => d.articulo_id === articulo.id);
+    if (already) {
+      already.cantidad += 1;
+    } else {
+      detalles.push({
+        articulo_id: articulo.id,
+        articulo_texto: articulo.texto,
+        stock: articulo.stock,
+        cantidad: 1,
+        precio_unitario: articulo.precio,
+      });
+    }
+
+    this.value = '';
+    refreshTable();
+  });
+
+  detalleTableBody.addEventListener('input', function (e) {
+    const idx = e.target.dataset.idx;
+    if (idx === undefined) return;
+
+    const detalle = detalles[idx];
+    if (e.target.classList.contains('cantidad-input')) {
+      detalle.cantidad = parseFloat(e.target.value || '0');
+    }
+    if (e.target.classList.contains('precio-input')) {
+      detalle.precio_unitario = parseFloat(e.target.value || '0');
+    }
+    refreshTable();
+  });
+
+  detalleTableBody.addEventListener('click', function (e) {
+    if (!e.target.classList.contains('remove-item')) return;
+    const idx = parseInt(e.target.dataset.idx);
+    detalles.splice(idx, 1);
+    refreshTable();
+  });
+
+  document.getElementById('venta-form').addEventListener('submit', function (e) {
+    const invalid = detalles.some(item => item.cantidad <= 0 || item.cantidad > item.stock || item.precio_unitario < 0);
+    if (detalles.length === 0 || invalid) {
+      e.preventDefault();
+      alert('Verifica cantidades, precios y stock disponible antes de guardar.');
+    }
+  });
+</script>
+{% endblock %}

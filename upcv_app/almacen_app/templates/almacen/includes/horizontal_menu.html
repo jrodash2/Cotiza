@@ -75,9 +75,9 @@
               <span>Cotizaciones</span>
             </a>
           </li>
-          <li class="sidebar-list{% if current_url == 'venta_list' %} active{% endif %}">
+          <li class="sidebar-list{% if current_url == 'lista_ventas' or current_url == 'crear_venta' or current_url == 'detalle_venta' %} active{% endif %}">
             <i class="fa fa-thumb-tack"></i>
-            <a class="sidebar-link sidebar-title link-nav{% if current_url == 'venta_list' %} active{% endif %}" href="{% url 'cotizaciones:venta_list' %}">
+            <a class="sidebar-link sidebar-title link-nav{% if current_url == 'lista_ventas' or current_url == 'crear_venta' or current_url == 'detalle_venta' %} active{% endif %}" href="{% url 'ventas:lista_ventas' %}">
               <svg class="stroke-icon">
                 <use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-ecommerce"></use>
               </svg>
