@@ -1,0 +1,255 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Riho admin is super flexible, powerful, clean &amp; modern responsive bootstrap 5 admin template with unlimited possibilities.">
+    <meta name="keywords" content="admin template, Riho admin template, dashboard template, flat admin template, responsive admin template, web app">
+    <meta name="author" content="pixelstrap">
+    <link rel="icon" href="{% static 'assets/images/favicon.svg' %}" type="image/x-icon">
+    <link rel="shortcut icon" href="{% static 'assets/images/favicon.svg' %}" type="image/x-icon">
+    <title>UPCV</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/font-awesome.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/icofont.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/themify.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/flag-icon.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/feather-icon.css' %}">
+
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/slick.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/slick-theme.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/scrollbar.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/animate.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/js-datatables/style.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/owlcarousel.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/echart.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/date-picker.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/datatables.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/datatable/datatables.min.css' %}">
+
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/bootstrap.css' %}">
+
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/style.css' %}">
+    <link id="color" rel="stylesheet" href="{% static 'assets/css/color-1.css' %}" media="screen">
+
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/responsive.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom_sidebar.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/app-fixes.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/layout-fixes.css' %}">
+    <style>
+      .page-header {
+        position: sticky;
+        top: 0;
+        z-index: 1030;
+        background: #ffffff;
+      }
+
+      .bookmark-flip,
+      .bookmark-dropdown {
+        display: none !important;
+      }
+
+      .customizer-links,
+      .customizer-contain,
+      .theme-setting,
+      .setting-primary,
+      .customizer-wrapper {
+        display: none !important;
+      }
+
+      .page-body-wrapper {
+        padding-top: 80px;
+      }
+
+      .sidebar-wrapper .sidebar-links .sidebar-list.active > a,
+      .sidebar-wrapper .sidebar-links .sidebar-list.active > a svg,
+      .sidebar-wrapper .sidebar-links .sidebar-submenu li a.active,
+      .sidebar-wrapper .sidebar-links .sidebar-submenu li a.active svg {
+        color: #38bdf8 !important;
+        fill: #38bdf8 !important;
+      }
+
+      .sidebar-wrapper .sidebar-links .sidebar-list.active > a,
+      .sidebar-wrapper .sidebar-links .sidebar-submenu li a.active {
+        background-color: rgba(56, 189, 248, 0.12) !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="loader-wrapper">
+      <div class="loader">
+        <div class="loader4"></div>
+      </div>
+    </div>
+    <div class="tap-top"><i data-feather="chevrons-up"></i></div>
+
+    <div class="page-wrapper compact-wrapper horizontal-wrapper" id="pageWrapper">
+      <div class="page-header">
+        <div class="header-wrapper row m-0">
+          <form class="form-inline search-full col" action="#" method="get">
+            <div class="form-group w-100">
+              <div class="Typeahead Typeahead--twitterUsers">
+                <div class="u-posRelative">
+                  <input class="demo-input Typeahead-input form-control-plaintext w-100" type="text" placeholder="Search Riho .." name="q" title="" autofocus>
+                  <div class="spinner-border Typeahead-spinner" role="status"><span class="sr-only">Loading... </span></div>
+                  <i class="close-search" data-feather="x"></i>
+                </div>
+                <div class="Typeahead-menu"></div>
+              </div>
+            </div>
+          </form>
+          <div class="header-logo-wrapper col-auto p-0">
+            <div class="logo-wrapper">
+              <a href="{% url 'almacen:dahsboard' %}">
+                {% if institucion and institucion.logo %}
+                  <img class="img-fluid for-light" src="{{ institucion.logo.url }}" alt="{{ institucion.nombre }}" style="height: 38px; width: auto;">
+                  <img class="img-fluid for-dark" src="{{ institucion.logo.url }}" alt="{{ institucion.nombre }}" style="height: 38px; width: auto;">
+                {% elif institucion %}
+                  <span class="fw-bold text-dark">{{ institucion.nombre }}</span>
+                {% endif %}
+              </a>
+            </div>
+            <div class="toggle-sidebar">
+              <i class="status_toggle middle sidebar-toggle" data-feather="align-center"></i>
+            </div>
+          </div>
+          <div class="left-header col-xxl-5 col-xl-6 col-lg-5 col-md-4 col-sm-3 p-0">
+            <div>
+              <div class="d-flex align-items-center gap-2">
+                <h4 class="f-w-600">Bienvenido {{ user.first_name }}</h4>
+                <img class="mt-0" src="{% static 'assets/images/hand.gif' %}" alt="hand-gif">
+              </div>
+            </div>
+            {% if frase_del_dia %}
+              <div class="welcome-content d-xl-block d-none">
+                <span class="text-truncate col-12">
+                  {{ frase_del_dia.frase }}
+                  <i>
+                    -
+                    {% if frase_del_dia.personaje == 'Unknown' %}
+                      Anónimo
+                    {% else %}
+                      {{ frase_del_dia.personaje }}
+                    {% endif %}
+                  </i>
+                </span>
+              </div>
+            {% endif %}
+          </div>
+          <div class="nav-right col-xxl-7 col-xl-6 col-md-7 col-8 pull-right right-header p-0 ms-auto">
+            <ul class="nav-menus">
+              <li>
+                <div class="mode"><i class="moon" data-feather="moon"></i></div>
+              </li>
+              <li class="profile-nav onhover-dropdown">
+                <div class="d-flex align-items-center">
+                  <div style="width: 36px; height: 36px;">
+                    {% if user.perfil.foto %}
+                      <img src="{{ user.perfil.foto.url }}" alt="Foto de perfil" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                    {% else %}
+                      <img src="{% static 'assets/images/dashboard/profile2.png' %}" alt="Sin foto" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                    {% endif %}
+                  </div>
+                  <div class="d-none d-xxl-block ms-2">
+                    <div class="d-flex align-items-center gap-2">
+                      <span>{{ user.first_name }} {{ user.last_name }}</span>
+                      <i class="middle fa fa-angle-down"></i>
+                    </div>
+                    <div>
+                      {% for group in user.groups.all %}
+                        <p class="mb-0 font-roboto small text-muted">{{ group.name }}</p>
+                      {% empty %}
+                        <p class="mb-0 text-muted small">Sin rol</p>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+                <style>
+                  .dropdown-wide {
+                    min-width: 220px;
+                    padding: 10px 15px;
+                    text-align: center;
+                  }
+
+                  .profile-dropdown li a {
+                    display: inline-block;
+                    margin: 5px auto;
+                    padding: 8px 12px;
+                    white-space: nowrap;
+                  }
+                </style>
+                <ul class="profile-dropdown onhover-show-div dropdown-wide text-center">
+                  <li>
+                    {% if user.is_authenticated %}
+                      <a class="d-block" href="{% url 'almacen:password_change' %}">Cambio de Contraseña</a>
+                    {% endif %}
+                  </li>
+                  <li>
+                    {% if user.is_authenticated %}
+                      <a class="d-block" href="{% static 'manuales/manual_usuario.pdf' %}" target="_blank">Manual de Usuario</a>
+                    {% endif %}
+                  </li>
+                  <li>
+                    <a class="btn btn-pill btn-outline-primary btn-sm d-block mx-auto mt-2" href="/logout">Salir del Sistema</a>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="page-body-wrapper horizontal-menu">
+        {% if user.is_authenticated %}
+          {% include 'almacen/includes/horizontal_menu.html' %}
+        {% endif %}
+        <div class="page-body">
+          <div class="container-fluid">
+            {% block content %}
+            {% endblock %}
+          </div>
+        </div>
+        <footer class="footer">
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-md-12 footer-copyright text-center">
+                <p class="mb-0">Copyright <span id="currentYear"></span> © Tecnologías de Guatemala</p>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <script src="{% static 'assets/js/jquery.min.js' %}"></script>
+    <script src="{% static 'assets/js/bootstrap/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'assets/js/icons/feather-icon/feather.min.js' %}"></script>
+    <script src="{% static 'assets/js/icons/feather-icon/feather-icon.js' %}"></script>
+    <script src="{% static 'assets/js/scrollbar/simplebar.js' %}"></script>
+    <script src="{% static 'assets/js/scrollbar/custom.js' %}"></script>
+    <script src="{% static 'assets/js/config.js' %}"></script>
+    <script src="{% static 'assets/js/sidebar-menu.js' %}"></script>
+    <script src="{% static 'assets/js/sidebar-pin.js' %}"></script>
+    <script src="{% static 'assets/js/slick/slick.min.js' %}"></script>
+    <script src="{% static 'assets/js/slick/slick.js' %}"></script>
+    <script src="{% static 'assets/js/header-slick.js' %}"></script>
+    <script src="{% static 'assets/js/js-datatables/simple-datatables@latest.js' %}"></script>
+    <script src="{% static 'assets/js/custom-list-product.js' %}"></script>
+    <script src="{% static 'assets/js/owlcarousel/owl.carousel.js' %}"></script>
+    <script src="{% static 'assets/js/ecommerce.js' %}"></script>
+    <script src="{% static 'assets/js/script.js' %}"></script>
+    <script src="{% static 'assets/js/notify/bootstrap-notify.min.js' %}"></script>
+    <script src="{% static 'assets/js/icons/icons-notify2.js' %}"></script>
+    <script src="{% static 'assets/js/icons/icons-notify.js' %}"></script>
+    <script src="{% static 'assets/js/chart/apex-chart/apex-chart.js' %}"></script>
+    <script>
+      document.getElementById('currentYear').textContent = new Date().getFullYear();
+    </script>
+  </body>
+</html>

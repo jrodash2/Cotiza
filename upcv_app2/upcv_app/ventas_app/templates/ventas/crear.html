@@ -1,0 +1,211 @@
+{% extends 'almacen/base.html' %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Nueva Venta</h5>
+        <a href="{% url 'ventas:lista_ventas' %}" class="btn btn-outline-secondary btn-sm">Volver</a>
+      </div>
+      <div class="card-body">
+        <form method="post" id="venta-form">
+          {% csrf_token %}
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Cliente</label>
+              {{ form.cliente }}
+            </div>
+            <div class="col-md-6 position-relative">
+              <label class="form-label">Buscar ítem</label>
+              <input id="search-item" type="text" class="form-control" autocomplete="off" placeholder="Escribe código o nombre">
+              <div id="search-results" class="list-group position-absolute w-100 shadow-sm" style="z-index: 1000;"></div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle" id="detalle-table">
+              <thead class="table-light">
+                <tr>
+                  <th>Tipo</th>
+                  <th>Ítem</th>
+                  <th>Stock disponible</th>
+                  <th>Cantidad</th>
+                  <th>Precio Unitario</th>
+                  <th>Subtotal</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot>
+                <tr>
+                  <th colspan="5" class="text-end">Total</th>
+                  <th id="total-display">Q 0.00</th>
+                  <th></th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <input type="hidden" name="detalles_json" id="detalles-json">
+
+          <div class="d-flex justify-content-end gap-2 mt-3">
+            <button type="submit" class="btn btn-primary">Guardar Venta</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const detalles = [];
+  const detalleTableBody = document.querySelector('#detalle-table tbody');
+  const totalDisplay = document.getElementById('total-display');
+  const detallesJsonInput = document.getElementById('detalles-json');
+  const searchInput = document.getElementById('search-item');
+  const searchResults = document.getElementById('search-results');
+  let debounceTimer = null;
+
+  function money(value) {
+    return `Q ${Number(value || 0).toFixed(2)}`;
+  }
+
+  function refreshTable() {
+    detalleTableBody.innerHTML = '';
+    let total = 0;
+
+    detalles.forEach((item, idx) => {
+      item.subtotal = item.cantidad * item.precio_unitario;
+      total += item.subtotal;
+      const stockLabel = item.type === 'articulo' ? item.stock.toFixed(2) : '-';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="text-capitalize">${item.type}</td>
+        <td>${item.codigo} - ${item.nombre}</td>
+        <td>${stockLabel}</td>
+        <td><input type="number" min="0.01" step="0.01" value="${item.cantidad}" class="form-control form-control-sm cantidad-input" data-idx="${idx}"></td>
+        <td><input type="number" min="0" step="0.01" value="${item.precio_unitario}" class="form-control form-control-sm precio-input" data-idx="${idx}"></td>
+        <td>${money(item.subtotal)}</td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger remove-item" data-idx="${idx}">Quitar</button></td>
+      `;
+      detalleTableBody.appendChild(tr);
+    });
+
+    totalDisplay.textContent = money(total);
+    detallesJsonInput.value = JSON.stringify(detalles.map(item => ({
+      type: item.type,
+      id: item.id,
+      cantidad: item.cantidad,
+      precio_unitario: item.precio_unitario,
+    })));
+  }
+
+  function addItem(item) {
+    const existing = detalles.find(row => row.type === item.type && row.id === item.id);
+    if (existing) {
+      existing.cantidad += 1;
+    } else {
+      detalles.push({
+        type: item.type,
+        id: item.id,
+        codigo: item.codigo,
+        nombre: item.nombre,
+        stock: Number(item.stock || 0),
+        cantidad: 1,
+        precio_unitario: Number(item.precio || 0),
+      });
+    }
+    refreshTable();
+  }
+
+  function renderSearchResults(results) {
+    searchResults.innerHTML = '';
+    if (!results.length) {
+      return;
+    }
+
+    results.forEach(item => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'list-group-item list-group-item-action';
+      const stock = item.type === 'articulo' ? ` | Stock: ${Number(item.stock).toFixed(2)}` : '';
+      btn.textContent = `[${item.type}] ${item.codigo} - ${item.nombre}${stock}`;
+      btn.addEventListener('click', () => {
+        addItem(item);
+        searchInput.value = '';
+        searchResults.innerHTML = '';
+      });
+      searchResults.appendChild(btn);
+    });
+  }
+
+  searchInput.addEventListener('input', function () {
+    const q = this.value.trim();
+    clearTimeout(debounceTimer);
+    if (!q) {
+      searchResults.innerHTML = '';
+      return;
+    }
+
+    debounceTimer = setTimeout(async () => {
+      try {
+        const response = await fetch(`{% url 'ventas:buscar_items' %}?q=${encodeURIComponent(q)}`);
+        const data = await response.json();
+        renderSearchResults(data.results || []);
+      } catch (error) {
+        searchResults.innerHTML = '';
+      }
+    }, 250);
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!searchResults.contains(e.target) && e.target !== searchInput) {
+      searchResults.innerHTML = '';
+    }
+  });
+
+  detalleTableBody.addEventListener('input', function (e) {
+    const idx = Number(e.target.dataset.idx);
+    if (Number.isNaN(idx)) return;
+
+    const detalle = detalles[idx];
+    if (!detalle) return;
+
+    if (e.target.classList.contains('cantidad-input')) {
+      detalle.cantidad = Number(e.target.value || '0');
+    }
+    if (e.target.classList.contains('precio-input')) {
+      detalle.precio_unitario = Number(e.target.value || '0');
+    }
+    refreshTable();
+  });
+
+  detalleTableBody.addEventListener('click', function (e) {
+    if (!e.target.classList.contains('remove-item')) return;
+    const idx = Number(e.target.dataset.idx);
+    detalles.splice(idx, 1);
+    refreshTable();
+  });
+
+  document.getElementById('venta-form').addEventListener('submit', function (e) {
+    if (!detalles.length) {
+      e.preventDefault();
+      alert('Debes agregar al menos un renglón para guardar.');
+      return;
+    }
+
+    const invalid = detalles.some(item => (
+      item.cantidad <= 0
+      || item.precio_unitario < 0
+      || (item.type === 'articulo' && item.cantidad > item.stock)
+    ));
+
+    if (invalid) {
+      e.preventDefault();
+      alert('Verifica cantidades, precios y stock disponible antes de guardar.');
+    }
+  });
+</script>
+{% endblock %}

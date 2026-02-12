@@ -1,0 +1,123 @@
+{% extends 'almacen/base.html' %}
+{% load static %}
+{% load money %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+            <div>
+              <h5 class="mb-1 text-truncate">Cotización {{ cotizacion.correlativo }}</h5>
+              <small class="text-muted">Fecha: {{ cotizacion.fecha_emision }} · Validez: {{ cotizacion.validez_dias }} días</small>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <a class="btn btn-outline-primary" href="{% url 'cotizaciones:cotizacion_jpg' cotizacion.pk %}?download=jpg" target="_blank">Descargar JPG</a>
+              <form method="post" action="{% url 'cotizaciones:cotizacion_clone' object.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-outline-primary btn-sm" type="submit">Clonar cotización</button>
+              </form>
+              {% if can_convert %}
+                <form method="post" action="{% url 'cotizaciones:cotizacion_convertir_venta' cotizacion.pk %}">
+                  {% csrf_token %}
+                  <button class="btn btn-success" type="submit">Convertir a proyecto</button>
+                </form>
+              {% elif venta %}
+                <a class="btn btn-outline-success" href="{% url 'cotizaciones:venta_detail' venta.pk %}">Ver proyecto</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <h6 class="text-muted">Cliente</h6>
+              <p class="mb-1"><strong>{{ cotizacion.cliente.nombre }}</strong></p>
+              {% if cotizacion.cliente.direccion %}
+                <p class="mb-1">{{ cotizacion.cliente.direccion }}</p>
+              {% endif %}
+              {% if cotizacion.cliente.telefono %}
+                <p class="mb-1">Tel: {{ cotizacion.cliente.telefono }}</p>
+              {% endif %}
+              {% if cotizacion.cliente.nit %}
+                <p class="mb-0">NIT: {{ cotizacion.cliente.nit }}</p>
+              {% endif %}
+            </div>
+            <div class="col-md-6 text-md-end">
+              {% if cotizacion.titulo %}
+                <h5 class="mb-2">{{ cotizacion.titulo }}</h5>
+              {% endif %}
+              {% if cotizacion.garantia_texto %}
+                <p class="mb-1 text-danger fw-bold">{{ cotizacion.garantia_texto }}</p>
+              {% endif %}
+              {% if cotizacion.observaciones %}
+                <p class="mb-0 text-wrap-force">{{ cotizacion.observaciones }}</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead class="table-light">
+                <tr>
+                  <th>Descripción</th>
+                  <th class="text-nowrap">Cantidad</th>
+                  <th class="text-nowrap">Precio</th>
+                  <th class="text-nowrap">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in items %}
+                  <tr>
+                    <td class="text-wrap-force">
+                      <strong>{{ item.producto_servicio.nombre }}</strong><br>
+                      {{ item.descripcion_editable|default:item.producto_servicio.descripcion }}
+                    </td>
+                    <td>{{ item.cantidad }}</td>
+                    <td>{{ item.precio_venta_unitario|money_q }}</td>
+                    <td>{{ item.total_linea_venta|money_q }}</td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="text-center">No hay ítems registrados.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="row justify-content-end">
+            <div class="col-md-4">
+              <div class="border rounded p-3 bg-light">
+                <p class="mb-1 d-flex justify-content-between"><strong>Subtotal:</strong><span>{{ cotizacion.subtotal|money_q }}</span></p>
+                <p class="mb-1 d-flex justify-content-between"><strong>Descuento:</strong><span>- {{ cotizacion.descuento_calculado|money_q }}</span></p>
+                <p class="mb-1 d-flex justify-content-between"><strong>Base:</strong><span>{{ cotizacion.base_imponible|money_q }}</span></p>
+                {% if cotizacion.iva_activo %}
+                  <p class="mb-1 d-flex justify-content-between"><strong>IVA ({{ cotizacion.iva_porcentaje }}%):</strong><span>{{ cotizacion.iva_monto|money_q }}</span></p>
+                {% endif %}
+                <p class="mb-1 d-flex justify-content-between"><strong>Total:</strong><span>{{ cotizacion.total|money_q }}</span></p>
+                <small class="text-muted">{{ cotizacion.iva_texto }}</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <h6>Datos de la empresa</h6>
+            {% if institucion %}
+              <p class="mb-1"><strong>{{ institucion.nombre }}</strong></p>
+              {% if institucion.telefono %}
+                <p class="mb-1">Tel: {{ institucion.telefono }}</p>
+              {% endif %}
+              {% if institucion.pagina_web %}
+                <p class="mb-0">Web: {{ institucion.pagina_web|strip_http }}</p>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

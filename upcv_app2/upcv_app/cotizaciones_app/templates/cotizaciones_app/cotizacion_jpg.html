@@ -1,0 +1,376 @@
+{% load static %}
+{% load money %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Cotización {{ cotizacion.correlativo }}</title>
+  <style>
+    *{ box-sizing:border-box; }
+
+    /* ✅ wrapper que centra (NO uses padding en body) */
+    .sheet{
+      min-height: 100vh;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      background:#eef1f6;
+      padding:24px; /* margen externo uniforme SOLO aquí */
+    }
+    .export-mode .sheet{
+      background:#ffffff;
+      padding:0;             /* ✅ en export NO hay margen externo */
+      align-items:center;    /* ✅ centra vertical */
+    }
+
+    body{
+      margin:0;
+      font-family: Arial, sans-serif;
+      font-size:16px;
+      color:#111827;
+    }
+
+    img{ max-width:100%; height:auto; }
+
+    /* ✅ “papel” siempre centrado + layout en columnas */
+    .page{
+      display:flex;                /* ✅ clave */
+      flex-direction:column;       /* ✅ clave */
+      margin:0 auto;
+      background:#ffffff;
+      overflow:hidden;             /* evita que algo se salga */
+      width:100%;
+      max-width:1100px;
+      padding:48px 56px;
+      min-height: 100%;            /* para que el footer pueda pegarse abajo */
+    }
+
+    /* ✅ lienzo fijo export JPG (márgenes iguales) */
+    .export-mode .page{
+      width:1275px;
+      height:1650px;
+      max-width:none;
+      padding:80px;                /* ✅ iguales */
+      margin:0 auto;
+    }
+
+    /* ✅ evita scroll lateral por algún elemento */
+    .page, .content, table{ max-width:100%; }
+    html, body{ overflow-x:hidden; }
+
+    /* ✅ contenido ocupa el espacio y empuja el footer al fondo */
+    .content{
+      flex: 1;                     /* ✅ clave: empuja el footer abajo */
+      display:flex;
+      flex-direction:column;
+    }
+
+    .band{ height:6px; background:#1f4ed8; margin-bottom:24px; }
+    .muted{ color:#5b6472; font-size:16px; }
+    .h1{ font-size:28px; font-weight:800; margin:0; }
+    .h2{ font-size:20px; font-weight:700; margin:0; }
+    .h3{ font-size:18px; font-weight:700; margin:0 0 8px; }
+    .institution-name{ font-size:32px; font-weight:800; margin:10px 0 4px; }
+
+    .header-grid,.info-grid,.footer-grid{
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+    }
+    .header-grid td,.info-grid td,.footer-grid td{
+      vertical-align:top;
+      word-wrap:break-word;
+      overflow-wrap:break-word;
+    }
+
+    .header-right{ text-align:right; font-size:16px; }
+    .header-right strong{ font-size:18px; }
+
+    .divider{ height:1px; background:#e6e8ef; margin:18px 0; }
+
+    .items{
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+      margin-top:18px;
+    }
+    .items th,.items td{
+      border:1px solid #d8dce6;
+      padding:12px 14px;
+      font-size:15px;
+    }
+    .items th{
+      background:#f5f7fb;
+      font-weight:700;
+      font-size:16px;
+    }
+
+    .text-right{ text-align:right; }
+    .text-center{ text-align:center; }
+    .no-wrap{ white-space:nowrap; }
+
+    .total-wrap{ width:100%; margin-top:18px; }
+    .total-box{
+      width:360px;
+      margin-left:auto;
+      background:#1f4ed8;
+      color:#ffffff;
+      padding:18px 20px;
+      border-radius:12px;
+      text-align:right;
+    }
+    .total-box .lbl{ font-size:14px; letter-spacing:1px; }
+    .total-box .amt{ font-size:22px; font-weight:800; }
+
+    .badge-red{ color:#b91c1c; font-weight:700; margin-top:6px; }
+
+    .total-line{ display:flex; justify-content:space-between; gap:12px; font-size:14px; margin-bottom:6px; }
+    .total-line strong{ font-weight:700; }
+    .total-line.total-final{ border-top:1px solid rgba(255,255,255,.35); margin-top:8px; padding-top:8px; font-size:18px; font-weight:800; }
+    .tax-note{ margin-top:8px; font-size:12px; color:#dbeafe; }
+
+    /* 🟨 Observaciones (amarillo suave) - debajo del TOTAL */
+    .obs-box{
+      border: 1px solid #fde68a;
+      background: #fffbeb;
+      padding: 14px 16px;
+      border-radius: 10px;
+      margin-top: 18px;
+    }
+    .obs-box .h3{
+      margin-bottom: 6px;
+      color: #92400e;
+    }
+    .obs-text{
+      font-size:14px;
+      color:#78350f;
+      white-space:pre-wrap;
+      line-height:1.35;
+    }
+
+    /* ✅ PIE DE PÁGINA (pegado abajo) */
+    .footer{
+      margin-top: 12px;            /* pequeño espacio, no “separación grande” */
+    }
+
+    .payment-box{
+      border:1px solid #dbe3f4;
+      background:#f3f5f9;
+      padding:16px 18px;
+      border-radius:10px;
+    }
+
+    /* ✅ NUEVO: distribución profesional (izq / der) */
+    .payment-grid{
+      display:flex;
+      justify-content:space-between;
+      gap:24px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+    .payment-left{
+      flex: 1 1 520px;
+      min-width: 360px;
+    }
+    .payment-right{
+      flex: 0 0 360px;
+      min-width: 320px;
+      text-align:right;
+    }
+
+    .payment-text{
+      margin:0;
+      color:#111827;
+      line-height:1.45;
+      font-size:15px;
+    }
+
+    .bank-label{
+      font-size:14px;
+      color:#374151;
+      margin:0 0 6px;
+      font-weight:700;
+    }
+
+    .bank-number{
+      font-size:28px;
+      font-weight:900;
+      letter-spacing:1.6px;
+      line-height:1.05;
+      margin:0;
+      color:#111827;
+    }
+    .bank-owner{
+      margin-top:6px;
+      font-weight:800;
+      color:#111827;
+      font-size:16px;
+    }
+
+    /* En móvil que quede uno debajo del otro bien */
+    @media (max-width: 768px){
+      .payment-left, .payment-right{
+        flex: 1 1 100%;
+        min-width: 100%;
+        text-align:left;
+      }
+      .payment-right{ margin-top:10px; }
+      .bank-number{ font-size:24px; }
+    }
+
+    .bottom-line{ height:4px; background:#1f4ed8; margin-top:12px; }
+  </style>
+</head>
+
+<body class="{% if export_mode %}export-mode{% endif %}">
+  <div class="sheet">
+    <div class="page" id="cotizacion-print" data-correlativo="{{ cotizacion.correlativo }}">
+
+      <div class="band"></div>
+
+      <!-- ✅ CONTENIDO (crece) -->
+      <div class="content">
+        <table class="header-grid">
+          <tr>
+            <td style="width:25%;">
+              {% if logo_url %}
+                <img src="{{ logo_url }}" alt="Logo {{ institucion.nombre }}" style="height:70px;" crossorigin="anonymous">
+              {% endif %}
+            </td>
+            <td style="width:45%; text-align:center;">
+              {% if institucion %}
+                <div class="institution-name">{{ institucion.nombre }}</div>
+                {% if institucion.direccion %}
+                  <div class="muted">{{ institucion.direccion }}</div>
+                {% endif %}
+              {% endif %}
+            </td>
+            <td style="width:30%;" class="header-right">
+              {% if institucion and institucion.telefono %}
+                <div>Tel: {{ institucion.telefono }}</div>
+              {% endif %}
+              <div class="no-wrap"><strong>No. {{ cotizacion.correlativo }}</strong></div>
+              <div class="no-wrap">Fecha: {{ cotizacion.fecha_emision }}</div>
+            </td>
+          </tr>
+        </table>
+
+        <div class="divider"></div>
+
+        <table class="info-grid">
+          <tr>
+            <td style="width:55%;">
+              <div class="h3">Cliente</div>
+              <div><strong>{{ cotizacion.cliente.nombre }}</strong></div>
+              {% if cotizacion.cliente.direccion %}<div>{{ cotizacion.cliente.direccion }}</div>{% endif %}
+              {% if cotizacion.cliente.telefono %}<div>Tel: {{ cotizacion.cliente.telefono }}</div>{% endif %}
+              {% if cotizacion.cliente.email %}<div>Email: {{ cotizacion.cliente.email }}</div>{% endif %}
+              {% if cotizacion.cliente.nit %}<div>NIT: {{ cotizacion.cliente.nit }}</div>{% endif %}
+            </td>
+
+            <td style="width:45%; text-align:right;">
+              <div class="h1">COTIZACIÓN</div>
+              {% if cotizacion.titulo %}
+                <div class="h2" style="margin-top:6px;">{{ cotizacion.titulo }}</div>
+              {% endif %}
+              {% if cotizacion.garantia_texto %}
+                <div class="badge-red">{{ cotizacion.garantia_texto }}</div>
+              {% endif %}
+            </td>
+          </tr>
+        </table>
+
+        <table class="items">
+          <thead>
+            <tr>
+              <th style="width:55%;">Descripción</th>
+              <th style="width:15%;" class="text-center">Cantidad</th>
+              <th style="width:15%;" class="text-right">Precio</th>
+              <th style="width:15%;" class="text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+              <tr>
+                <td>
+                  <strong>{{ item.producto_servicio.nombre }}</strong><br>
+                  {{ item.descripcion_editable|default:item.producto_servicio.descripcion }}
+                </td>
+                <td class="text-center">{{ item.cantidad }}</td>
+                <td class="text-right no-wrap">{{ item.precio_venta_unitario|money_q }}</td>
+                <td class="text-right no-wrap">{{ item.total_linea_venta|money_q }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div class="total-wrap">
+          <div class="total-box">
+            <div class="total-line"><span>Subtotal</span><strong>{{ cotizacion.subtotal|money_q }}</strong></div>
+            <div class="total-line"><span>Descuento</span><strong>- {{ cotizacion.descuento_calculado|money_q }}</strong></div>
+            <div class="total-line"><span>Base</span><strong>{{ cotizacion.base_imponible|money_q }}</strong></div>
+            {% if cotizacion.iva_activo %}
+              <div class="total-line"><span>IVA ({{ cotizacion.iva_porcentaje }}%)</span><strong>{{ cotizacion.iva_monto|money_q }}</strong></div>
+            {% endif %}
+            <div class="total-line total-final"><span>Total</span><strong>{{ cotizacion.total|money_q }}</strong></div>
+            <div class="tax-note">{{ cotizacion.iva_texto }}</div>
+          </div>
+        </div>
+
+        {% if cotizacion.observaciones %}
+          <div class="obs-box">
+            <div class="h3">Observaciones</div>
+            <div class="obs-text">{{ cotizacion.observaciones }}</div>
+          </div>
+        {% endif %}
+
+      </div>
+
+      <!-- ✅ PIE DE PÁGINA FIJO (desde “Método de pago” hacia abajo) -->
+      <div class="footer">
+        <div class="payment-box">
+          <div class="payment-grid">
+            <!-- IZQUIERDA -->
+            <div class="payment-left">
+              <div class="h3">Método de pago</div>
+              <p class="payment-text">
+                50% para confirmar el servicio y 50% entrega satisfactoria.
+              </p>
+            </div>
+
+            <!-- DERECHA -->
+            <div class="payment-right">
+              <div class="bank-label">Cuenta Banrural</div>
+              <div class="bank-number">3356033880</div>
+              <div class="bank-owner">Tecnologías de Guatemala</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <table class="footer-grid">
+          <tr>
+            <td style="width:70%;">
+              {% if institucion and institucion.pagina_web %}
+                <div><strong>Web:</strong> {{ institucion.pagina_web|strip_http }}</div>
+              {% endif %}
+            </td>
+            <td style="width:30%; text-align:right;">
+              <div class="muted">Gracias por su preferencia</div>
+            </td>
+          </tr>
+        </table>
+
+        <div class="bottom-line"></div>
+      </div>
+
+    </div>
+  </div>
+
+  {% if download_jpg %}
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="{% static 'cotizaciones_app/js/cotizacion_jpg.js' %}"></script>
+  {% endif %}
+</body>
+</html>

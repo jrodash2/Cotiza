@@ -1,0 +1,206 @@
+@page {
+  margin: 24mm 18mm;
+}
+
+body {
+  font-family: "Helvetica", "Arial", sans-serif;
+  color: #111827;
+  background: #f3f4f6;
+  margin: 0;
+}
+
+.cotizacion-page {
+  background: #ffffff;
+  padding: 32px;
+  max-width: 920px;
+  margin: 24px auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.cotizacion-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 16px;
+}
+
+.brand {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.brand-logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 22px;
+  color: #0f172a;
+}
+
+.brand p {
+  margin: 4px 0 0;
+  color: #475569;
+}
+
+.header-meta {
+  text-align: right;
+  font-size: 13px;
+  color: #334155;
+}
+
+.header-meta .label {
+  display: block;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.header-meta .value {
+  font-size: 14px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.cotizacion-info {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 0;
+}
+
+.cotizacion-info h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: #1f2937;
+}
+
+.cotizacion-title {
+  text-align: right;
+}
+
+.cotizacion-title h2 {
+  font-size: 24px;
+  margin: 0;
+  color: #1d4ed8;
+}
+
+.cotizacion-title h3 {
+  margin: 6px 0;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+.garantia {
+  margin-top: 8px;
+  font-weight: 700;
+  color: #dc2626;
+}
+
+.cotizacion-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cotizacion-table th,
+.cotizacion-table td {
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  font-size: 13px;
+}
+
+.cotizacion-table th {
+  background: #f8fafc;
+  text-align: left;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-end {
+  text-align: right;
+}
+
+.totales {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 24px;
+  align-items: center;
+}
+
+.totales-box {
+  background: #1d4ed8;
+  color: #ffffff;
+  padding: 16px 24px;
+  border-radius: 8px;
+  font-size: 18px;
+  min-width: 220px;
+  text-align: center;
+}
+
+.totales-box span {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.8;
+}
+
+.totales-info {
+  flex: 1;
+  font-size: 13px;
+  color: #334155;
+}
+
+.costos-internos {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.costos-internos h4 {
+  margin-top: 0;
+  font-size: 14px;
+}
+
+.costos-grid {
+  display: flex;
+  gap: 32px;
+  font-size: 13px;
+}
+
+.cotizacion-footer {
+  margin-top: 32px;
+  display: flex;
+  justify-content: space-between;
+  border-top: 2px solid #e5e7eb;
+  padding-top: 16px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.qr-box {
+  border: 1px dashed #cbd5f5;
+  padding: 12px 16px;
+  text-align: center;
+  min-width: 100px;
+  color: #64748b;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  .cotizacion-page {
+    box-shadow: none;
+    margin: 0;
+  }
+}

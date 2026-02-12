@@ -1,0 +1,76 @@
+{% extends 'almacen/base.html' %}
+{% load money %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+            <h5 class="mb-0 text-truncate">Ventas</h5>
+            <form class="d-flex flex-wrap gap-2" method="get">
+              <input
+                class="form-control form-control-sm"
+                type="text"
+                name="cliente"
+                placeholder="Nombre, teléfono, email o NIT"
+                value="{{ request.GET.cliente }}"
+              >
+              <button class="btn btn-outline-primary btn-sm" type="submit">Buscar</button>
+            </form>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th class="text-nowrap">ID</th>
+                  <th class="text-nowrap">Fecha</th>
+                  <th>Cliente</th>
+                  <th class="text-nowrap">Cotización</th>
+                  <th class="text-nowrap">Total</th>
+                  <th class="text-nowrap">Pagado</th>
+                  <th class="text-nowrap">Saldo</th>
+                  <th class="text-nowrap">Estado</th>
+                  <th class="text-nowrap">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for venta in ventas %}
+                  <tr>
+                    <td class="text-nowrap">{{ venta.id }}</td>
+                    <td class="text-nowrap">{{ venta.fecha_venta|date:"d/m/Y" }}</td>
+                    <td class="text-wrap-force">{{ venta.cliente.nombre }}</td>
+                    <td class="text-nowrap">{{ venta.cotizacion.correlativo }}</td>
+                    <td class="text-nowrap">{{ venta.total|money_q }}</td>
+                    <td class="text-nowrap">{{ venta.total_pagado|money_q }}</td>
+                    <td class="text-nowrap">{{ venta.saldo|money_q }}</td>
+                    <td>
+                      {% if venta.estado_pago == 'PAGADA' %}
+                        <span class="badge bg-success">Pagada</span>
+                      {% elif venta.estado_pago == 'PARCIAL' %}
+                        <span class="badge bg-warning text-dark">Parcial</span>
+                      {% else %}
+                        <span class="badge bg-secondary">Pendiente</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-nowrap">
+                      <a class="btn btn-outline-primary btn-sm" href="{% url 'cotizaciones:venta_detail' venta.pk %}">Ver</a>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="9" class="text-center">No hay ventas registradas.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
