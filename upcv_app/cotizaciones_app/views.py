@@ -336,6 +336,10 @@ def cotizacion_clone(request, pk):
             validez_dias=original.validez_dias,
             observaciones=original.observaciones,
             garantia_texto=original.garantia_texto,
+            descuento_porcentaje=original.descuento_porcentaje,
+            descuento_monto=original.descuento_monto,
+            iva_activo=original.iva_activo,
+            iva_porcentaje=original.iva_porcentaje,
             estado=Cotizacion.ESTADO_BORRADOR,
             fecha_emision=timezone.now().date(),
         )
@@ -352,31 +356,6 @@ def cotizacion_clone(request, pk):
     return redirect('cotizaciones:cotizacion_update', pk=nueva.pk)
 
 
-@login_required
-@require_POST
-def cotizacion_clone(request, pk):
-    original = get_object_or_404(Cotizacion.objects.select_related('cliente'), pk=pk)
-    with transaction.atomic():
-        nueva = Cotizacion(
-            cliente=original.cliente,
-            titulo=original.titulo,
-            validez_dias=original.validez_dias,
-            observaciones=original.observaciones,
-            garantia_texto=original.garantia_texto,
-            estado=Cotizacion.ESTADO_BORRADOR,
-            fecha_emision=timezone.now().date(),
-        )
-        nueva.save()
-        for item in original.items.select_related('producto_servicio'):
-            CotizacionItem.objects.create(
-                cotizacion=nueva,
-                producto_servicio=item.producto_servicio,
-                descripcion_editable=item.descripcion_editable,
-                cantidad=item.cantidad,
-                precio_venta_unitario=item.precio_venta_unitario,
-                precio_costo_unitario=item.precio_costo_unitario,
-            )
-    return redirect('cotizaciones:cotizacion_update', pk=nueva.pk)
 
 
 @login_required
