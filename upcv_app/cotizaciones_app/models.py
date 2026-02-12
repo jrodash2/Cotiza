@@ -7,6 +7,18 @@ from django.db.models import Max
 from django.utils import timezone
 
 
+MONEY_QUANTIZER = Decimal('0.01')
+PERCENT_QUANTIZER = Decimal('0.01')
+
+
+def quantize_money(value):
+    return (value or Decimal('0.00')).quantize(MONEY_QUANTIZER)
+
+
+def quantize_percent(value):
+    return (value or Decimal('0.00')).quantize(PERCENT_QUANTIZER)
+
+
 def add_months(date_value, months):
     if not date_value:
         return None
@@ -89,6 +101,10 @@ class Cotizacion(models.Model):
     subtotal_venta = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     subtotal_costo = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     ganancia_total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    descuento_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    descuento_monto = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    iva_activo = models.BooleanField(default=False)
+    iva_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('12.00'))
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -108,8 +124,65 @@ class Cotizacion(models.Model):
             errors['subtotal_costo'] = 'El subtotal no puede ser negativo.'
         if self.ganancia_total is not None and self.ganancia_total < 0:
             errors['ganancia_total'] = 'La ganancia no puede ser negativa.'
+        if self.descuento_porcentaje is not None:
+            if self.descuento_porcentaje < 0 or self.descuento_porcentaje > 100:
+                errors['descuento_porcentaje'] = 'El descuento porcentual debe estar entre 0 y 100.'
+        if self.descuento_monto is not None and self.descuento_monto < 0:
+            errors['descuento_monto'] = 'El descuento en monto no puede ser negativo.'
+        if self.iva_porcentaje is not None and self.iva_porcentaje < 0:
+            errors['iva_porcentaje'] = 'El porcentaje de IVA no puede ser negativo.'
+        if (self.descuento_porcentaje or Decimal('0.00')) > 0 and (self.descuento_monto or Decimal('0.00')) > 0:
+            errors['descuento_monto'] = 'Usa descuento en porcentaje o en monto, no ambos a la vez.'
         if errors:
             raise ValidationError(errors)
+
+    @property
+    def subtotal(self):
+        return quantize_money(self.subtotal_venta)
+
+    @property
+    def descuento_calculado(self):
+        subtotal = self.subtotal
+        descuento_monto = quantize_money(self.descuento_monto)
+        if descuento_monto > 0:
+            return min(descuento_monto, subtotal)
+        porcentaje = quantize_percent(self.descuento_porcentaje)
+        if porcentaje <= 0 or subtotal <= 0:
+            return Decimal('0.00')
+        descuento = quantize_money(subtotal * (porcentaje / Decimal('100')))
+        return min(descuento, subtotal)
+
+    @property
+    def base_imponible(self):
+        base = self.subtotal - self.descuento_calculado
+        if base < 0:
+            return Decimal('0.00')
+        return quantize_money(base)
+
+    @property
+    def iva_monto(self):
+        if not self.iva_activo:
+            return Decimal('0.00')
+        base = self.base_imponible
+        if base <= 0:
+            return Decimal('0.00')
+        porcentaje = quantize_percent(self.iva_porcentaje)
+        if porcentaje <= 0:
+            return Decimal('0.00')
+        return quantize_money(base * (porcentaje / Decimal('100')))
+
+    @property
+    def total(self):
+        base = self.base_imponible
+        if not self.iva_activo:
+            return base
+        return quantize_money(base + self.iva_monto)
+
+    @property
+    def iva_texto(self):
+        if self.iva_activo:
+            return 'Precios con IVA incluido.'
+        return 'Precios no incluyen IVA.'
 
     def _generar_correlativo(self) -> str:
         with transaction.atomic():
@@ -121,6 +194,9 @@ class Cotizacion(models.Model):
     def save(self, *args, **kwargs):
         if not self.correlativo:
             self.correlativo = self._generar_correlativo()
+        self.descuento_porcentaje = quantize_percent(self.descuento_porcentaje)
+        self.descuento_monto = quantize_money(self.descuento_monto)
+        self.iva_porcentaje = quantize_percent(self.iva_porcentaje)
         super().save(*args, **kwargs)
 
     def actualizar_totales(self) -> None:
@@ -213,7 +289,7 @@ class Venta(models.Model):
 
     @property
     def total(self):
-        return self.cotizacion.subtotal_venta or Decimal('0.00')
+        return self.cotizacion.total or Decimal('0.00')
 
     @property
     def total_pagado(self):

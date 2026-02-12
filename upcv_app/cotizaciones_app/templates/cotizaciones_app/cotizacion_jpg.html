@@ -124,6 +124,11 @@
 
     .badge-red{ color:#b91c1c; font-weight:700; margin-top:6px; }
 
+    .total-line{ display:flex; justify-content:space-between; gap:12px; font-size:14px; margin-bottom:6px; }
+    .total-line strong{ font-weight:700; }
+    .total-line.total-final{ border-top:1px solid rgba(255,255,255,.35); margin-top:8px; padding-top:8px; font-size:18px; font-weight:800; }
+    .tax-note{ margin-top:8px; font-size:12px; color:#dbeafe; }
+
     /* 🟨 Observaciones (amarillo suave) - debajo del TOTAL */
     .obs-box{
       border: 1px solid #fde68a;
@@ -301,8 +306,14 @@
 
         <div class="total-wrap">
           <div class="total-box">
-            <div class="lbl">TOTAL</div>
-            <div class="amt">{{ cotizacion.subtotal_venta|money_q }}</div>
+            <div class="total-line"><span>Subtotal</span><strong>{{ cotizacion.subtotal|money_q }}</strong></div>
+            <div class="total-line"><span>Descuento</span><strong>- {{ cotizacion.descuento_calculado|money_q }}</strong></div>
+            <div class="total-line"><span>Base</span><strong>{{ cotizacion.base_imponible|money_q }}</strong></div>
+            {% if cotizacion.iva_activo %}
+              <div class="total-line"><span>IVA ({{ cotizacion.iva_porcentaje }}%)</span><strong>{{ cotizacion.iva_monto|money_q }}</strong></div>
+            {% endif %}
+            <div class="total-line total-final"><span>Total</span><strong>{{ cotizacion.total|money_q }}</strong></div>
+            <div class="tax-note">{{ cotizacion.iva_texto }}</div>
           </div>
         </div>
 

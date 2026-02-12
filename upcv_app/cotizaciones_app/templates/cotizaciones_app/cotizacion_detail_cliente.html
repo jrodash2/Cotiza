@@ -91,8 +91,14 @@
           <div class="row justify-content-end">
             <div class="col-md-4">
               <div class="border rounded p-3 bg-light">
-                <p class="mb-1"><strong>Subtotal:</strong> {{ cotizacion.subtotal_venta|money_q }}</p>
-                <p class="mb-0"><strong>Total:</strong> {{ cotizacion.subtotal_venta|money_q }}</p>
+                <p class="mb-1 d-flex justify-content-between"><strong>Subtotal:</strong><span>{{ cotizacion.subtotal|money_q }}</span></p>
+                <p class="mb-1 d-flex justify-content-between"><strong>Descuento:</strong><span>- {{ cotizacion.descuento_calculado|money_q }}</span></p>
+                <p class="mb-1 d-flex justify-content-between"><strong>Base:</strong><span>{{ cotizacion.base_imponible|money_q }}</span></p>
+                {% if cotizacion.iva_activo %}
+                  <p class="mb-1 d-flex justify-content-between"><strong>IVA ({{ cotizacion.iva_porcentaje }}%):</strong><span>{{ cotizacion.iva_monto|money_q }}</span></p>
+                {% endif %}
+                <p class="mb-1 d-flex justify-content-between"><strong>Total:</strong><span>{{ cotizacion.total|money_q }}</span></p>
+                <small class="text-muted">{{ cotizacion.iva_texto }}</small>
               </div>
             </div>
           </div>
