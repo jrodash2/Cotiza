@@ -152,3 +152,37 @@ class CotizacionCreateTests(TestCase):
         self.assertEqual(CotizacionItem.objects.count(), 1)
         item = CotizacionItem.objects.first()
         self.assertEqual(item.precio_venta_unitario, self.producto.precio_venta)
+
+
+class CotizacionCalculoTotalesTests(TestCase):
+    def setUp(self):
+        self.cliente = Cliente.objects.create(nombre='Cliente Totales')
+
+    def test_descuento_porcentaje_e_iva_activo(self):
+        cotizacion = Cotizacion.objects.create(
+            cliente=self.cliente,
+            descuento_porcentaje=Decimal('10.00'),
+            iva_activo=True,
+            iva_porcentaje=Decimal('12.00'),
+        )
+        cotizacion.subtotal_venta = Decimal('100.00')
+
+        self.assertEqual(cotizacion.descuento_calculado, Decimal('10.00'))
+        self.assertEqual(cotizacion.base_imponible, Decimal('90.00'))
+        self.assertEqual(cotizacion.iva_monto, Decimal('10.80'))
+        self.assertEqual(cotizacion.total, Decimal('100.80'))
+
+    def test_descuento_monto_superior_normaliza_base_a_cero(self):
+        cotizacion = Cotizacion.objects.create(
+            cliente=self.cliente,
+            descuento_monto=Decimal('80.00'),
+            iva_activo=True,
+            iva_porcentaje=Decimal('12.00'),
+        )
+        cotizacion.subtotal_venta = Decimal('50.00')
+
+        self.assertEqual(cotizacion.descuento_calculado, Decimal('50.00'))
+        self.assertEqual(cotizacion.base_imponible, Decimal('0.00'))
+        self.assertEqual(cotizacion.iva_monto, Decimal('0.00'))
+        self.assertEqual(cotizacion.total, Decimal('0.00'))
+
