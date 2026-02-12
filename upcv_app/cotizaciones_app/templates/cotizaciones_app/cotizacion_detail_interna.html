@@ -93,11 +93,19 @@
           <div class="row justify-content-end">
             <div class="col-md-4">
               <div class="border rounded p-3 bg-light">
-                <p class="mb-1"><strong>Subtotal:</strong> {{ cotizacion.subtotal_venta|money_q }}</p>
-                {% if show_costs %}
-                  <p class="mb-1"><strong>Subtotal costo:</strong> {{ cotizacion.subtotal_costo|money_q }}</p>
-                  <p class="mb-0"><strong>Ganancia total:</strong> {{ cotizacion.ganancia_total|money_q }}</p>
+                <p class="mb-1 d-flex justify-content-between"><strong>Subtotal:</strong><span>{{ cotizacion.subtotal|money_q }}</span></p>
+                <p class="mb-1 d-flex justify-content-between"><strong>Descuento:</strong><span>- {{ cotizacion.descuento_calculado|money_q }}</span></p>
+                <p class="mb-1 d-flex justify-content-between"><strong>Base:</strong><span>{{ cotizacion.base_imponible|money_q }}</span></p>
+                {% if cotizacion.iva_activo %}
+                  <p class="mb-1 d-flex justify-content-between"><strong>IVA ({{ cotizacion.iva_porcentaje }}%):</strong><span>{{ cotizacion.iva_monto|money_q }}</span></p>
                 {% endif %}
+                <p class="mb-1 d-flex justify-content-between"><strong>Total:</strong><span>{{ cotizacion.total|money_q }}</span></p>
+                {% if show_costs %}
+                  <hr class="my-2">
+                  <p class="mb-1 d-flex justify-content-between"><strong>Subtotal costo:</strong><span>{{ cotizacion.subtotal_costo|money_q }}</span></p>
+                  <p class="mb-1 d-flex justify-content-between"><strong>Ganancia total:</strong><span>{{ cotizacion.ganancia_total|money_q }}</span></p>
+                {% endif %}
+                <small class="text-muted">{{ cotizacion.iva_texto }}</small>
               </div>
             </div>
           </div>
