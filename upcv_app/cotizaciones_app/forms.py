@@ -31,6 +31,11 @@ class ClienteForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.fields['descuento_porcentaje'].help_text = 'Ingresa porcentaje entre 0 y 100.'
+        self.fields['descuento_monto'].help_text = 'Ingresa monto fijo de descuento en Q.'
+        self.fields['iva_activo'].help_text = 'Activa para aplicar IVA al total.'
+        self.fields['iva_porcentaje'].help_text = 'Porcentaje de IVA editable.'
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs['class'] = 'form-check-input'
@@ -87,12 +92,19 @@ class CotizacionForm(forms.ModelForm):
             'cliente',
             'titulo',
             'validez_dias',
+            'descuento_porcentaje',
+            'descuento_monto',
+            'iva_activo',
+            'iva_porcentaje',
             'observaciones',
             'garantia_texto',
             'estado',
         ]
         widgets = {
             'fecha_emision': forms.DateInput(attrs={'type': 'date'}),
+            'descuento_porcentaje': forms.NumberInput(attrs={'min': '0', 'max': '100', 'step': '0.01'}),
+            'descuento_monto': forms.NumberInput(attrs={'min': '0', 'step': '0.01'}),
+            'iva_porcentaje': forms.NumberInput(attrs={'min': '0', 'step': '0.01'}),
             'observaciones': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
             'garantia_texto': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
         }
@@ -102,6 +114,14 @@ class CotizacionForm(forms.ModelForm):
         if not self.instance.pk and 'fecha_emision' in self.fields:
             self.fields['fecha_emision'].initial = timezone.now().date()
             self.fields['fecha_emision'].required = False
+        if 'descuento_porcentaje' in self.fields:
+            self.fields['descuento_porcentaje'].help_text = 'Ingresa porcentaje entre 0 y 100.'
+        if 'descuento_monto' in self.fields:
+            self.fields['descuento_monto'].help_text = 'Ingresa monto fijo de descuento en Q.'
+        if 'iva_activo' in self.fields:
+            self.fields['iva_activo'].help_text = 'Activa para aplicar IVA al total.'
+        if 'iva_porcentaje' in self.fields:
+            self.fields['iva_porcentaje'].help_text = 'Porcentaje de IVA editable.'
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs['class'] = 'form-check-input'
@@ -110,6 +130,28 @@ class CotizacionForm(forms.ModelForm):
             else:
                 existing_class = field.widget.attrs.get('class', '')
                 field.widget.attrs['class'] = f'{existing_class} form-control'.strip()
+
+
+    def clean(self):
+        cleaned_data = super().clean()
+        descuento_porcentaje = cleaned_data.get('descuento_porcentaje')
+        descuento_monto = cleaned_data.get('descuento_monto')
+
+        if descuento_porcentaje is not None and (descuento_porcentaje < 0 or descuento_porcentaje > 100):
+            self.add_error('descuento_porcentaje', 'El descuento porcentual debe estar entre 0 y 100.')
+
+        if descuento_monto is not None and descuento_monto < 0:
+            self.add_error('descuento_monto', 'El descuento en monto no puede ser negativo.')
+
+        if (descuento_porcentaje or 0) > 0 and (descuento_monto or 0) > 0:
+            self.add_error('descuento_monto', 'Usa descuento en porcentaje o en monto, no ambos a la vez.')
+
+        iva_porcentaje = cleaned_data.get('iva_porcentaje')
+        if iva_porcentaje is not None and iva_porcentaje < 0:
+            self.add_error('iva_porcentaje', 'El porcentaje de IVA no puede ser negativo.')
+
+        return cleaned_data
+
 
 
 class CotizacionItemForm(forms.ModelForm):

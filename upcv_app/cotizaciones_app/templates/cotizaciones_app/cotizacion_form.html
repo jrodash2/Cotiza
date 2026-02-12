@@ -47,6 +47,33 @@
                     {{ form.validez_dias }}
                     {{ form.validez_dias.errors }}
                   </div>
+                  <div class="col-12 col-md-3">
+                    <label class="form-label">Descuento (%)</label>
+                    {{ form.descuento_porcentaje }}
+                    {% if form.descuento_porcentaje.help_text %}<small class="form-text text-muted">{{ form.descuento_porcentaje.help_text }}</small>{% endif %}
+                    {{ form.descuento_porcentaje.errors }}
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <label class="form-label">Descuento (monto)</label>
+                    {{ form.descuento_monto }}
+                    {% if form.descuento_monto.help_text %}<small class="form-text text-muted">{{ form.descuento_monto.help_text }}</small>{% endif %}
+                    {{ form.descuento_monto.errors }}
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <label class="form-label">IVA (%)</label>
+                    {{ form.iva_porcentaje }}
+                    {% if form.iva_porcentaje.help_text %}<small class="form-text text-muted">{{ form.iva_porcentaje.help_text }}</small>{% endif %}
+                    {{ form.iva_porcentaje.errors }}
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <label class="form-label d-block">Aplicar IVA</label>
+                    <div class="form-check form-switch">
+                      {{ form.iva_activo }}
+                      <label class="form-check-label" for="{{ form.iva_activo.id_for_label }}">Activo</label>
+                    </div>
+                    {% if form.iva_activo.help_text %}<small class="form-text text-muted">{{ form.iva_activo.help_text }}</small>{% endif %}
+                    {{ form.iva_activo.errors }}
+                  </div>
                   <div class="col-12 col-md-9">
                     <label class="form-label">Garantía</label>
                     {{ form.garantia_texto }}
