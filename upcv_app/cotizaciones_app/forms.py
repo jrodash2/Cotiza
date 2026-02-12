@@ -1,13 +1,13 @@
 from django import forms
-from django.utils import timezone
 from django.forms import BaseInlineFormSet, inlineformset_factory
+from django.utils import timezone
 
 from .models import (
     Cliente,
-    ProductoServicio,
     Cotizacion,
     CotizacionItem,
     PagoVenta,
+    ProductoServicio,
 )
 
 
@@ -44,6 +44,13 @@ class ClienteForm(forms.ModelForm):
             else:
                 field.widget.attrs['class'] = 'form-control'
 
+        if 'descuento_porcentaje' in self.fields:
+            self.fields['descuento_porcentaje'].widget.attrs.update({'class': 'form-control'})
+        if 'iva_incluido' in self.fields:
+            self.fields['iva_incluido'].widget.attrs.update({'class': 'form-control'})
+        if 'iva_porcentaje' in self.fields:
+            self.fields['iva_porcentaje'].widget.attrs.update({'class': 'form-control'})
+
 
 class ProductoServicioForm(forms.ModelForm):
     class Meta:
@@ -70,6 +77,13 @@ class ProductoServicioForm(forms.ModelForm):
                 field.widget.attrs['class'] = 'form-select'
             else:
                 field.widget.attrs['class'] = 'form-control'
+
+        if 'descuento_porcentaje' in self.fields:
+            self.fields['descuento_porcentaje'].widget.attrs.update({'class': 'form-control'})
+        if 'iva_incluido' in self.fields:
+            self.fields['iva_incluido'].widget.attrs.update({'class': 'form-control'})
+        if 'iva_porcentaje' in self.fields:
+            self.fields['iva_porcentaje'].widget.attrs.update({'class': 'form-control'})
 
     def clean_precio_costo(self):
         precio_costo = self.cleaned_data.get('precio_costo')
@@ -114,14 +128,20 @@ class CotizacionForm(forms.ModelForm):
         if not self.instance.pk and 'fecha_emision' in self.fields:
             self.fields['fecha_emision'].initial = timezone.now().date()
             self.fields['fecha_emision'].required = False
+
         if 'descuento_porcentaje' in self.fields:
             self.fields['descuento_porcentaje'].help_text = 'Ingresa porcentaje entre 0 y 100.'
+            self.fields['descuento_porcentaje'].widget.attrs.update({'class': 'form-control'})
         if 'descuento_monto' in self.fields:
             self.fields['descuento_monto'].help_text = 'Ingresa monto fijo de descuento en Q.'
         if 'iva_activo' in self.fields:
             self.fields['iva_activo'].help_text = 'Activa para aplicar IVA al total.'
+        if 'iva_incluido' in self.fields:
+            self.fields['iva_incluido'].widget.attrs.update({'class': 'form-control'})
         if 'iva_porcentaje' in self.fields:
             self.fields['iva_porcentaje'].help_text = 'Porcentaje de IVA editable.'
+            self.fields['iva_porcentaje'].widget.attrs.update({'class': 'form-control'})
+
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs['class'] = 'form-check-input'
@@ -130,6 +150,26 @@ class CotizacionForm(forms.ModelForm):
             else:
                 existing_class = field.widget.attrs.get('class', '')
                 field.widget.attrs['class'] = f'{existing_class} form-control'.strip()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        descuento_porcentaje = cleaned_data.get('descuento_porcentaje')
+        descuento_monto = cleaned_data.get('descuento_monto')
+
+        if descuento_porcentaje is not None and (descuento_porcentaje < 0 or descuento_porcentaje > 100):
+            self.add_error('descuento_porcentaje', 'El descuento porcentual debe estar entre 0 y 100.')
+
+        if descuento_monto is not None and descuento_monto < 0:
+            self.add_error('descuento_monto', 'El descuento en monto no puede ser negativo.')
+
+        if (descuento_porcentaje or 0) > 0 and (descuento_monto or 0) > 0:
+            self.add_error('descuento_monto', 'Usa descuento en porcentaje o en monto, no ambos a la vez.')
+
+        iva_porcentaje = cleaned_data.get('iva_porcentaje')
+        if iva_porcentaje is not None and iva_porcentaje < 0:
+            self.add_error('iva_porcentaje', 'El porcentaje de IVA no puede ser negativo.')
+
+        return cleaned_data
 
 
     def clean(self):
@@ -174,6 +214,13 @@ class CotizacionItemForm(forms.ModelForm):
                 existing_class = field.widget.attrs.get('class', '')
                 field.widget.attrs['class'] = f'{existing_class} form-control'.strip()
 
+        if 'descuento_porcentaje' in self.fields:
+            self.fields['descuento_porcentaje'].widget.attrs.update({'class': 'form-control'})
+        if 'iva_incluido' in self.fields:
+            self.fields['iva_incluido'].widget.attrs.update({'class': 'form-control'})
+        if 'iva_porcentaje' in self.fields:
+            self.fields['iva_porcentaje'].widget.attrs.update({'class': 'form-control'})
+
     def clean_cantidad(self):
         cantidad = self.cleaned_data.get('cantidad')
         if cantidad is not None and cantidad <= 0:
@@ -197,16 +244,16 @@ class CotizacionItemInlineFormSet(BaseInlineFormSet):
         super().clean()
         items_validos = 0
         for form in self.forms:
-            if not hasattr(form, "cleaned_data"):
+            if not hasattr(form, 'cleaned_data'):
                 continue
-            if form.cleaned_data.get("DELETE"):
+            if form.cleaned_data.get('DELETE'):
                 continue
-            producto = form.cleaned_data.get("producto_servicio")
-            cantidad = form.cleaned_data.get("cantidad")
+            producto = form.cleaned_data.get('producto_servicio')
+            cantidad = form.cleaned_data.get('cantidad')
             if producto and cantidad:
                 items_validos += 1
         if items_validos == 0:
-            raise forms.ValidationError("Debes agregar al menos un ítem a la cotización.")
+            raise forms.ValidationError('Debes agregar al menos un ítem a la cotización.')
 
 
 CotizacionItemFormSet = inlineformset_factory(
@@ -247,6 +294,13 @@ class PagoVentaForm(forms.ModelForm):
             else:
                 existing_class = field.widget.attrs.get('class', '')
                 field.widget.attrs['class'] = f'{existing_class} form-control'.strip()
+
+        if 'descuento_porcentaje' in self.fields:
+            self.fields['descuento_porcentaje'].widget.attrs.update({'class': 'form-control'})
+        if 'iva_incluido' in self.fields:
+            self.fields['iva_incluido'].widget.attrs.update({'class': 'form-control'})
+        if 'iva_porcentaje' in self.fields:
+            self.fields['iva_porcentaje'].widget.attrs.update({'class': 'form-control'})
 
     def clean_monto(self):
         monto = self.cleaned_data.get('monto')
