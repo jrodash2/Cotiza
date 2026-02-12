@@ -131,7 +131,9 @@ class CotizacionForm(forms.ModelForm):
 
         if 'descuento_porcentaje' in self.fields:
             self.fields['descuento_porcentaje'].help_text = 'Ingresa porcentaje entre 0 y 100.'
-            self.fields['descuento_porcentaje'].widget.attrs.update({'class': 'form-control'})
+            self.fields['descuento_porcentaje'].widget.attrs.update(
+                {'class': 'form-control', 'min': '0', 'max': '100', 'step': '0.01'}
+            )
         if 'descuento_monto' in self.fields:
             self.fields['descuento_monto'].help_text = 'Ingresa monto fijo de descuento en Q.'
         if 'iva_activo' in self.fields:
@@ -140,7 +142,9 @@ class CotizacionForm(forms.ModelForm):
             self.fields['iva_incluido'].widget.attrs.update({'class': 'form-control'})
         if 'iva_porcentaje' in self.fields:
             self.fields['iva_porcentaje'].help_text = 'Porcentaje de IVA editable.'
-            self.fields['iva_porcentaje'].widget.attrs.update({'class': 'form-control'})
+            self.fields['iva_porcentaje'].widget.attrs.update(
+                {'class': 'form-control', 'min': '0', 'step': '0.01'}
+            )
 
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
@@ -170,28 +174,6 @@ class CotizacionForm(forms.ModelForm):
             self.add_error('iva_porcentaje', 'El porcentaje de IVA no puede ser negativo.')
 
         return cleaned_data
-
-
-    def clean(self):
-        cleaned_data = super().clean()
-        descuento_porcentaje = cleaned_data.get('descuento_porcentaje')
-        descuento_monto = cleaned_data.get('descuento_monto')
-
-        if descuento_porcentaje is not None and (descuento_porcentaje < 0 or descuento_porcentaje > 100):
-            self.add_error('descuento_porcentaje', 'El descuento porcentual debe estar entre 0 y 100.')
-
-        if descuento_monto is not None and descuento_monto < 0:
-            self.add_error('descuento_monto', 'El descuento en monto no puede ser negativo.')
-
-        if (descuento_porcentaje or 0) > 0 and (descuento_monto or 0) > 0:
-            self.add_error('descuento_monto', 'Usa descuento en porcentaje o en monto, no ambos a la vez.')
-
-        iva_porcentaje = cleaned_data.get('iva_porcentaje')
-        if iva_porcentaje is not None and iva_porcentaje < 0:
-            self.add_error('iva_porcentaje', 'El porcentaje de IVA no puede ser negativo.')
-
-        return cleaned_data
-
 
 
 class CotizacionItemForm(forms.ModelForm):
