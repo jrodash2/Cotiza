@@ -138,8 +138,6 @@ class CotizacionForm(forms.ModelForm):
             self.fields['descuento_monto'].help_text = 'Ingresa monto fijo de descuento en Q.'
         if 'iva_activo' in self.fields:
             self.fields['iva_activo'].help_text = 'Activa para aplicar IVA al total.'
-        if 'iva_incluido' in self.fields:
-            self.fields['iva_incluido'].widget.attrs.update({'class': 'form-control'})
         if 'iva_porcentaje' in self.fields:
             self.fields['iva_porcentaje'].help_text = 'Porcentaje de IVA editable.'
             self.fields['iva_porcentaje'].widget.attrs.update(
