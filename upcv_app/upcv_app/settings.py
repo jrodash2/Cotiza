@@ -38,10 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-     'django.contrib.humanize',
+    
     'almacen_app.apps.AlmacenAppConfig',  # ✅ solo esta línea
     'cotizaciones_app.apps.CotizacionesAppConfig',
-    'ventas_app.apps.VentasAppConfig',
 ]
 
 

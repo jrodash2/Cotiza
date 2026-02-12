@@ -121,9 +121,6 @@
     }
     .total-box .lbl{ font-size:14px; letter-spacing:1px; }
     .total-box .amt{ font-size:22px; font-weight:800; }
-    .total-box .line{ display:flex; justify-content:space-between; gap:8px; font-size:14px; margin-bottom:4px; }
-    .iva-note{ margin-top:10px; font-size:13px; font-style:italic; color:#0f172a; background:#e2e8f0; padding:6px 8px; border-radius:8px; text-align:left; display:block; opacity:1; visibility:visible; }
-    #texto-iva-legal{ position:relative; z-index:3; }
 
     .badge-red{ color:#b91c1c; font-weight:700; margin-top:6px; }
 
@@ -304,17 +301,8 @@
 
         <div class="total-wrap">
           <div class="total-box">
-            <div class="line"><span>Subtotal</span><span>{{ cotizacion.subtotal|money_q }}</span></div>
-            <div class="line"><span>Descuento</span><span>{{ cotizacion.total_descuento|money_q }}</span></div>
-            <div class="line"><span>Base imponible</span><span>{{ cotizacion.base_imponible|money_q }}</span></div>
-            <div class="line"><span>IVA ({{ cotizacion.iva_porcentaje }}%)</span><span>{{ cotizacion.total_iva|money_q }}</span></div>
             <div class="lbl">TOTAL</div>
-            <div class="amt">{{ cotizacion.total|money_q }}</div>
-            {% if cotizacion.precios_sin_iva %}
-            <div id="texto-iva-legal" class="iva-note">Precios no incluyen IVA.</div>
-            {% else %}
-            <div id="texto-iva-legal" class="iva-note">Precios con IVA incluido.</div>
-            {% endif %}
+            <div class="amt">{{ cotizacion.subtotal_venta|money_q }}</div>
           </div>
         </div>
 

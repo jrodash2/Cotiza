@@ -20,7 +20,6 @@ from .forms import (
     PagoVentaForm,
 )
 from .models import Cliente, ProductoServicio, Cotizacion, CotizacionItem, Venta, PagoVenta
-from ventas_app.models import Articulo, Servicio, Venta as VentaDirecta
 
 
 class ClienteListView(LoginRequiredMixin, ListView):
@@ -193,7 +192,6 @@ class CotizacionCreateView(LoginRequiredMixin, CreateView):
         with transaction.atomic():
             cotizacion = form.save(commit=False)
             cotizacion.fecha_emision = timezone.now().date()
-            cotizacion.precios_sin_iva = form.cleaned_data.get('precios_sin_iva', True)
             cotizacion.save()
 
             formset.instance = cotizacion
@@ -208,8 +206,6 @@ class CotizacionCreateView(LoginRequiredMixin, CreateView):
             if hasattr(formset, 'deleted_objects'):
                 for item in formset.deleted_objects:
                     item.delete()
-
-            cotizacion.recalcular_totales(save=True)
 
         messages.success(self.request, 'Cotización creada correctamente.')
         return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
@@ -264,7 +260,6 @@ class CotizacionUpdateView(LoginRequiredMixin, UpdateView):
         with transaction.atomic():
             cotizacion = form.save(commit=False)
             cotizacion.fecha_emision = timezone.now().date()
-            cotizacion.precios_sin_iva = form.cleaned_data.get('precios_sin_iva', True)
             cotizacion.save()
             for item_form in formset.forms:
                 if not item_form.cleaned_data:
@@ -279,8 +274,6 @@ class CotizacionUpdateView(LoginRequiredMixin, UpdateView):
                 if not item.descripcion_editable:
                     item.descripcion_editable = item.producto_servicio.descripcion
                 item.save()
-
-            cotizacion.recalcular_totales(save=True)
         messages.success(self.request, 'Cotización actualizada correctamente.')
         return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
 
@@ -388,59 +381,18 @@ def cotizacion_clone(request, pk):
 
 @login_required
 @require_POST
-@transaction.atomic
 def convertir_cotizacion_venta(request, pk):
-    cotizacion = get_object_or_404(
-        Cotizacion.objects.select_related('cliente').prefetch_related('items__producto_servicio'),
-        pk=pk,
-    )
+    cotizacion = get_object_or_404(Cotizacion.objects.select_related('cliente'), pk=pk)
     if cotizacion.estado not in {Cotizacion.ESTADO_BORRADOR, Cotizacion.ESTADO_EMITIDA}:
         messages.error(request, 'La cotización no puede convertirse a venta en su estado actual.')
         return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
-
-    venta, created = VentaDirecta.objects.get_or_create(
-        origen_cotizacion=cotizacion,
-        defaults={
-            'cliente': cotizacion.cliente,
-            'usuario': request.user,
-            'estado': VentaDirecta.ESTADO_BORRADOR,
-        },
+    venta, created = Venta.objects.get_or_create(
+        cotizacion=cotizacion,
+        defaults={'cliente': cotizacion.cliente, 'fecha_venta': timezone.now().date()},
     )
-
     if created:
-        for item in cotizacion.items.select_related('producto_servicio'):
-            if item.producto_servicio.tipo == item.producto_servicio.TIPO_SERVICIO:
-                servicio, _ = Servicio.objects.get_or_create(
-                    codigo=f'SRV-COT-{item.producto_servicio_id}',
-                    defaults={
-                        'nombre': item.producto_servicio.nombre,
-                        'descripcion': item.descripcion_editable or item.producto_servicio.descripcion,
-                        'precio_venta': item.precio_venta_unitario,
-                        'activo': True,
-                    },
-                )
-                venta.detalles_servicios.create(
-                    servicio=servicio,
-                    cantidad=item.cantidad,
-                    precio_unitario=item.precio_venta_unitario,
-                )
-            else:
-                articulo = Articulo.objects.filter(nombre=item.producto_servicio.nombre, activo=True).first()
-                if articulo:
-                    venta.detalles_articulos.create(
-                        articulo=articulo,
-                        cantidad=item.cantidad,
-                        precio_unitario=item.precio_venta_unitario,
-                    )
-                else:
-                    messages.warning(
-                        request,
-                        f'El producto {item.producto_servicio.nombre} no se agregó automáticamente por no existir como artículo de inventario.',
-                    )
-        venta.actualizar_total()
         messages.success(request, 'Cotización convertida a venta correctamente.')
-
-    return redirect('ventas:detalle_venta', id=venta.pk)
+    return redirect('cotizaciones:venta_detail', pk=venta.pk)
 
 
 @login_required

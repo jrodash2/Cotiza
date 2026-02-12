@@ -89,14 +89,6 @@ class Cotizacion(models.Model):
     subtotal_venta = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     subtotal_costo = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     ganancia_total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
-    descuento_monto = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), blank=True, null=True)
-    descuento_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), blank=True, null=True)
-    iva_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('12.00'), blank=True, null=True)
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), blank=True, null=True)
-    total_descuento = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), blank=True, null=True)
-    total_iva = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), blank=True, null=True)
-    total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), blank=True, null=True)
-    precios_sin_iva = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -116,20 +108,8 @@ class Cotizacion(models.Model):
             errors['subtotal_costo'] = 'El subtotal no puede ser negativo.'
         if self.ganancia_total is not None and self.ganancia_total < 0:
             errors['ganancia_total'] = 'La ganancia no puede ser negativa.'
-        if self.descuento_monto is not None and self.descuento_monto < 0:
-            errors['descuento_monto'] = 'El descuento fijo no puede ser negativo.'
-        if self.descuento_porcentaje is not None and self.descuento_porcentaje < 0:
-            errors['descuento_porcentaje'] = 'El descuento porcentual no puede ser negativo.'
-        if self.iva_porcentaje is not None and self.iva_porcentaje < 0:
-            errors['iva_porcentaje'] = 'El IVA no puede ser negativo.'
         if errors:
             raise ValidationError(errors)
-
-
-    @property
-    def base_imponible(self):
-        base = (self.subtotal or Decimal('0.00')) - (self.total_descuento or Decimal('0.00'))
-        return base if base > Decimal('0.00') else Decimal('0.00')
 
     def _generar_correlativo(self) -> str:
         with transaction.atomic():
@@ -144,55 +124,15 @@ class Cotizacion(models.Model):
         super().save(*args, **kwargs)
 
     def actualizar_totales(self) -> None:
-        self.recalcular_totales(save=True)
-
-    def recalcular_totales(self, save=False) -> None:
         totales = self.items.aggregate(
             total_venta=models.Sum('total_linea_venta'),
             total_costo=models.Sum('total_linea_costo'),
             total_ganancia=models.Sum('ganancia_linea'),
         )
-        decimal_cero = Decimal('0.00')
-        porcentaje_cien = Decimal('100.00')
-        subtotal_items = totales['total_venta'] or decimal_cero
-
-        self.subtotal_venta = subtotal_items
-        self.subtotal_costo = totales['total_costo'] or decimal_cero
-        self.ganancia_total = totales['total_ganancia'] or decimal_cero
-        self.subtotal = subtotal_items
-
-        descuento_porcentaje = self.descuento_porcentaje or decimal_cero
-        descuento_monto = self.descuento_monto or decimal_cero
-        iva_porcentaje = self.iva_porcentaje or decimal_cero
-
-        if descuento_porcentaje > decimal_cero:
-            self.total_descuento = subtotal_items * (descuento_porcentaje / porcentaje_cien)
-        else:
-            self.total_descuento = descuento_monto
-
-        base_imponible = subtotal_items - self.total_descuento
-        if base_imponible < decimal_cero:
-            base_imponible = decimal_cero
-
-        if self.precios_sin_iva:
-            self.total_iva = base_imponible * (iva_porcentaje / porcentaje_cien)
-        else:
-            self.total_iva = decimal_cero
-
-        self.total = base_imponible + self.total_iva
-
-        if save:
-            self.save(
-                update_fields=[
-                    'subtotal_venta',
-                    'subtotal_costo',
-                    'ganancia_total',
-                    'subtotal',
-                    'total_descuento',
-                    'total_iva',
-                    'total',
-                ]
-            )
+        self.subtotal_venta = totales['total_venta'] or Decimal('0.00')
+        self.subtotal_costo = totales['total_costo'] or Decimal('0.00')
+        self.ganancia_total = totales['total_ganancia'] or Decimal('0.00')
+        self.save(update_fields=['subtotal_venta', 'subtotal_costo', 'ganancia_total'])
 
 
 class CotizacionItem(models.Model):

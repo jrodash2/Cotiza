@@ -6,10 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const width = 1275;
   const height = 1650;
-  const textoIva = document.querySelector('#texto-iva-legal');
-  console.log('texto legal IVA antes de exportar:', textoIva?.innerText || '(no encontrado)');
-
-  const capturar = () => window.html2canvas(target, {
+  window.html2canvas(target, {
     scale: 3,
     useCORS: true,
     width,
@@ -23,9 +20,5 @@ document.addEventListener('DOMContentLoaded', () => {
     link.download = `cotizacion_${correlativo}.jpg`;
     link.href = canvas.toDataURL('image/jpeg', 0.95);
     link.click();
-  });
-
-  window.requestAnimationFrame(() => {
-    setTimeout(capturar, 80);
   });
 });

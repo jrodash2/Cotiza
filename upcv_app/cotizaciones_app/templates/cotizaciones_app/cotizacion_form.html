@@ -148,68 +148,6 @@
                     </td>
                   </tr>
                 </template>
-
-                <div class="row justify-content-end mt-3" id="cotizacion-resumen-block">
-                  <div class="col-12 col-lg-5">
-                    <div class="border rounded p-3 bg-light">
-                      <h6 class="mb-3">Resumen</h6>
-                      <div class="mb-2 d-flex justify-content-between">
-                        <span>Subtotal</span>
-                        <strong id="resumen-subtotal">{{ cotizacion.subtotal|default:form.instance.subtotal|money_q }}</strong>
-                      </div>
-                      <div class="row g-2 align-items-end mb-2">
-                        <div class="col-6">
-                          <label class="form-label">Descuento (%)</label>
-                          {{ form.descuento_porcentaje }}
-                          {{ form.descuento_porcentaje.errors }}
-                        </div>
-                        <div class="col-6">
-                          <label class="form-label">Descuento (monto)</label>
-                          {{ form.descuento_monto }}
-                          {{ form.descuento_monto.errors }}
-                        </div>
-                      </div>
-                      <small id="resumen-descuento-feedback" class="text-muted d-block mb-2"></small>
-                      <div class="mb-2 d-flex justify-content-between">
-                        <span>Descuento aplicado</span>
-                        <strong id="resumen-descuento">{{ cotizacion.total_descuento|default:form.instance.total_descuento|money_q }}</strong>
-                      </div>
-                      <div class="mb-2 d-flex justify-content-between">
-                        <span>Base imponible</span>
-                        <strong id="resumen-base">Q0.00</strong>
-                      </div>
-                      <div class="row g-2 align-items-center mb-2">
-                        <div class="col-6">
-                          <label class="form-label mb-0">IVA (%)</label>
-                          {{ form.iva_porcentaje }}
-                          {{ form.iva_porcentaje.errors }}
-                        </div>
-                        <div class="col-6">
-                          <div class="form-check mt-4">
-                            {{ form.incluye_iva }}
-                            <label class="form-check-label" for="{{ form.incluye_iva.id_for_label }}">Incluye IVA</label>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="mb-2 d-flex justify-content-between">
-                        <span>Total IVA</span>
-                        <strong id="resumen-iva">{{ cotizacion.total_iva|default:form.instance.total_iva|money_q }}</strong>
-                      </div>
-                      <p class="text-muted small mt-2 mb-2" id="texto-iva-legal">
-                        {% if form.incluye_iva.value %}
-                          Precios con IVA incluido.
-                        {% else %}
-                          Precios no incluyen IVA.
-                        {% endif %}
-                      </p>
-                      <hr>
-                      <div class="d-flex justify-content-between">
-                        <span class="fw-bold">Total</span>
-                        <strong id="resumen-total">{{ cotizacion.total|default:form.instance.total|money_q }}</strong>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -246,32 +184,27 @@
     const addButton = document.getElementById('add-item-btn');
     const template = document.getElementById('item-row-template');
     if (!tableBody || !addButton || !template) {
-      return;
-    }
+          return;
+        }
 
     const totalFormsInput = document.getElementById('id_items-TOTAL_FORMS');
     const priceUrlTemplate = tableBody.dataset.priceUrl;
+    const emptyRow = template.dataset.emptyForm;
 
-    const buildPriceUrl = (productId) => priceUrlTemplate.replace('0/', `${productId}/`);
+        const buildPriceUrl = (productId) => priceUrlTemplate.replace('0/', `${productId}/`);
 
     const parsePrice = (value) => {
-      const cleaned = (value || '').replace('Q', '').replace(',', '').trim();
+      const cleaned = value.replace('Q', '').replace(',', '').trim();
       const parsed = Number.parseFloat(cleaned);
       return Number.isNaN(parsed) ? 0 : parsed;
     };
 
-    const formatMoney = (value) => `Q${(Number.isFinite(value) ? value : 0).toFixed(2)}`;
-
     const updateSubtotal = (row, price) => {
       const qtyInput = row.querySelector('input[name$="-cantidad"]');
       const subtotalSpan = row.querySelector('.js-subtotal');
-      if (!subtotalSpan) {
-        return;
-      }
       const quantity = Number.parseFloat(qtyInput?.value || '0');
       const subtotal = (Number.isNaN(quantity) ? 0 : quantity) * price;
-      subtotalSpan.textContent = formatMoney(subtotal);
-      cotizacionResumenRecalcular();
+      subtotalSpan.textContent = `Q${subtotal.toFixed(2)}`;
     };
 
     const updateRowPrice = (row) => {
@@ -291,7 +224,7 @@
         .then((data) => {
           const price = Number.parseFloat(data.precio_venta || '0');
           const safePrice = Number.isNaN(price) ? 0 : price;
-          priceSpan.textContent = formatMoney(safePrice);
+          priceSpan.textContent = `Q${safePrice.toFixed(2)}`;
           updateSubtotal(row, safePrice);
         })
         .catch(() => {
@@ -300,82 +233,34 @@
         });
     };
 
-    const cotizacionResumenElements = {
-      subtotal: document.getElementById('resumen-subtotal'),
-      descuento: document.getElementById('resumen-descuento'),
-      base: document.getElementById('resumen-base'),
-      iva: document.getElementById('resumen-iva'),
-      total: document.getElementById('resumen-total'),
-      feedback: document.getElementById('resumen-descuento-feedback'),
-      descuentoPorcentaje: document.getElementById('id_descuento_porcentaje'),
-      descuentoMonto: document.getElementById('id_descuento_monto'),
-      ivaPorcentaje: document.getElementById('id_iva_porcentaje'),
-      incluyeIva: document.getElementById('id_incluye_iva'),
-    };
-
-
-    function actualizarTextoIVA() {
-      const checkbox = document.getElementById('id_incluye_iva');
-      const texto = document.getElementById('texto-iva-legal');
-      if (!checkbox || !texto) {
-        return;
+    const reindexForms = () => {
+      const rows = Array.from(tableBody.querySelectorAll('.item-form'));
+      rows.forEach((row, index) => {
+        const elements = row.querySelectorAll('input, select, textarea, label');
+        elements.forEach((element) => {
+          if (element.name) {
+            element.name = element.name.replace(
+              new RegExp(`${formsetPrefix}-\\d+-`),
+              `${formsetPrefix}-${index}-`,
+            );
+          }
+          if (element.id) {
+            element.id = element.id.replace(
+              new RegExp(`id_${formsetPrefix}-\\d+-`),
+              `id_${formsetPrefix}-${index}-`,
+            );
+          }
+          if (element.htmlFor) {
+            element.htmlFor = element.htmlFor.replace(
+              new RegExp(`id_${formsetPrefix}-\\d+-`),
+              `id_${formsetPrefix}-${index}-`,
+            );
+          }
+        });
+      });
+      if (totalFormsInput) {
+        totalFormsInput.value = rows.length;
       }
-      texto.innerText = checkbox.checked
-        ? 'Precios con IVA incluido.'
-        : 'Precios no incluyen IVA.';
-    }
-
-    const cotizacionResumenRecalcular = () => {
-      const { subtotal, descuento, base, iva, total, feedback, descuentoPorcentaje, descuentoMonto, ivaPorcentaje, incluyeIva } = cotizacionResumenElements;
-      if (!subtotal || !descuento || !base || !iva || !total || !descuentoPorcentaje || !descuentoMonto || !ivaPorcentaje || !incluyeIva) {
-        return;
-      }
-
-      const rows = Array.from(tableBody.querySelectorAll('.item-row')).filter((row) => row.style.display !== 'none');
-      const subtotalValue = rows.reduce((acc, row) => {
-        const subtotalSpan = row.querySelector('.js-subtotal');
-        return acc + parsePrice(subtotalSpan?.textContent || '0');
-      }, 0);
-
-      const descuentoPorcentajeValue = Number.parseFloat(descuentoPorcentaje.value || '0') || 0;
-      const descuentoMontoValue = Number.parseFloat(descuentoMonto.value || '0') || 0;
-      const ivaPorcentajeValue = Number.parseFloat(ivaPorcentaje.value || '0') || 0;
-
-      let totalDescuento = 0;
-      if (descuentoPorcentajeValue > 0) {
-        totalDescuento = subtotalValue * (descuentoPorcentajeValue / 100);
-        descuentoMonto.readOnly = true;
-        if (feedback) {
-          feedback.className = 'text-primary d-block mb-2';
-          feedback.textContent = 'Descuento porcentual activo: se ignora descuento por monto.';
-        }
-      } else {
-        totalDescuento = descuentoMontoValue;
-        descuentoMonto.readOnly = false;
-        if (descuentoMontoValue > 0 && feedback) {
-          feedback.className = 'text-primary d-block mb-2';
-          feedback.textContent = 'Descuento por monto activo.';
-        } else if (feedback) {
-          feedback.className = 'text-muted d-block mb-2';
-          feedback.textContent = 'Sin descuento activo.';
-        }
-      }
-
-      if (descuentoMontoValue > 0) {
-        descuentoPorcentaje.readOnly = true;
-      } else {
-        descuentoPorcentaje.readOnly = false;
-      }
-
-      const baseValue = Math.max(subtotalValue - totalDescuento, 0);
-      const totalIvaValue = incluyeIva.checked ? 0 : (baseValue * (ivaPorcentajeValue / 100));
-      const totalValue = baseValue + totalIvaValue;
-
-      subtotal.textContent = formatMoney(subtotalValue);
-      descuento.textContent = formatMoney(totalDescuento);
-      base.textContent = formatMoney(baseValue);
-      iva.textContent = formatMoney(totalIvaValue);
-      total.textContent = formatMoney(totalValue);
     };
 
     const bindRow = (row) => {
@@ -396,14 +281,13 @@
       if (removeBtn) {
         removeBtn.addEventListener('click', () => {
           const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+          const idInput = row.querySelector('input[name$="-id"]');
           if (deleteInput) {
             deleteInput.checked = true;
             row.style.display = 'none';
-            cotizacionResumenRecalcular();
             return;
           }
           row.remove();
-          cotizacionResumenRecalcular();
         });
       }
     };
@@ -437,7 +321,6 @@
         });
         bindRow(newRow);
       }
-      cotizacionResumenRecalcular();
     };
 
     addButton.addEventListener('click', addRow);
@@ -445,26 +328,6 @@
       bindRow(row);
       updateRowPrice(row);
     });
-
-    if (cotizacionResumenElements.descuentoPorcentaje) {
-      cotizacionResumenElements.descuentoPorcentaje.addEventListener('input', cotizacionResumenRecalcular);
-    }
-    if (cotizacionResumenElements.descuentoMonto) {
-      cotizacionResumenElements.descuentoMonto.addEventListener('input', cotizacionResumenRecalcular);
-    }
-    if (cotizacionResumenElements.ivaPorcentaje) {
-      cotizacionResumenElements.ivaPorcentaje.addEventListener('input', cotizacionResumenRecalcular);
-    }
-    if (cotizacionResumenElements.incluyeIva) {
-      cotizacionResumenElements.incluyeIva.addEventListener('change', () => {
-        cotizacionResumenRecalcular();
-        actualizarTextoIVA();
-      });
-    }
-
-    document.addEventListener('change', actualizarTextoIVA);
-    cotizacionResumenRecalcular();
-    actualizarTextoIVA();
   });
 </script>
 {% endblock %}
