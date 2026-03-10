@@ -175,6 +175,34 @@
                     </td>
                   </tr>
                 </template>
+                <div class="row justify-content-end mt-3">
+                  <div class="col-12 col-md-7 col-lg-5">
+                    <div class="card border shadow-none mb-0">
+                      <div class="card-body py-3">
+                        <div class="d-flex justify-content-between mb-2">
+                          <span>Subtotal</span>
+                          <strong id="js-total-subtotal">{{ form.instance.subtotal_venta|money_q }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                          <span>Descuento</span>
+                          <strong id="js-total-descuento">{{ form.instance.descuento_calculado|money_q }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                          <span>Base imponible</span>
+                          <strong id="js-total-base">{{ form.instance.base_imponible|money_q }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                          <span>IVA</span>
+                          <strong id="js-total-iva">{{ form.instance.iva_monto|money_q }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between pt-2 border-top">
+                          <span class="fw-semibold">Total</span>
+                          <strong class="text-primary" id="js-total-final">{{ form.instance.total|money_q }}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -205,6 +233,31 @@
     </div>
   </div>
 </div>
+<style>
+  #items-table .item-row td {
+    vertical-align: middle;
+  }
+
+  #items-table input[name$="-cantidad"] {
+    min-width: 110px;
+    max-width: 130px;
+    margin: 0 auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #items-table .js-precio,
+  #items-table .js-subtotal {
+    display: inline-block;
+    min-width: 94px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #items-table input[name$="-cantidad"]:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 .2rem rgba(56, 189, 248, .15);
+  }
+</style>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const tableBody = document.getElementById('items-tbody');
@@ -217,89 +270,158 @@
     const totalFormsInput = document.getElementById('id_items-TOTAL_FORMS');
     const priceUrlTemplate = tableBody.dataset.priceUrl;
     const lockPrices = tableBody.dataset.lockPrices === '1';
+    const subtotalEl = document.getElementById('js-total-subtotal');
+    const descuentoEl = document.getElementById('js-total-descuento');
+    const baseEl = document.getElementById('js-total-base');
+    const ivaEl = document.getElementById('js-total-iva');
+    const totalEl = document.getElementById('js-total-final');
+    const descuentoPorcentajeInput = document.getElementById('id_descuento_porcentaje');
+    const descuentoMontoInput = document.getElementById('id_descuento_monto');
+    const ivaActivoInput = document.getElementById('id_iva_activo');
+    const ivaPorcentajeInput = document.getElementById('id_iva_porcentaje');
 
     const buildPriceUrl = (productId) => priceUrlTemplate.replace('0/', `${productId}/`);
 
-    const parsePrice = (value) => {
-      const cleaned = `${value || ''}`.replace('Q', '').replace(',', '').trim();
-      const parsed = Number.parseFloat(cleaned);
-      return Number.isNaN(parsed) ? 0 : parsed;
+    const parseNumber = (value) => {
+      const normalized = `${value ?? ''}`.replace(/Q/gi, '').replace(/,/g, '').trim();
+      const parsed = Number.parseFloat(normalized);
+      return Number.isFinite(parsed) ? parsed : 0;
     };
+
+    const formatMoney = (value) => `Q${parseNumber(value).toFixed(2)}`;
+
+    const getVisibleRows = () => Array.from(tableBody.querySelectorAll('.item-row')).filter((row) => row.style.display !== 'none');
 
     const getRowPrice = (row) => {
       const priceSpan = row.querySelector('.js-precio');
-      if (!priceSpan) {
-        return 0;
-      }
-      return parsePrice(priceSpan.dataset.value || priceSpan.textContent);
+      if (!priceSpan) return 0;
+      return parseNumber(priceSpan.dataset.value || priceSpan.textContent);
     };
 
-    const updateSubtotal = (row, price) => {
+    const getRowQuantity = (row) => {
       const qtyInput = row.querySelector('input[name$="-cantidad"]');
-      const subtotalSpan = row.querySelector('.js-subtotal');
-      if (!subtotalSpan) {
-        return;
-      }
-      const quantity = Number.parseFloat(qtyInput?.value || '0');
-      const safeQuantity = Number.isNaN(quantity) ? 0 : quantity;
-      const subtotal = safeQuantity * price;
-      subtotalSpan.dataset.value = subtotal.toFixed(2);
-      subtotalSpan.textContent = `Q${subtotal.toFixed(2)}`;
+      return parseNumber(qtyInput?.value || '0');
     };
 
     const setPrice = (row, price) => {
-      const safePrice = Number.isNaN(price) ? 0 : price;
       const priceSpan = row.querySelector('.js-precio');
-      if (!priceSpan) {
-        return;
-      }
+      if (!priceSpan) return;
+      const safePrice = Math.max(0, parseNumber(price));
       priceSpan.dataset.value = safePrice.toFixed(2);
-      priceSpan.textContent = `Q${safePrice.toFixed(2)}`;
-      updateSubtotal(row, safePrice);
+      priceSpan.textContent = formatMoney(safePrice);
+      recalculateRow(row);
+    };
+
+    const recalculateRow = (row) => {
+      const subtotalSpan = row.querySelector('.js-subtotal');
+      if (!subtotalSpan || row.style.display === 'none') return 0;
+      const subtotal = getRowQuantity(row) * getRowPrice(row);
+      subtotalSpan.dataset.value = subtotal.toFixed(2);
+      subtotalSpan.textContent = formatMoney(subtotal);
+      return subtotal;
+    };
+
+    const recalculateTotals = () => {
+      const subtotal = getVisibleRows().reduce((acc, row) => acc + recalculateRow(row), 0);
+      const descuentoPorcentaje = Math.max(0, parseNumber(descuentoPorcentajeInput?.value || '0'));
+      const descuentoMonto = Math.max(0, parseNumber(descuentoMontoInput?.value || '0'));
+      let descuento = 0;
+      if (descuentoPorcentaje > 0) {
+        descuento = subtotal * (descuentoPorcentaje / 100);
+      } else if (descuentoMonto > 0) {
+        descuento = descuentoMonto;
+      }
+      descuento = Math.min(descuento, subtotal);
+      const base = Math.max(0, subtotal - descuento);
+      const ivaPorcentaje = Math.max(0, parseNumber(ivaPorcentajeInput?.value || '0'));
+      const iva = ivaActivoInput?.checked ? base * (ivaPorcentaje / 100) : 0;
+      const total = base + iva;
+
+      if (subtotalEl) subtotalEl.textContent = formatMoney(subtotal);
+      if (descuentoEl) descuentoEl.textContent = formatMoney(descuento);
+      if (baseEl) baseEl.textContent = formatMoney(base);
+      if (ivaEl) ivaEl.textContent = formatMoney(iva);
+      if (totalEl) totalEl.textContent = formatMoney(total);
+    };
+
+    const configureQuantityInput = (qtyInput) => {
+      if (!qtyInput) return;
+      qtyInput.classList.add('text-center');
+      qtyInput.min = '0';
+      qtyInput.step = qtyInput.step || '0.01';
+      qtyInput.placeholder = qtyInput.placeholder || '0.00';
+      qtyInput.addEventListener('focus', () => qtyInput.select());
+      qtyInput.addEventListener('click', () => qtyInput.select());
+      qtyInput.addEventListener('input', () => {
+        if (qtyInput.value && parseNumber(qtyInput.value) < 0) {
+          qtyInput.value = '0';
+        }
+        recalculateTotals();
+      });
+      qtyInput.addEventListener('change', () => {
+        if (qtyInput.value === '' || parseNumber(qtyInput.value) < 0) {
+          qtyInput.value = '0';
+        }
+        recalculateTotals();
+      });
+      qtyInput.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        const visibleRows = getVisibleRows();
+        const currentIndex = visibleRows.indexOf(qtyInput.closest('.item-row'));
+        const nextRow = visibleRows[currentIndex + 1];
+        if (nextRow) {
+          const nextQty = nextRow.querySelector('input[name$="-cantidad"]');
+          if (nextQty) nextQty.focus();
+          return;
+        }
+        addButton.focus();
+      });
     };
 
     const updateRowPrice = (row, forceFetch = false) => {
       const productSelect = row.querySelector('select[name$="-producto_servicio"]');
-      if (!productSelect) {
-        return;
-      }
+      if (!productSelect) return;
 
       const hasPersistedId = Boolean(row.querySelector('input[name$="-id"]')?.value);
       if (lockPrices && hasPersistedId && !forceFetch) {
-        updateSubtotal(row, getRowPrice(row));
+        recalculateTotals();
         return;
       }
 
       const productId = productSelect.value;
       if (!productId) {
         setPrice(row, 0);
+        recalculateTotals();
         return;
       }
 
       fetch(buildPriceUrl(productId))
         .then((response) => (response.ok ? response.json() : Promise.reject()))
         .then((data) => {
-          const price = Number.parseFloat(data.precio_venta || '0');
-          setPrice(row, Number.isNaN(price) ? 0 : price);
+          setPrice(row, parseNumber(data.precio_venta || '0'));
+          recalculateTotals();
         })
         .catch(() => {
           setPrice(row, 0);
+          recalculateTotals();
         });
     };
 
-    const bindRow = (row) => {
+    const bindRowEvents = (row) => {
+      if (row.dataset.bound === '1') return;
+      row.dataset.bound = '1';
+
       const productSelect = row.querySelector('select[name$="-producto_servicio"]');
       const qtyInput = row.querySelector('input[name$="-cantidad"]');
       const removeBtn = row.querySelector('.js-remove');
 
+      if (qtyInput) configureQuantityInput(qtyInput);
+
       if (productSelect) {
         productSelect.addEventListener('change', () => updateRowPrice(row, true));
       }
-      if (qtyInput) {
-        qtyInput.addEventListener('input', () => {
-          updateSubtotal(row, getRowPrice(row));
-        });
-      }
+
       if (removeBtn) {
         removeBtn.addEventListener('click', () => {
           const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
@@ -307,41 +429,53 @@
           if (deleteInput && hasPersistedId) {
             deleteInput.checked = true;
             row.style.display = 'none';
-            return;
+          } else {
+            row.remove();
+            if (totalFormsInput) {
+              totalFormsInput.value = tableBody.querySelectorAll('.item-row').length;
+            }
           }
-          row.remove();
-          if (totalFormsInput) {
-            const activeRows = tableBody.querySelectorAll('.item-row').length;
-            totalFormsInput.value = activeRows;
-          }
+          recalculateTotals();
         });
       }
     };
 
+    const bindFormsetEvents = () => {
+      [descuentoPorcentajeInput, descuentoMontoInput, ivaPorcentajeInput, ivaActivoInput].forEach((field) => {
+        if (!field) return;
+        field.addEventListener('input', recalculateTotals);
+        field.addEventListener('change', recalculateTotals);
+        field.addEventListener('blur', recalculateTotals);
+      });
+    };
+
     const addRow = () => {
-      if (!totalFormsInput) {
-        return;
-      }
+      if (!totalFormsInput) return;
       const formIndex = parseInt(totalFormsInput.value, 10);
       const rowHtml = template.innerHTML.replaceAll('__prefix__', formIndex);
-      if (!rowHtml) {
-        return;
-      }
+      if (!rowHtml) return;
+
       tableBody.insertAdjacentHTML('beforeend', rowHtml);
       totalFormsInput.value = formIndex + 1;
-      const rows = tableBody.querySelectorAll('.item-row');
-      const newRow = rows[rows.length - 1];
-      if (newRow) {
-        bindRow(newRow);
-        updateRowPrice(newRow, true);
-      }
+      const newRow = tableBody.querySelectorAll('.item-row')[tableBody.querySelectorAll('.item-row').length - 1];
+      if (!newRow) return;
+
+      bindRowEvents(newRow);
+      updateRowPrice(newRow, true);
+      recalculateTotals();
+      const qtyInput = newRow.querySelector('input[name$="-cantidad"]');
+      if (qtyInput) qtyInput.focus();
     };
 
     addButton.addEventListener('click', addRow);
+    bindFormsetEvents();
+
     Array.from(tableBody.querySelectorAll('.item-row')).forEach((row) => {
-      bindRow(row);
+      bindRowEvents(row);
       updateRowPrice(row, false);
     });
+
+    recalculateTotals();
   });
 </script>
 {% endblock %}
