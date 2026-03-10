@@ -195,17 +195,7 @@ class CotizacionCreateView(LoginRequiredMixin, CreateView):
             cotizacion.save()
 
             formset.instance = cotizacion
-            items = formset.save(commit=False)
-            for item in items:
-                item.cotizacion = cotizacion
-                item.precio_venta_unitario = item.producto_servicio.precio_venta
-                item.precio_costo_unitario = item.producto_servicio.precio_costo
-                if not item.descripcion_editable:
-                    item.descripcion_editable = item.producto_servicio.descripcion
-                item.save()
-            if hasattr(formset, 'deleted_objects'):
-                for item in formset.deleted_objects:
-                    item.delete()
+            _save_cotizacion_items(cotizacion, formset)
 
         messages.success(self.request, 'Cotización creada correctamente.')
         return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
@@ -261,21 +251,31 @@ class CotizacionUpdateView(LoginRequiredMixin, UpdateView):
             cotizacion = form.save(commit=False)
             cotizacion.fecha_emision = timezone.now().date()
             cotizacion.save()
-            for item_form in formset.forms:
-                if not item_form.cleaned_data:
-                    continue
-                if item_form.cleaned_data.get('DELETE') and item_form.instance.pk:
-                    item_form.instance.delete()
-            items = formset.save(commit=False)
-            for item in items:
-                item.cotizacion = cotizacion
-                item.precio_venta_unitario = item.producto_servicio.precio_venta
-                item.precio_costo_unitario = item.producto_servicio.precio_costo
-                if not item.descripcion_editable:
-                    item.descripcion_editable = item.producto_servicio.descripcion
-                item.save()
+
+            _save_cotizacion_items(cotizacion, formset)
+
         messages.success(self.request, 'Cotización actualizada correctamente.')
         return redirect('cotizaciones:cotizacion_detail', pk=cotizacion.pk)
+
+
+
+def _save_cotizacion_items(cotizacion, formset):
+    should_refresh_prices = cotizacion.estado == Cotizacion.ESTADO_BORRADOR
+
+    for item in formset.deleted_objects:
+        item.delete()
+
+    items = formset.save(commit=False)
+    for item in items:
+        item.cotizacion = cotizacion
+        is_new_item = item.pk is None
+        if item.producto_servicio_id:
+            if should_refresh_prices or is_new_item:
+                item.precio_venta_unitario = item.producto_servicio.precio_venta
+                item.precio_costo_unitario = item.producto_servicio.precio_costo
+            if not item.descripcion_editable:
+                item.descripcion_editable = item.producto_servicio.descripcion
+        item.save()
 
 
 def user_can_view_costs(user):
