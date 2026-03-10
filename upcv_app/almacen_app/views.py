@@ -25,6 +25,7 @@ from django.db import models
 from django.db.models import (
     DecimalField,
     Sum,
+    Min,
     F,
     Value,
     Count,
@@ -205,30 +206,35 @@ import json
 @grupo_requerido('Administrador', 'Almacen')
 def dahsboard(request):
     cotizaciones_qs = Cotizacion.objects.select_related('cliente')
-    ventas_qs = Venta.objects.select_related('cotizacion', 'cliente')
-
-    current_year = timezone.now().year
-    monthly_sales_stats = (
-        ventas_qs.filter(fecha_venta__year=current_year)
-        .annotate(month=TruncMonth('fecha_venta'))
-        .values('month')
-        .annotate(
-            total_amount=Coalesce(
-                Sum('cotizacion__subtotal_venta'),
-                Value(Decimal('0.00')),
-                output_field=DecimalField(max_digits=12, decimal_places=2),
-            )
-        )
-        .order_by('month')
+    ventas_qs = Venta.objects.select_related('cotizacion', 'cliente').exclude(
+        cotizacion__estado=Cotizacion.ESTADO_ANULADA,
     )
 
+    current_year = timezone.now().year
     month_labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
     monthly_sales_amounts = [0.0] * 12
-    for item in monthly_sales_stats:
-        month = item['month']
+    for venta in ventas_qs.filter(fecha_venta__year=current_year):
+        month = venta.fecha_venta
         if not month:
             continue
-        monthly_sales_amounts[month.month - 1] = float(item['total_amount'] or 0)
+        monthly_sales_amounts[month.month - 1] += float(venta.total or 0)
+
+    clientes_por_mes_data = [0] * 12
+    if 'created_at' in {field.name for field in Cliente._meta.get_fields()}:
+        clientes_fechas = Cliente.objects.filter(
+            created_at__year=current_year,
+        ).values_list('created_at', flat=True)
+    else:
+        clientes_fechas = Cliente.objects.annotate(
+            fecha_registro=Min('cotizaciones__fecha_emision'),
+        ).values_list('fecha_registro', flat=True)
+
+    for fecha in clientes_fechas:
+        if not fecha:
+            continue
+        if getattr(fecha, 'year', None) != current_year:
+            continue
+        clientes_por_mes_data[fecha.month - 1] += 1
 
     top_clients = (
         cotizaciones_qs.values('cliente__nombre')
@@ -249,14 +255,9 @@ def dahsboard(request):
         'ventas': ventas_qs.count(),
         'clientes': Cliente.objects.count(),
         'productos': ProductoServicio.objects.count(),
-        'ventas_monto': ventas_qs.filter(fecha_venta__year=current_year).aggregate(
-            total=Coalesce(
-                Sum('cotizacion__subtotal_venta'),
-                Value(Decimal('0.00')),
-                output_field=DecimalField(max_digits=12, decimal_places=2),
-            )
-        )['total'],
-        'monto': cotizaciones_qs.aggregate(
+        'ventas_monto': Decimal('0.00'),
+        'pendiente_pago': Decimal('0.00'),
+        'monto': cotizaciones_qs.exclude(estado=Cotizacion.ESTADO_ANULADA).aggregate(
             total=Coalesce(
                 Sum('subtotal_venta'),
                 Value(Decimal('0.00')),
@@ -264,6 +265,13 @@ def dahsboard(request):
             )
         )['total'],
     }
+
+    for venta in ventas_qs:
+        total_venta = venta.total or Decimal('0.00')
+        saldo = venta.saldo or Decimal('0.00')
+        totals['ventas_monto'] += total_venta
+        if venta.estado_pago != Venta.ESTADO_PAGADA and saldo > 0:
+            totals['pendiente_pago'] += saldo
 
     def fmt_q(value):
         if value is None:
@@ -296,11 +304,12 @@ def dahsboard(request):
 
     context = {
         'totals': totals,
-        'total_cotizado_fmt': fmt_q(totals['monto']),
         'total_ventas_fmt': fmt_q(totals['ventas_monto']),
+        'total_pendiente_fmt': fmt_q(totals['pendiente_pago']),
         'chart_month_labels': month_labels,
         'chart_month_sales': monthly_sales_amounts,
-        'chart_month_totals': monthly_sales_amounts,
+        'clientes_por_mes_labels': month_labels,
+        'clientes_por_mes_data': clientes_por_mes_data,
         'top_clients_labels': top_clients_labels,
         'top_clients_totals': top_clients_amounts,
         'top_products_labels': top_productos_labels,

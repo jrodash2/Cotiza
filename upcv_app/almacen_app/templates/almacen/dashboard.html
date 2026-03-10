@@ -55,8 +55,8 @@
           <div class="col-12 col-md-6 col-xl-3">
             <div class="card">
               <div class="card-body">
-                <p class="text-muted mb-1">Total cotizado</p>
-                <h3 class="dashboard-card-title mb-0">{{ total_cotizado_fmt }}</h3>
+                <p class="text-muted mb-1">Total Pendiente de Pago</p>
+                <h3 class="dashboard-card-title mb-0">{{ total_pendiente_fmt }}</h3>
               </div>
             </div>
           </div>
@@ -81,11 +81,11 @@
           <div class="col-12 col-xl-6">
             <div class="card h-100">
               <div class="card-header">
-                <h5 class="dashboard-card-title mb-0">Total cotizado por Mes</h5>
+                <h5 class="dashboard-card-title mb-0">Clientes por Mes</h5>
               </div>
               <div class="card-body dashboard-chart">
-                <div id="chart-total-mes" style="min-height: 320px; width: 100%;"></div>
-                <div class="text-muted text-center mt-3 d-none" data-empty="chart-totals">
+                <div id="chart-clientes-mes" style="min-height: 320px; width: 100%;"></div>
+                <div class="text-muted text-center mt-3 d-none" data-empty="chart-clients-months">
                   Sin datos
                 </div>
               </div>
@@ -124,7 +124,8 @@
 
         {{ chart_month_labels|json_script:"chart-month-labels" }}
         {{ chart_month_sales|json_script:"chart-month-sales" }}
-        {{ chart_month_totals|json_script:"chart-month-totals" }}
+        {{ clientes_por_mes_labels|json_script:"chart-clientes-labels" }}
+        {{ clientes_por_mes_data|json_script:"chart-clientes-data" }}
         {{ top_clients_labels|json_script:"chart-top-labels" }}
         {{ top_clients_totals|json_script:"chart-top-totals" }}
         {{ top_products_labels|json_script:"chart-top-products-labels" }}
@@ -134,7 +135,8 @@
 
     {{ chart_month_labels|json_script:"chart-month-labels" }}
     {{ chart_month_sales|json_script:"chart-month-sales" }}
-    {{ chart_month_totals|json_script:"chart-month-totals" }}
+    {{ clientes_por_mes_labels|json_script:"chart-clientes-labels" }}
+    {{ clientes_por_mes_data|json_script:"chart-clientes-data" }}
     {{ top_clients_labels|json_script:"chart-top-labels" }}
     {{ top_clients_totals|json_script:"chart-top-totals" }}
   </div>
@@ -144,7 +146,8 @@
   window.addEventListener('load', () => {
     const labels = JSON.parse(document.getElementById('chart-month-labels').textContent);
     const monthSales = JSON.parse(document.getElementById('chart-month-sales').textContent);
-    const totals = JSON.parse(document.getElementById('chart-month-totals').textContent);
+    const clientesLabels = JSON.parse(document.getElementById('chart-clientes-labels').textContent);
+    const clientesData = JSON.parse(document.getElementById('chart-clientes-data').textContent);
     const topLabels = JSON.parse(document.getElementById('chart-top-labels').textContent);
     const topTotals = JSON.parse(document.getElementById('chart-top-totals').textContent);
     const topProductsLabels = JSON.parse(
@@ -184,7 +187,7 @@
 
     if (!window.ApexCharts) {
       showEmpty('chart-months');
-      showEmpty('chart-totals');
+      showEmpty('chart-clients-months');
       showEmpty('chart-top');
       showEmpty('chart-products');
       return;
@@ -192,7 +195,8 @@
 
     const safeMonthLabels = cleanLabels(labels, 'Mes');
     const safeMonthSales = cleanSeries(monthSales);
-    const safeTotals = cleanSeries(totals);
+    const safeClientesLabels = cleanLabels(clientesLabels, 'Mes');
+    const safeClientesData = cleanSeries(clientesData);
     const safeTopLabels = cleanLabels(topLabels, 'SIN CLIENTE');
     const safeTopTotals = cleanSeries(topTotals);
     const safeTopProductsLabels = cleanLabels(topProductsLabels, 'SIN NOMBRE');
@@ -221,26 +225,23 @@
       }).render();
     }
 
-    if (!safeTotals.length) {
-      showEmpty('chart-totals');
+    if (!safeClientesLabels.length) {
+      showEmpty('chart-clients-months');
     } else {
-      new ApexCharts(document.querySelector('#chart-total-mes'), {
+      new ApexCharts(document.querySelector('#chart-clientes-mes'), {
         chart: {
-          type: 'line',
+          type: 'bar',
           height: 300,
           toolbar: { show: false },
         },
         colors: [brandBlue],
-        series: [{ name: 'Total ventas', data: safeTotals }],
-        xaxis: { categories: safeMonthLabels },
-        yaxis: {
-          labels: { formatter: (val) => formatCurrency(val) },
-        },
-        stroke: { curve: 'smooth', width: 3 },
-        markers: { size: 4 },
-        fill: { opacity: 0.15 },
+        series: [{ name: 'Clientes nuevos', data: safeClientesData }],
+        xaxis: { categories: safeClientesLabels },
+        yaxis: { labels: { formatter: (val) => `${Math.round(toSafeNumber(val))}` } },
+        plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
+        dataLabels: { enabled: false },
         tooltip: {
-          y: { formatter: (val) => formatCurrency(val) },
+          y: { formatter: (val) => `${Math.round(toSafeNumber(val))} cliente(s)` },
         },
       }).render();
     }
