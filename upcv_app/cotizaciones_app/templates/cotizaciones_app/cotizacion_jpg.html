@@ -296,7 +296,7 @@
                   <strong>{{ item.producto_servicio.nombre }}</strong><br>
                   {{ item.descripcion_editable|default:item.producto_servicio.descripcion }}
                 </td>
-                <td class="text-center">{{ item.cantidad }}</td>
+                <td class="text-center">{{ item.cantidad|floatformat:0 }}</td>
                 <td class="text-right no-wrap">{{ item.precio_venta_unitario|money_q }}</td>
                 <td class="text-right no-wrap">{{ item.total_linea_venta|money_q }}</td>
               </tr>
