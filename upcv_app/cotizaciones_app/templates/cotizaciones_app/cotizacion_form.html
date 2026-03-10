@@ -118,7 +118,7 @@
                         <th class="text-nowrap">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody id="items-tbody" data-formset-prefix="items" data-price-url="{% url 'cotizaciones:producto_precio' 0 %}">
+                    <tbody id="items-tbody" data-formset-prefix="items" data-price-url="{% url 'cotizaciones:producto_precio' 0 %}" data-lock-prices="{% if cotizacion and cotizacion.estado != 'BORRADOR' %}1{% else %}0{% endif %}">
                       {% for item_form in formset %}
                         <tr class="item-row">
                           <td class="w-50">
@@ -131,12 +131,12 @@
                             {{ item_form.cantidad.errors }}
                           </td>
                           <td class="text-nowrap">
-                            <span class="js-precio" data-value="0">
+                            <span class="js-precio" data-value="{{ item_form.instance.precio_venta_unitario|default_if_none:0 }}">
                               {{ item_form.instance.precio_venta_unitario|money_q }}
                             </span>
                           </td>
                           <td class="text-nowrap">
-                            <span class="js-subtotal" data-value="0">
+                            <span class="js-subtotal" data-value="{{ item_form.instance.total_linea_venta|default_if_none:0 }}">
                               {{ item_form.instance.total_linea_venta|money_q }}
                             </span>
                           </td>
@@ -175,6 +175,34 @@
                     </td>
                   </tr>
                 </template>
+                <div class="row justify-content-end mt-3">
+                  <div class="col-12 col-md-7 col-lg-5">
+                    <div class="card border shadow-none mb-0">
+                      <div class="card-body py-3">
+                        <div class="d-flex justify-content-between mb-2">
+                          <span>Subtotal</span>
+                          <strong id="js-total-subtotal">{{ form.instance.subtotal_venta|money_q }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                          <span>Descuento</span>
+                          <strong id="js-total-descuento">{{ form.instance.descuento_calculado|money_q }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                          <span>Base imponible</span>
+                          <strong id="js-total-base">{{ form.instance.base_imponible|money_q }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                          <span>IVA</span>
+                          <strong id="js-total-iva">{{ form.instance.iva_monto|money_q }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between pt-2 border-top">
+                          <span class="fw-semibold">Total</span>
+                          <strong class="text-primary" id="js-total-final">{{ form.instance.total|money_q }}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -205,156 +233,249 @@
     </div>
   </div>
 </div>
+<style>
+  #items-table .item-row td {
+    vertical-align: middle;
+  }
+
+  #items-table input[name$="-cantidad"] {
+    min-width: 110px;
+    max-width: 130px;
+    margin: 0 auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #items-table .js-precio,
+  #items-table .js-subtotal {
+    display: inline-block;
+    min-width: 94px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #items-table input[name$="-cantidad"]:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 .2rem rgba(56, 189, 248, .15);
+  }
+</style>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const tableBody = document.getElementById('items-tbody');
     const addButton = document.getElementById('add-item-btn');
     const template = document.getElementById('item-row-template');
     if (!tableBody || !addButton || !template) {
-          return;
-        }
+      return;
+    }
 
     const totalFormsInput = document.getElementById('id_items-TOTAL_FORMS');
     const priceUrlTemplate = tableBody.dataset.priceUrl;
-    const emptyRow = template.dataset.emptyForm;
+    const lockPrices = tableBody.dataset.lockPrices === '1';
+    const subtotalEl = document.getElementById('js-total-subtotal');
+    const descuentoEl = document.getElementById('js-total-descuento');
+    const baseEl = document.getElementById('js-total-base');
+    const ivaEl = document.getElementById('js-total-iva');
+    const totalEl = document.getElementById('js-total-final');
+    const descuentoPorcentajeInput = document.getElementById('id_descuento_porcentaje');
+    const descuentoMontoInput = document.getElementById('id_descuento_monto');
+    const ivaActivoInput = document.getElementById('id_iva_activo');
+    const ivaPorcentajeInput = document.getElementById('id_iva_porcentaje');
 
-        const buildPriceUrl = (productId) => priceUrlTemplate.replace('0/', `${productId}/`);
+    const buildPriceUrl = (productId) => priceUrlTemplate.replace('0/', `${productId}/`);
 
-    const parsePrice = (value) => {
-      const cleaned = value.replace('Q', '').replace(',', '').trim();
-      const parsed = Number.parseFloat(cleaned);
-      return Number.isNaN(parsed) ? 0 : parsed;
+    const parseNumber = (value) => {
+      const normalized = `${value ?? ''}`.replace(/Q/gi, '').replace(/,/g, '').trim();
+      const parsed = Number.parseFloat(normalized);
+      return Number.isFinite(parsed) ? parsed : 0;
     };
 
-    const updateSubtotal = (row, price) => {
-      const qtyInput = row.querySelector('input[name$="-cantidad"]');
-      const subtotalSpan = row.querySelector('.js-subtotal');
-      const quantity = Number.parseFloat(qtyInput?.value || '0');
-      const subtotal = (Number.isNaN(quantity) ? 0 : quantity) * price;
-      subtotalSpan.textContent = `Q${subtotal.toFixed(2)}`;
-    };
+    const formatMoney = (value) => `Q${parseNumber(value).toFixed(2)}`;
 
-    const updateRowPrice = (row) => {
-      const productSelect = row.querySelector('select[name$="-producto_servicio"]');
+    const getVisibleRows = () => Array.from(tableBody.querySelectorAll('.item-row')).filter((row) => row.style.display !== 'none');
+
+    const getRowPrice = (row) => {
       const priceSpan = row.querySelector('.js-precio');
-      if (!productSelect || !priceSpan) {
+      if (!priceSpan) return 0;
+      return parseNumber(priceSpan.dataset.value || priceSpan.textContent);
+    };
+
+    const getRowQuantity = (row) => {
+      const qtyInput = row.querySelector('input[name$="-cantidad"]');
+      return parseNumber(qtyInput?.value || '0');
+    };
+
+    const setPrice = (row, price) => {
+      const priceSpan = row.querySelector('.js-precio');
+      if (!priceSpan) return;
+      const safePrice = Math.max(0, parseNumber(price));
+      priceSpan.dataset.value = safePrice.toFixed(2);
+      priceSpan.textContent = formatMoney(safePrice);
+      recalculateRow(row);
+    };
+
+    const recalculateRow = (row) => {
+      const subtotalSpan = row.querySelector('.js-subtotal');
+      if (!subtotalSpan || row.style.display === 'none') return 0;
+      const subtotal = getRowQuantity(row) * getRowPrice(row);
+      subtotalSpan.dataset.value = subtotal.toFixed(2);
+      subtotalSpan.textContent = formatMoney(subtotal);
+      return subtotal;
+    };
+
+    const recalculateTotals = () => {
+      const subtotal = getVisibleRows().reduce((acc, row) => acc + recalculateRow(row), 0);
+      const descuentoPorcentaje = Math.max(0, parseNumber(descuentoPorcentajeInput?.value || '0'));
+      const descuentoMonto = Math.max(0, parseNumber(descuentoMontoInput?.value || '0'));
+      let descuento = 0;
+      if (descuentoPorcentaje > 0) {
+        descuento = subtotal * (descuentoPorcentaje / 100);
+      } else if (descuentoMonto > 0) {
+        descuento = descuentoMonto;
+      }
+      descuento = Math.min(descuento, subtotal);
+      const base = Math.max(0, subtotal - descuento);
+      const ivaPorcentaje = Math.max(0, parseNumber(ivaPorcentajeInput?.value || '0'));
+      const iva = ivaActivoInput?.checked ? base * (ivaPorcentaje / 100) : 0;
+      const total = base + iva;
+
+      if (subtotalEl) subtotalEl.textContent = formatMoney(subtotal);
+      if (descuentoEl) descuentoEl.textContent = formatMoney(descuento);
+      if (baseEl) baseEl.textContent = formatMoney(base);
+      if (ivaEl) ivaEl.textContent = formatMoney(iva);
+      if (totalEl) totalEl.textContent = formatMoney(total);
+    };
+
+    const configureQuantityInput = (qtyInput) => {
+      if (!qtyInput) return;
+      qtyInput.classList.add('text-center');
+      qtyInput.min = '0';
+      qtyInput.step = qtyInput.step || '0.01';
+      qtyInput.placeholder = qtyInput.placeholder || '0.00';
+      qtyInput.addEventListener('focus', () => qtyInput.select());
+      qtyInput.addEventListener('click', () => qtyInput.select());
+      qtyInput.addEventListener('input', () => {
+        if (qtyInput.value && parseNumber(qtyInput.value) < 0) {
+          qtyInput.value = '0';
+        }
+        recalculateTotals();
+      });
+      qtyInput.addEventListener('change', () => {
+        if (qtyInput.value === '' || parseNumber(qtyInput.value) < 0) {
+          qtyInput.value = '0';
+        }
+        recalculateTotals();
+      });
+      qtyInput.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        const visibleRows = getVisibleRows();
+        const currentIndex = visibleRows.indexOf(qtyInput.closest('.item-row'));
+        const nextRow = visibleRows[currentIndex + 1];
+        if (nextRow) {
+          const nextQty = nextRow.querySelector('input[name$="-cantidad"]');
+          if (nextQty) nextQty.focus();
+          return;
+        }
+        addButton.focus();
+      });
+    };
+
+    const updateRowPrice = (row, forceFetch = false) => {
+      const productSelect = row.querySelector('select[name$="-producto_servicio"]');
+      if (!productSelect) return;
+
+      const hasPersistedId = Boolean(row.querySelector('input[name$="-id"]')?.value);
+      if (lockPrices && hasPersistedId && !forceFetch) {
+        recalculateTotals();
         return;
       }
+
       const productId = productSelect.value;
       if (!productId) {
-        priceSpan.textContent = 'Q0.00';
-        updateSubtotal(row, 0);
+        setPrice(row, 0);
+        recalculateTotals();
         return;
       }
+
       fetch(buildPriceUrl(productId))
         .then((response) => (response.ok ? response.json() : Promise.reject()))
         .then((data) => {
-          const price = Number.parseFloat(data.precio_venta || '0');
-          const safePrice = Number.isNaN(price) ? 0 : price;
-          priceSpan.textContent = `Q${safePrice.toFixed(2)}`;
-          updateSubtotal(row, safePrice);
+          setPrice(row, parseNumber(data.precio_venta || '0'));
+          recalculateTotals();
         })
         .catch(() => {
-          priceSpan.textContent = 'Q0.00';
-          updateSubtotal(row, 0);
+          setPrice(row, 0);
+          recalculateTotals();
         });
     };
 
-    const reindexForms = () => {
-      const rows = Array.from(tableBody.querySelectorAll('.item-form'));
-      rows.forEach((row, index) => {
-        const elements = row.querySelectorAll('input, select, textarea, label');
-        elements.forEach((element) => {
-          if (element.name) {
-            element.name = element.name.replace(
-              new RegExp(`${formsetPrefix}-\\d+-`),
-              `${formsetPrefix}-${index}-`,
-            );
-          }
-          if (element.id) {
-            element.id = element.id.replace(
-              new RegExp(`id_${formsetPrefix}-\\d+-`),
-              `id_${formsetPrefix}-${index}-`,
-            );
-          }
-          if (element.htmlFor) {
-            element.htmlFor = element.htmlFor.replace(
-              new RegExp(`id_${formsetPrefix}-\\d+-`),
-              `id_${formsetPrefix}-${index}-`,
-            );
-          }
-        });
-      });
-      if (totalFormsInput) {
-        totalFormsInput.value = rows.length;
-      }
-    };
+    const bindRowEvents = (row) => {
+      if (row.dataset.bound === '1') return;
+      row.dataset.bound = '1';
 
-    const bindRow = (row) => {
       const productSelect = row.querySelector('select[name$="-producto_servicio"]');
       const qtyInput = row.querySelector('input[name$="-cantidad"]');
       const removeBtn = row.querySelector('.js-remove');
 
+      if (qtyInput) configureQuantityInput(qtyInput);
+
       if (productSelect) {
-        productSelect.addEventListener('change', () => updateRowPrice(row));
+        productSelect.addEventListener('change', () => updateRowPrice(row, true));
       }
-      if (qtyInput) {
-        qtyInput.addEventListener('input', () => {
-          const priceSpan = row.querySelector('.js-precio');
-          const price = priceSpan ? parsePrice(priceSpan.textContent) : 0;
-          updateSubtotal(row, price);
-        });
-      }
+
       if (removeBtn) {
         removeBtn.addEventListener('click', () => {
           const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-          const idInput = row.querySelector('input[name$="-id"]');
-          if (deleteInput) {
+          const hasPersistedId = Boolean(row.querySelector('input[name$="-id"]')?.value);
+          if (deleteInput && hasPersistedId) {
             deleteInput.checked = true;
             row.style.display = 'none';
-            return;
+          } else {
+            row.remove();
+            if (totalFormsInput) {
+              totalFormsInput.value = tableBody.querySelectorAll('.item-row').length;
+            }
           }
-          row.remove();
+          recalculateTotals();
         });
       }
     };
 
-    const buildRowFromTemplate = (index) => {
-      const html = template.innerHTML.replaceAll('__prefix__', index);
-      return html;
+    const bindFormsetEvents = () => {
+      [descuentoPorcentajeInput, descuentoMontoInput, ivaPorcentajeInput, ivaActivoInput].forEach((field) => {
+        if (!field) return;
+        field.addEventListener('input', recalculateTotals);
+        field.addEventListener('change', recalculateTotals);
+        field.addEventListener('blur', recalculateTotals);
+      });
     };
 
     const addRow = () => {
-      if (!totalFormsInput) {
-        return;
-      }
+      if (!totalFormsInput) return;
       const formIndex = parseInt(totalFormsInput.value, 10);
-      const rowHtml = buildRowFromTemplate(formIndex);
-      if (!rowHtml) {
-        return;
-      }
+      const rowHtml = template.innerHTML.replaceAll('__prefix__', formIndex);
+      if (!rowHtml) return;
+
       tableBody.insertAdjacentHTML('beforeend', rowHtml);
       totalFormsInput.value = formIndex + 1;
-      const rows = tableBody.querySelectorAll('.item-row');
-      const newRow = rows[rows.length - 1];
-      if (newRow) {
-        newRow.querySelectorAll('select').forEach((select) => {
-          select.classList.add('form-select');
-        });
-        newRow.querySelectorAll('input').forEach((input) => {
-          if (input.type !== 'checkbox' && input.type !== 'hidden') {
-            input.classList.add('form-control');
-          }
-        });
-        bindRow(newRow);
-      }
+      const newRow = tableBody.querySelectorAll('.item-row')[tableBody.querySelectorAll('.item-row').length - 1];
+      if (!newRow) return;
+
+      bindRowEvents(newRow);
+      updateRowPrice(newRow, true);
+      recalculateTotals();
+      const qtyInput = newRow.querySelector('input[name$="-cantidad"]');
+      if (qtyInput) qtyInput.focus();
     };
 
     addButton.addEventListener('click', addRow);
+    bindFormsetEvents();
+
     Array.from(tableBody.querySelectorAll('.item-row')).forEach((row) => {
-      bindRow(row);
-      updateRowPrice(row);
+      bindRowEvents(row);
+      updateRowPrice(row, false);
     });
+
+    recalculateTotals();
   });
 </script>
 {% endblock %}

@@ -192,11 +192,8 @@ class CotizacionItemForm(forms.ModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        if instance.producto_servicio_id:
-            instance.precio_venta_unitario = instance.producto_servicio.precio_venta
-            instance.precio_costo_unitario = instance.producto_servicio.precio_costo
-            if not instance.descripcion_editable:
-                instance.descripcion_editable = instance.producto_servicio.descripcion
+        if instance.producto_servicio_id and not instance.descripcion_editable:
+            instance.descripcion_editable = instance.producto_servicio.descripcion
         if commit:
             instance.save()
         return instance
