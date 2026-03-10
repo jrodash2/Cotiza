@@ -31,8 +31,8 @@
           <div class="col-12 col-md-6 col-xl-3">
             <div class="card">
               <div class="card-body">
-                <p class="text-muted mb-1">Total cotizaciones</p>
-                <h3 class="dashboard-card-title mb-0">{{ totals.cotizaciones }}</h3>
+                <p class="text-muted mb-1">Total de Ventas</p>
+                <h3 class="dashboard-card-title mb-0">{{ total_ventas_fmt }}</h3>
               </div>
             </div>
           </div>
@@ -68,7 +68,7 @@
           <div class="col-12 col-xl-6">
             <div class="card h-100">
               <div class="card-header">
-                <h5 class="dashboard-card-title mb-0">Cotizaciones por Mes</h5>
+                <h5 class="dashboard-card-title mb-0">Ventas por Mes</h5>
               </div>
               <div class="card-body dashboard-chart">
                 <div id="chart-cotizaciones-mes" style="min-height: 320px; width: 100%;"></div>
@@ -123,7 +123,7 @@
         </div>
 
         {{ chart_month_labels|json_script:"chart-month-labels" }}
-        {{ chart_month_counts|json_script:"chart-month-counts" }}
+        {{ chart_month_sales|json_script:"chart-month-sales" }}
         {{ chart_month_totals|json_script:"chart-month-totals" }}
         {{ top_clients_labels|json_script:"chart-top-labels" }}
         {{ top_clients_totals|json_script:"chart-top-totals" }}
@@ -133,7 +133,7 @@
     </div>
 
     {{ chart_month_labels|json_script:"chart-month-labels" }}
-    {{ chart_month_counts|json_script:"chart-month-counts" }}
+    {{ chart_month_sales|json_script:"chart-month-sales" }}
     {{ chart_month_totals|json_script:"chart-month-totals" }}
     {{ top_clients_labels|json_script:"chart-top-labels" }}
     {{ top_clients_totals|json_script:"chart-top-totals" }}
@@ -143,7 +143,7 @@
 <script>
   window.addEventListener('load', () => {
     const labels = JSON.parse(document.getElementById('chart-month-labels').textContent);
-    const counts = JSON.parse(document.getElementById('chart-month-counts').textContent);
+    const monthSales = JSON.parse(document.getElementById('chart-month-sales').textContent);
     const totals = JSON.parse(document.getElementById('chart-month-totals').textContent);
     const topLabels = JSON.parse(document.getElementById('chart-top-labels').textContent);
     const topTotals = JSON.parse(document.getElementById('chart-top-totals').textContent);
@@ -156,11 +156,24 @@
 
     const brandBlue = '#1f4ed8';
     const brandBlueLight = '#88a8fb';
+    const toSafeNumber = (value) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
     const formatCurrency = (value) =>
-      `Q ${Number(value).toLocaleString('en-US', {
+      `Q ${toSafeNumber(value).toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`;
+
+    const cleanLabels = (items, fallback = 'SIN NOMBRE') =>
+      (Array.isArray(items) ? items : []).map((item) => {
+        const label = `${item ?? ''}`.trim();
+        return label || fallback;
+      });
+
+    const cleanSeries = (items) => (Array.isArray(items) ? items : []).map((item) => toSafeNumber(item));
 
     const showEmpty = (key) => {
       const placeholder = document.querySelector(`[data-empty="${key}"]`);
@@ -177,7 +190,15 @@
       return;
     }
 
-    if (!labels.length) {
+    const safeMonthLabels = cleanLabels(labels, 'Mes');
+    const safeMonthSales = cleanSeries(monthSales);
+    const safeTotals = cleanSeries(totals);
+    const safeTopLabels = cleanLabels(topLabels, 'SIN CLIENTE');
+    const safeTopTotals = cleanSeries(topTotals);
+    const safeTopProductsLabels = cleanLabels(topProductsLabels, 'SIN NOMBRE');
+    const safeTopProductsTotals = cleanSeries(topProductsTotals);
+
+    if (!safeMonthLabels.length) {
       showEmpty('chart-months');
     } else {
       new ApexCharts(document.querySelector('#chart-cotizaciones-mes'), {
@@ -187,14 +208,20 @@
           toolbar: { show: false },
         },
         colors: [brandBlue],
-        series: [{ name: 'Cotizaciones', data: counts }],
-        xaxis: { categories: labels },
+        series: [{ name: 'Ventas', data: safeMonthSales }],
+        xaxis: { categories: safeMonthLabels },
+        yaxis: {
+          labels: { formatter: (val) => formatCurrency(val) },
+        },
         plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
         dataLabels: { enabled: false },
+        tooltip: {
+          y: { formatter: (val) => formatCurrency(val) },
+        },
       }).render();
     }
 
-    if (!totals.length) {
+    if (!safeTotals.length) {
       showEmpty('chart-totals');
     } else {
       new ApexCharts(document.querySelector('#chart-total-mes'), {
@@ -204,8 +231,8 @@
           toolbar: { show: false },
         },
         colors: [brandBlue],
-        series: [{ name: 'Total cotizado', data: totals }],
-        xaxis: { categories: labels },
+        series: [{ name: 'Total ventas', data: safeTotals }],
+        xaxis: { categories: safeMonthLabels },
         yaxis: {
           labels: { formatter: (val) => formatCurrency(val) },
         },
@@ -218,7 +245,7 @@
       }).render();
     }
 
-    if (!topLabels.length) {
+    if (!safeTopLabels.length) {
       showEmpty('chart-top');
     } else {
       new ApexCharts(document.querySelector('#chart-top-clientes'), {
@@ -226,8 +253,8 @@
           type: 'donut',
           height: 300,
         },
-        labels: topLabels,
-        series: topTotals,
+        labels: safeTopLabels,
+        series: safeTopTotals,
         colors: [brandBlue, '#3c6df0', '#5c89f5', brandBlueLight, '#b3c7ff'],
         legend: { position: 'bottom' },
         tooltip: {
@@ -236,7 +263,7 @@
       }).render();
     }
 
-    if (!topProductsLabels.length) {
+    if (!safeTopProductsLabels.length) {
       showEmpty('chart-products');
     } else {
       new ApexCharts(document.querySelector('#chart-top-productos'), {
@@ -246,9 +273,9 @@
           toolbar: { show: false },
         },
         colors: [brandBlue],
-        series: [{ name: 'Total cotizado', data: topProductsTotals }],
+        series: [{ name: 'Total vendido', data: safeTopProductsTotals }],
         xaxis: {
-          categories: topProductsLabels,
+          categories: safeTopProductsLabels,
           labels: { trim: true },
         },
         yaxis: {
@@ -257,7 +284,12 @@
         plotOptions: { bar: { horizontal: true, borderRadius: 6 } },
         dataLabels: { enabled: false },
         tooltip: {
-          y: { formatter: (val) => formatCurrency(val) },
+          y: {
+            formatter: (val, opts) => {
+              const product = safeTopProductsLabels?.[opts?.dataPointIndex] || 'SIN NOMBRE';
+              return `${product}: ${formatCurrency(val)}`;
+            },
+          },
         },
       }).render();
     }

@@ -1,6 +1,7 @@
 from django import forms
 from django.utils import timezone
 from django.forms import BaseInlineFormSet, inlineformset_factory
+from decimal import Decimal
 
 from .models import (
     Cliente,
@@ -175,6 +176,23 @@ class CotizacionItemForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         kwargs.pop('show_costs', True)
         super().__init__(*args, **kwargs)
+
+        if 'cantidad' in self.fields:
+            self.fields['cantidad'].widget = forms.NumberInput(attrs={
+                'min': '1',
+                'step': '1',
+                'inputmode': 'numeric',
+            })
+
+            cantidad_inicial = self.initial.get('cantidad') if isinstance(self.initial, dict) else None
+            if cantidad_inicial in (None, '') and getattr(self.instance, 'pk', None):
+                cantidad_inicial = self.instance.cantidad
+            if cantidad_inicial not in (None, ''):
+                try:
+                    self.initial['cantidad'] = int(Decimal(cantidad_inicial))
+                except Exception:
+                    pass
+
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs['class'] = 'form-check-input'
@@ -186,9 +204,16 @@ class CotizacionItemForm(forms.ModelForm):
 
     def clean_cantidad(self):
         cantidad = self.cleaned_data.get('cantidad')
-        if cantidad is not None and cantidad <= 0:
+        if cantidad is None:
+            return cantidad
+
+        if cantidad <= 0:
             raise forms.ValidationError('La cantidad debe ser mayor a 0.')
-        return cantidad
+
+        if cantidad != cantidad.to_integral_value():
+            raise forms.ValidationError('La cantidad debe ser un número entero.')
+
+        return Decimal(int(cantidad))
 
     def save(self, commit=True):
         instance = super().save(commit=False)
