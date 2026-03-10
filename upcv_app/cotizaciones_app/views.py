@@ -262,8 +262,10 @@ class CotizacionUpdateView(LoginRequiredMixin, UpdateView):
 def _save_cotizacion_items(cotizacion, formset):
     should_refresh_prices = cotizacion.estado == Cotizacion.ESTADO_BORRADOR
 
-    for item in formset.deleted_objects:
-        item.delete()
+    for deleted_form in formset.deleted_forms:
+        instance = getattr(deleted_form, 'instance', None)
+        if instance and instance.pk:
+            instance.delete()
 
     items = formset.save(commit=False)
     for item in items:
@@ -276,6 +278,9 @@ def _save_cotizacion_items(cotizacion, formset):
             if not item.descripcion_editable:
                 item.descripcion_editable = item.producto_servicio.descripcion
         item.save()
+
+    if hasattr(formset, 'save_m2m'):
+        formset.save_m2m()
 
 
 def user_can_view_costs(user):
