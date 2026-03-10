@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from .form import InstitucionForm, UserCreateForm, UserEditForm, PerfilForm
 from .models import Perfil, Institucion
-from cotizaciones_app.models import Cliente, Cotizacion, CotizacionItem, ProductoServicio
+from cotizaciones_app.models import Cliente, Cotizacion, CotizacionItem, ProductoServicio, Venta
 from django.views.generic import CreateView
 from django.views.generic import ListView
 from django.urls import reverse_lazy
@@ -25,6 +25,7 @@ from django.db import models
 from django.db.models import (
     DecimalField,
     Sum,
+    Min,
     F,
     Value,
     Count,
@@ -205,29 +206,35 @@ import json
 @grupo_requerido('Administrador', 'Almacen')
 def dahsboard(request):
     cotizaciones_qs = Cotizacion.objects.select_related('cliente')
-
-    monthly_stats = (
-        cotizaciones_qs.annotate(month=TruncMonth('fecha_emision'))
-        .values('month')
-        .annotate(
-            total_count=Count('id'),
-            total_amount=Coalesce(
-                Sum('subtotal_venta'),
-                Value(Decimal('0.00')),
-                output_field=DecimalField(max_digits=12, decimal_places=2),
-            ),
-        )
-        .order_by('month')
+    ventas_qs = Venta.objects.select_related('cotizacion', 'cliente').exclude(
+        cotizacion__estado=Cotizacion.ESTADO_ANULADA,
     )
 
-    month_labels = []
-    monthly_counts = []
-    monthly_amounts = []
-    for item in monthly_stats:
-        month = item['month']
-        month_labels.append(month.strftime('%b %Y') if month else 'Sin fecha')
-        monthly_counts.append(int(item['total_count'] or 0))
-        monthly_amounts.append(float(item['total_amount'] or 0))
+    current_year = timezone.now().year
+    month_labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    monthly_sales_amounts = [0.0] * 12
+    for venta in ventas_qs.filter(fecha_venta__year=current_year):
+        month = venta.fecha_venta
+        if not month:
+            continue
+        monthly_sales_amounts[month.month - 1] += float(venta.total or 0)
+
+    clientes_por_mes_data = [0] * 12
+    if 'created_at' in {field.name for field in Cliente._meta.get_fields()}:
+        clientes_fechas = Cliente.objects.filter(
+            created_at__year=current_year,
+        ).values_list('created_at', flat=True)
+    else:
+        clientes_fechas = Cliente.objects.annotate(
+            fecha_registro=Min('cotizaciones__fecha_emision'),
+        ).values_list('fecha_registro', flat=True)
+
+    for fecha in clientes_fechas:
+        if not fecha:
+            continue
+        if getattr(fecha, 'year', None) != current_year:
+            continue
+        clientes_por_mes_data[fecha.month - 1] += 1
 
     top_clients = (
         cotizaciones_qs.values('cliente__nombre')
@@ -245,9 +252,12 @@ def dahsboard(request):
 
     totals = {
         'cotizaciones': cotizaciones_qs.count(),
+        'ventas': ventas_qs.count(),
         'clientes': Cliente.objects.count(),
         'productos': ProductoServicio.objects.count(),
-        'monto': cotizaciones_qs.aggregate(
+        'ventas_monto': Decimal('0.00'),
+        'pendiente_pago': Decimal('0.00'),
+        'monto': cotizaciones_qs.exclude(estado=Cotizacion.ESTADO_ANULADA).aggregate(
             total=Coalesce(
                 Sum('subtotal_venta'),
                 Value(Decimal('0.00')),
@@ -256,21 +266,25 @@ def dahsboard(request):
         )['total'],
     }
 
+    for venta in ventas_qs:
+        total_venta = venta.total or Decimal('0.00')
+        saldo = venta.saldo or Decimal('0.00')
+        totals['ventas_monto'] += total_venta
+        if venta.estado_pago != Venta.ESTADO_PAGADA and saldo > 0:
+            totals['pendiente_pago'] += saldo
+
     def fmt_q(value):
         if value is None:
             value = Decimal('0.00')
         return f"Q{value:,.2f}"
 
-    monto_expr = ExpressionWrapper(
-        F('cantidad') * F('precio_venta_unitario'),
-        output_field=DecimalField(max_digits=18, decimal_places=2),
-    )
     top_productos = (
         CotizacionItem.objects.select_related('producto_servicio')
+        .filter(cotizacion__venta__isnull=False)
         .values('producto_servicio__nombre')
         .annotate(
             total_monto=Coalesce(
-                Sum(monto_expr),
+                Sum('total_linea_venta'),
                 Value(Decimal('0.00')),
                 output_field=DecimalField(max_digits=18, decimal_places=2),
             ),
@@ -283,17 +297,19 @@ def dahsboard(request):
         .order_by('-total_monto')[:10]
     )
     top_productos_labels = [
-        item['producto_servicio__nombre'] or 'Sin producto'
+        item['producto_servicio__nombre'] or 'SIN NOMBRE'
         for item in top_productos
     ]
-    top_productos_totals = [float(item['total_monto'] or 0) for item in top_productos]
+    top_productos_totals = [float(item['total_monto'] or Decimal('0.00')) for item in top_productos]
 
     context = {
         'totals': totals,
-        'total_cotizado_fmt': fmt_q(totals['monto']),
+        'total_ventas_fmt': fmt_q(totals['ventas_monto']),
+        'total_pendiente_fmt': fmt_q(totals['pendiente_pago']),
         'chart_month_labels': month_labels,
-        'chart_month_counts': monthly_counts,
-        'chart_month_totals': monthly_amounts,
+        'chart_month_sales': monthly_sales_amounts,
+        'clientes_por_mes_labels': month_labels,
+        'clientes_por_mes_data': clientes_por_mes_data,
         'top_clients_labels': top_clients_labels,
         'top_clients_totals': top_clients_amounts,
         'top_products_labels': top_productos_labels,
