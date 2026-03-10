@@ -13,7 +13,7 @@
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table id="ventas-table" class="table table-hover align-middle">
+      <table id="ventas-table" class="table table-hover align-middle datatable-app">
         <thead>
           <tr>
             <th>Correlativo</th>
@@ -53,13 +53,5 @@
   </div>
 </div>
 
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    if (window.jQuery && $.fn.DataTable) {
-      $('#ventas-table').DataTable({
-        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' }
-      });
-    }
-  });
-</script>
+
 {% endblock %}
