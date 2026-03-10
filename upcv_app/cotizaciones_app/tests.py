@@ -73,7 +73,24 @@ class CotizacionUpdateTests(TestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
         self.item.refresh_from_db()
-        self.assertEqual(self.item.cantidad, Decimal('2.00'))
+        self.assertEqual(self.item.cantidad, Decimal('2'))
+        self.assertEqual(self.item.total_linea_venta, Decimal('40.00'))
+
+    def test_reject_decimal_quantity(self):
+        url = reverse('cotizaciones:cotizacion_update', args=[self.cotizacion.pk])
+        data = {
+            **self._base_form_data(),
+            'items-TOTAL_FORMS': '1',
+            'items-INITIAL_FORMS': '1',
+            'items-MIN_NUM_FORMS': '0',
+            'items-MAX_NUM_FORMS': '1000',
+            'items-0-id': str(self.item.id),
+            'items-0-producto_servicio': str(self.producto_a.id),
+            'items-0-cantidad': '1.50',
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'La cantidad debe ser un número entero.')
 
     def test_add_new_item_persists(self):
         url = reverse('cotizaciones:cotizacion_update', args=[self.cotizacion.pk])
@@ -185,4 +202,3 @@ class CotizacionCalculoTotalesTests(TestCase):
         self.assertEqual(cotizacion.base_imponible, Decimal('0.00'))
         self.assertEqual(cotizacion.iva_monto, Decimal('0.00'))
         self.assertEqual(cotizacion.total, Decimal('0.00'))
-

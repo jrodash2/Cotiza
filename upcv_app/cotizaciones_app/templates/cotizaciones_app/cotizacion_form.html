@@ -283,9 +283,30 @@
     const buildPriceUrl = (productId) => priceUrlTemplate.replace('0/', `${productId}/`);
 
     const parseNumber = (value) => {
-      const normalized = `${value ?? ''}`.replace(/Q/gi, '').replace(/,/g, '').trim();
+      const raw = `${value ?? ''}`.replace(/Q/gi, '').replace(/\s/g, '').trim();
+      if (!raw) return 0;
+
+      const hasComma = raw.includes(',');
+      const hasDot = raw.includes('.');
+
+      let normalized = raw;
+      if (hasComma && hasDot) {
+        if (raw.lastIndexOf(',') > raw.lastIndexOf('.')) {
+          normalized = raw.replace(/\./g, '').replace(',', '.');
+        } else {
+          normalized = raw.replace(/,/g, '');
+        }
+      } else if (hasComma) {
+        normalized = raw.replace(',', '.');
+      }
+
       const parsed = Number.parseFloat(normalized);
       return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const parseQuantity = (value) => {
+      const parsed = Number.parseInt(`${value ?? ''}`, 10);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
     };
 
     const formatMoney = (value) => `Q${parseNumber(value).toFixed(2)}`;
@@ -300,7 +321,7 @@
 
     const getRowQuantity = (row) => {
       const qtyInput = row.querySelector('input[name$="-cantidad"]');
-      return parseNumber(qtyInput?.value || '0');
+      return parseQuantity(qtyInput?.value || '0');
     };
 
     const setPrice = (row, price) => {
@@ -347,21 +368,21 @@
     const configureQuantityInput = (qtyInput) => {
       if (!qtyInput) return;
       qtyInput.classList.add('text-center');
-      qtyInput.min = '0';
-      qtyInput.step = qtyInput.step || '0.01';
-      qtyInput.placeholder = qtyInput.placeholder || '0.00';
+      qtyInput.type = 'number';
+      qtyInput.min = '1';
+      qtyInput.step = '1';
+      qtyInput.placeholder = qtyInput.placeholder || '1';
       qtyInput.addEventListener('focus', () => qtyInput.select());
       qtyInput.addEventListener('click', () => qtyInput.select());
       qtyInput.addEventListener('input', () => {
-        if (qtyInput.value && parseNumber(qtyInput.value) < 0) {
-          qtyInput.value = '0';
+        if (qtyInput.value && parseQuantity(qtyInput.value) <= 0) {
+          qtyInput.value = '1';
         }
+        qtyInput.value = `${parseQuantity(qtyInput.value || '1') || 1}`;
         recalculateTotals();
       });
       qtyInput.addEventListener('change', () => {
-        if (qtyInput.value === '' || parseNumber(qtyInput.value) < 0) {
-          qtyInput.value = '0';
-        }
+        qtyInput.value = `${parseQuantity(qtyInput.value || '1') || 1}`;
         recalculateTotals();
       });
       qtyInput.addEventListener('keydown', (event) => {
