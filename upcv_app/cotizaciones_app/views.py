@@ -26,7 +26,6 @@ class ClienteListView(LoginRequiredMixin, ListView):
     model = Cliente
     template_name = 'cotizaciones_app/cliente_list.html'
     context_object_name = 'clientes'
-    paginate_by = 20
 
     def get_queryset(self):
         queryset = super().get_queryset().order_by('nombre')
@@ -67,7 +66,6 @@ class ProductoServicioListView(LoginRequiredMixin, ListView):
     model = ProductoServicio
     template_name = 'cotizaciones_app/producto_list.html'
     context_object_name = 'productos'
-    paginate_by = 20
 
     def get_queryset(self):
         queryset = super().get_queryset().order_by('nombre')
@@ -103,7 +101,6 @@ class CotizacionListView(LoginRequiredMixin, ListView):
     model = Cotizacion
     template_name = 'cotizaciones_app/cotizacion_list.html'
     context_object_name = 'cotizaciones'
-    paginate_by = 20
 
     def get_queryset(self):
         queryset = super().get_queryset().select_related('cliente')
@@ -404,7 +401,6 @@ class VentaListView(LoginRequiredMixin, ListView):
     model = Venta
     template_name = 'cotizaciones_app/venta_list.html'
     context_object_name = 'ventas'
-    paginate_by = 20
 
     def get_queryset(self):
         queryset = (
