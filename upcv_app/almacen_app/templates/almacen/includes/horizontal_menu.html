@@ -63,6 +63,14 @@
               <span>Dashboard</span>
             </a>
           </li>
+          <li class="sidebar-list{% if request.resolver_match.namespace == 'servicio_tecnico' %} active{% endif %}">
+            <i class="fa fa-thumb-tack"></i>
+            <a class="sidebar-link sidebar-title link-nav{% if request.resolver_match.namespace == 'servicio_tecnico' %} active{% endif %}" href="{% url 'servicio_tecnico:orden_lista' %}">
+              <svg class="stroke-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#stroke-project"></use></svg>
+              <svg class="fill-icon"><use href="{% static 'assets/svg/icon-sprite.svg' %}#fill-project"></use></svg>
+              <span>Servicio técnico</span>
+            </a>
+          </li>
           <li class="sidebar-list{% if current_url == 'cotizacion_list' %} active{% endif %}">
             <i class="fa fa-thumb-tack"></i>
             <a class="sidebar-link sidebar-title link-nav{% if current_url == 'cotizacion_list' %} active{% endif %}" href="{% url 'cotizaciones:cotizacion_list' %}">
