@@ -12,6 +12,7 @@ urlpatterns = [
     path('<int:pk>/seguimiento/', views.agregar_seguimiento, name='agregar_seguimiento'),
     path('<int:pk>/estado/', views.cambiar_estado, name='cambiar_estado'),
     path('<int:pk>/entrega/', views.registrar_entrega, name='registrar_entrega'),
+    path('<int:pk>/anticipo/', views.registrar_anticipo, name='registrar_anticipo'),
     path('<int:pk>/constancia.pdf', views.constancia_recepcion_pdf, name='constancia_pdf'),
     path('<int:orden_pk>/cotizaciones/nueva/', views.crear_cotizacion, name='cotizacion_crear'),
     path('cotizaciones/<int:pk>/', views.CotizacionServicioDetailView.as_view(), name='cotizacion_detalle'),

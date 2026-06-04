@@ -45,10 +45,10 @@
       <div class="card-header"><h5 class="mb-0">Recepción y diagnóstico</h5></div>
       <div class="card-body"><div class="row g-3">
         {% for field in form %}
-          {% if field.name == 'accesorios_entregados' or field.name == 'estado_fisico' or field.name == 'falla_reportada' or field.name == 'observaciones_recepcion' or field.name == 'diagnostico_final' or field.name == 'solucion_aplicada' or field.name == 'costo_final' or field.name == 'anticipo' %}
-            <div class="{% if field.name == 'costo_final' or field.name == 'anticipo' %}col-md-4{% else %}col-md-6{% endif %}">
+          {% if field.name == 'accesorios_entregados' or field.name == 'estado_fisico' or field.name == 'falla_reportada' or field.name == 'observaciones_recepcion' or field.name == 'diagnostico_final' or field.name == 'solucion_aplicada' or field.name == 'costo_final' %}
+            <div class="{% if field.name == 'costo_final' %}col-md-4{% else %}col-md-6{% endif %}">
               <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-              {% if field.name == 'costo_final' or field.name == 'anticipo' %}<div class="input-group"><span class="input-group-text">Q</span>{{ field }}</div>{% else %}{{ field }}{% endif %}
+              {% if field.name == 'costo_final' %}<div class="input-group"><span class="input-group-text">Q</span>{{ field }}</div>{% else %}{{ field }}{% endif %}
               <div class="text-danger small">{{ field.errors }}</div>
             </div>
           {% endif %}

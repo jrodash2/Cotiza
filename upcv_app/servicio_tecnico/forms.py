@@ -2,6 +2,7 @@ from django import forms
 from django.forms import inlineformset_factory
 
 from .models import (
+    AnticipoOrdenServicio,
     CotizacionServicio,
     DetalleCotizacionServicio,
     OrdenServicio,
@@ -35,13 +36,24 @@ class OrdenServicioForm(StyledModelForm):
             'accesorios_entregados', 'estado_fisico', 'falla_reportada',
             'observaciones_recepcion', 'clave_equipo', 'tecnico_asignado',
             'prioridad', 'fecha_estimada_revision', 'diagnostico_final',
-            'solucion_aplicada', 'costo_final', 'anticipo', 'activo',
+            'solucion_aplicada', 'costo_final', 'activo',
         ]
         widgets = {
             'fecha_estimada_revision': forms.DateInput(attrs={'type': 'date'}),
             'costo_final': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'placeholder': '0.00', 'inputmode': 'decimal'}),
-            'anticipo': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'placeholder': '0.00', 'inputmode': 'decimal'}),
         }
+
+
+class AnticipoOrdenServicioForm(StyledModelForm):
+    class Meta:
+        model = AnticipoOrdenServicio
+        fields = ['monto', 'fecha', 'observacion']
+        widgets = {
+            'monto': forms.NumberInput(attrs={'step': '0.01', 'min': '0.01', 'placeholder': '0.00', 'inputmode': 'decimal'}),
+            'fecha': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'}),
+            'observacion': forms.Textarea(attrs={'rows': 3}),
+        }
+
 
 
 class SeguimientoOrdenServicioForm(StyledModelForm):

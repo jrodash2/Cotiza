@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CotizacionServicio, DetalleCotizacionServicio, HistorialOrdenServicio, OrdenServicio, SeguimientoOrdenServicio
+from .models import AnticipoOrdenServicio, CotizacionServicio, DetalleCotizacionServicio, HistorialOrdenServicio, OrdenServicio, SeguimientoOrdenServicio
 
 
 class SeguimientoInline(admin.TabularInline):
@@ -10,7 +10,7 @@ class SeguimientoInline(admin.TabularInline):
 
 @admin.register(OrdenServicio)
 class OrdenServicioAdmin(admin.ModelAdmin):
-    list_display = ('numero_orden', 'cliente', 'tipo_equipo', 'estado', 'prioridad', 'anticipo', 'tecnico_asignado', 'fecha_recepcion')
+    list_display = ('numero_orden', 'cliente', 'tipo_equipo', 'estado', 'prioridad', 'total_anticipos', 'tecnico_asignado', 'fecha_recepcion')
     list_filter = ('estado', 'prioridad', 'tipo_equipo', 'activo')
     search_fields = ('numero_orden', 'cliente__nombre', 'numero_serie', 'marca', 'modelo')
     readonly_fields = ('numero_orden', 'fecha_recepcion', 'fecha_actualizacion')
@@ -35,3 +35,16 @@ class CotizacionServicioAdmin(admin.ModelAdmin):
     search_fields = ('numero_cotizacion', 'orden_servicio__numero_orden', 'orden_servicio__cliente__nombre')
     readonly_fields = ('numero_cotizacion', 'subtotal', 'total', 'fecha_actualizacion')
     inlines = [DetalleCotizacionInline]
+
+
+@admin.register(AnticipoOrdenServicio)
+class AnticipoOrdenServicioAdmin(admin.ModelAdmin):
+    list_display = ('orden_servicio', 'monto', 'fecha', 'usuario')
+    list_filter = ('fecha',)
+    search_fields = ('orden_servicio__numero_orden', 'orden_servicio__cliente__nombre', 'observacion')
+    readonly_fields = ('usuario',)
+
+    def save_model(self, request, obj, form, change):
+        if not obj.usuario_id:
+            obj.usuario = request.user
+        super().save_model(request, obj, form, change)

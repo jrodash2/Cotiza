@@ -16,4 +16,8 @@ El módulo reutiliza `cotizaciones_app.Cliente` y `almacen_app.Institucion`. Los
 
 ## Anticipos y saldo
 
-La orden permite registrar un anticipo no negativo. Cuando existe un costo final, el anticipo no puede superarlo. `saldo_pendiente` devuelve la diferencia entre costo final y anticipo, con límite mínimo de cero. El anticipo se incluye en la constancia de recepción y en el resumen económico de la orden/cotización.
+Los anticipos se registran en `AnticipoOrdenServicio`, únicamente cuando la orden está en `APROBADO_REPARACION`. Esto permite múltiples pagos, usuario/fecha/observación por movimiento y conserva trazabilidad. El saldo usa el total de la cotización aprobada o, si no existe, el costo final.
+
+## Detalle de cotización
+
+El formulario usa un inline formset con `management_form` y `DELETE`. La interfaz permite agregar y eliminar líneas dinámicamente; las eliminaciones se procesan en backend y cada alta, cambio o baja recalcula los totales.

@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import models, transaction
 from django.db.models import Sum
 from django.urls import reverse
@@ -68,12 +68,6 @@ class OrdenServicio(models.Model):
     diagnostico_final = models.TextField(blank=True)
     solucion_aplicada = models.TextField(blank=True)
     costo_final = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
-    anticipo = models.DecimalField(
-        'Anticipo recibido',
-        max_digits=12,
-        decimal_places=2,
-        default=Decimal('0.00'),
-    )
     recibido_por = models.CharField(max_length=200, blank=True)
     observaciones_entrega = models.TextField(blank=True)
     usuario_creacion = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='ordenes_servicio_creadas')
@@ -98,21 +92,27 @@ class OrdenServicio(models.Model):
         errors = {}
         if self.costo_final is not None and self.costo_final < 0:
             errors['costo_final'] = 'El costo final no puede ser negativo.'
-        if self.anticipo is not None and self.anticipo < 0:
-            errors['anticipo'] = 'El anticipo no puede ser negativo.'
-        if self.costo_final and self.anticipo > self.costo_final:
-            errors['anticipo'] = 'El anticipo no puede superar el costo final registrado.'
         if self.estado == self.Estado.ENTREGADO and not self.fecha_entrega:
             errors['fecha_entrega'] = 'Debe registrar la fecha de entrega.'
         if errors:
             raise ValidationError(errors)
 
     @property
+    def cotizacion_aprobada(self):
+        return self.cotizaciones_servicio.filter(estado=CotizacionServicio.Estado.APROBADA).order_by('-fecha', '-id').first()
+
+    @property
+    def total_aprobado(self):
+        cotizacion = self.cotizacion_aprobada
+        return cotizacion.total if cotizacion else (self.costo_final or Decimal('0.00'))
+
+    @property
+    def total_anticipos(self):
+        return self.anticipos.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+
+    @property
     def saldo_pendiente(self):
-        return max(
-            (self.costo_final or Decimal('0.00')) - (self.anticipo or Decimal('0.00')),
-            Decimal('0.00'),
-        )
+        return max(self.total_aprobado - self.total_anticipos, Decimal('0.00'))
 
     def save(self, *args, **kwargs):
         usuario_historial = kwargs.pop('usuario_historial', None)
@@ -131,6 +131,38 @@ class OrdenServicio(models.Model):
                 observacion=observacion_historial,
                 usuario=usuario_historial,
             )
+
+
+class AnticipoOrdenServicio(models.Model):
+    orden_servicio = models.ForeignKey(OrdenServicio, on_delete=models.CASCADE, related_name='anticipos')
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+    fecha = models.DateTimeField(default=timezone.now)
+    observacion = models.TextField(blank=True)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='anticipos_servicio_registrados')
+
+    class Meta:
+        ordering = ['-fecha', '-id']
+
+    def __str__(self):
+        return f'{self.orden_servicio.numero_orden} - Q{self.monto}'
+
+    def clean(self):
+        errors = {}
+        if self.monto is not None and self.monto <= 0:
+            errors['monto'] = 'El anticipo debe ser mayor a cero.'
+        if self.orden_servicio_id and self.orden_servicio.estado != OrdenServicio.Estado.APROBADO_REPARACION:
+            errors[NON_FIELD_ERRORS] = 'Solo se pueden registrar anticipos cuando la reparación está aprobada.'
+        if self.orden_servicio_id and self.monto and self.monto > 0:
+            anticipos_previos = self.orden_servicio.anticipos.exclude(pk=self.pk).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+            total_aprobado = self.orden_servicio.total_aprobado
+            if total_aprobado > 0 and anticipos_previos + self.monto > total_aprobado:
+                errors['monto'] = 'El total de anticipos no puede superar el total aprobado.'
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
 
 class HistorialOrdenServicio(models.Model):
@@ -193,7 +225,7 @@ class CotizacionServicio(models.Model):
     @property
     def saldo_despues_anticipo(self):
         return max(
-            (self.total or Decimal('0.00')) - (self.orden_servicio.anticipo or Decimal('0.00')),
+            (self.total or Decimal('0.00')) - self.orden_servicio.total_anticipos,
             Decimal('0.00'),
         )
 

@@ -1,1 +1,121 @@
-{% extends 'almacen/base.html' %}{% block content %}<div class="container-fluid py-3"><h3>{% if cotizacion %}Editar {{ cotizacion.numero_cotizacion }}{% else %}Nueva cotización{% endif %}</h3><p class="text-muted">Orden {{ orden.numero_orden }} · {{ orden.cliente }} · {{ orden.tipo_equipo }}</p><form method="post" novalidate>{% csrf_token %}<div class="card mb-3"><div class="card-body"><div class="row g-3">{% for field in form %}<div class="col-md-{% if field.name == 'observaciones' %}12{% else %}3{% endif %}"><label class="form-label">{{ field.label }}</label>{{ field }}<div class="text-danger small">{{ field.errors }}</div></div>{% endfor %}</div></div></div><div class="card mb-3"><div class="card-header"><h5 class="mb-0">Detalle</h5></div><div class="card-body">{{ formset.management_form }}{{ formset.non_form_errors }}<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Tipo</th><th>Descripción</th><th>Cantidad</th><th>Precio unitario</th><th>Eliminar</th></tr></thead><tbody>{% for item in formset %}<tr><td>{{ item.id }}{{ item.tipo_item }}{{ item.tipo_item.errors }}</td><td>{{ item.descripcion }}{{ item.descripcion.errors }}</td><td>{{ item.cantidad }}{{ item.cantidad.errors }}</td><td>{{ item.precio_unitario }}{{ item.precio_unitario.errors }}</td><td>{% if item.instance.pk %}{{ item.DELETE }}{% endif %}</td></tr>{% endfor %}</tbody></table></div><small class="text-muted">Guarde para calcular automáticamente subtotales y total.</small></div></div><button class="btn btn-primary">Guardar cotización</button> <a class="btn btn-outline-secondary" href="{{ orden.get_absolute_url }}">Cancelar</a></form></div>{% endblock %}
+{% extends 'almacen/base.html' %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3>{% if cotizacion %}Editar {{ cotizacion.numero_cotizacion }}{% else %}Nueva cotización{% endif %}</h3>
+      <p class="text-muted mb-0">Orden {{ orden.numero_orden }} · {{ orden.cliente }} · {{ orden.tipo_equipo }}</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ orden.get_absolute_url }}">Cancelar</a>
+  </div>
+  <form method="post" novalidate id="cotizacion-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="card mb-3">
+      <div class="card-body"><div class="row g-3">
+        {% for field in form %}
+          <div class="col-md-{% if field.name == 'observaciones' %}12{% else %}3{% endif %}">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+            <div class="text-danger small">{{ field.errors }}</div>
+          </div>
+        {% endfor %}
+      </div></div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div><h5 class="mb-0">Detalle de cotización</h5><small class="text-muted">Agregue repuestos, mano de obra o servicios.</small></div>
+        <button class="btn btn-primary btn-sm" type="button" id="agregar-item"><i class="fa fa-plus me-1"></i>Agregar ítem</button>
+      </div>
+      <div class="card-body">
+        {{ formset.management_form }}
+        {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
+        <div class="table-responsive">
+          <table class="table align-middle" id="items-table">
+            <thead><tr><th style="min-width:150px">Tipo</th><th style="min-width:260px">Descripción</th><th style="min-width:120px">Cantidad</th><th style="min-width:150px">Precio unitario</th><th class="text-end" style="min-width:130px">Subtotal</th><th></th></tr></thead>
+            <tbody id="items-body">
+              {% for item in formset %}
+                <tr class="item-row{% if item.DELETE.value %} d-none{% endif %}">
+                  <td>{{ item.id }}{{ item.tipo_item }}<div class="text-danger small">{{ item.tipo_item.errors }}</div></td>
+                  <td>{{ item.descripcion }}<div class="text-danger small">{{ item.descripcion.errors }}</div></td>
+                  <td>{{ item.cantidad }}<div class="text-danger small">{{ item.cantidad.errors }}</div></td>
+                  <td><div class="input-group"><span class="input-group-text">Q</span>{{ item.precio_unitario }}</div><div class="text-danger small">{{ item.precio_unitario.errors }}</div></td>
+                  <td class="text-end fw-semibold item-subtotal">Q0.00</td>
+                  <td class="text-end"><span class="d-none delete-field">{{ item.DELETE }}</span><button type="button" class="btn btn-outline-danger btn-sm eliminar-item">Eliminar</button></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <template id="item-template">
+          <tr class="item-row">
+            <td>{{ formset.empty_form.id }}{{ formset.empty_form.tipo_item }}<div class="text-danger small">{{ formset.empty_form.tipo_item.errors }}</div></td>
+            <td>{{ formset.empty_form.descripcion }}<div class="text-danger small">{{ formset.empty_form.descripcion.errors }}</div></td>
+            <td>{{ formset.empty_form.cantidad }}<div class="text-danger small">{{ formset.empty_form.cantidad.errors }}</div></td>
+            <td><div class="input-group"><span class="input-group-text">Q</span>{{ formset.empty_form.precio_unitario }}</div><div class="text-danger small">{{ formset.empty_form.precio_unitario.errors }}</div></td>
+            <td class="text-end fw-semibold item-subtotal">Q0.00</td>
+            <td class="text-end"><span class="d-none delete-field">{{ formset.empty_form.DELETE }}</span><button type="button" class="btn btn-outline-danger btn-sm eliminar-item">Eliminar</button></td>
+          </tr>
+        </template>
+        <div class="row justify-content-end mt-3"><div class="col-md-5 col-lg-4"><div class="border rounded p-3">
+          <div class="d-flex justify-content-between mb-2"><span>Subtotal</span><strong id="resumen-subtotal">Q0.00</strong></div>
+          <div class="d-flex justify-content-between mb-2"><span>Descuento</span><strong id="resumen-descuento">Q0.00</strong></div>
+          <div class="d-flex justify-content-between border-top pt-2"><span>Total</span><strong class="text-primary fs-5" id="resumen-total">Q0.00</strong></div>
+        </div></div></div>
+      </div>
+    </div>
+    <button class="btn btn-primary">Guardar cotización</button>
+  </form>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const prefix = '{{ formset.prefix }}';
+  const body = document.getElementById('items-body');
+  const totalForms = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+  const template = document.getElementById('item-template').innerHTML;
+  const discountInput = document.getElementById('id_descuento');
+  const money = value => `Q${value.toFixed(2)}`;
+  const numberValue = input => Math.max(parseFloat(input?.value || '0') || 0, 0);
+
+  function isDeleted(row) {
+    return Boolean(row.querySelector('input[name$="-DELETE"]')?.checked);
+  }
+
+  function recalculate() {
+    let subtotal = 0;
+    body.querySelectorAll('.item-row').forEach(row => {
+      if (isDeleted(row)) return;
+      const quantity = numberValue(row.querySelector('input[name$="-cantidad"]'));
+      const price = numberValue(row.querySelector('input[name$="-precio_unitario"]'));
+      const lineTotal = quantity * price;
+      row.querySelector('.item-subtotal').textContent = money(lineTotal);
+      subtotal += lineTotal;
+    });
+    const discount = numberValue(discountInput);
+    document.getElementById('resumen-subtotal').textContent = money(subtotal);
+    document.getElementById('resumen-descuento').textContent = money(discount);
+    document.getElementById('resumen-total').textContent = money(Math.max(subtotal - discount, 0));
+  }
+
+  document.getElementById('agregar-item').addEventListener('click', () => {
+    const index = Number(totalForms.value);
+    body.insertAdjacentHTML('beforeend', template.replaceAll('__prefix__', index));
+    totalForms.value = index + 1;
+    recalculate();
+  });
+
+  body.addEventListener('click', event => {
+    const button = event.target.closest('.eliminar-item');
+    if (!button) return;
+    const row = button.closest('.item-row');
+    const deleteInput = row.querySelector('input[name$="-DELETE"]');
+    if (deleteInput) deleteInput.checked = true;
+    row.classList.add('d-none');
+    recalculate();
+  });
+
+  body.addEventListener('input', recalculate);
+  discountInput?.addEventListener('input', recalculate);
+  recalculate();
+});
+</script>
+{% endblock %}

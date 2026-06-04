@@ -14,6 +14,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from weasyprint import HTML
 
 from .forms import (
+    AnticipoOrdenServicioForm,
     CambioEstadoForm,
     CotizacionServicioForm,
     DetalleCotizacionFormSet,
@@ -21,7 +22,7 @@ from .forms import (
     OrdenServicioForm,
     SeguimientoOrdenServicioForm,
 )
-from .models import CotizacionServicio, OrdenServicio
+from .models import AnticipoOrdenServicio, CotizacionServicio, OrdenServicio
 
 
 ROLES_SERVICIO = ('Administrador', 'Recepcion', 'Técnico', 'Tecnico', 'Almacen')
@@ -123,7 +124,7 @@ class OrdenServicioDetailView(LoginRequiredMixin, RolServicioMixin, DetailView):
     context_object_name = 'orden'
 
     def get_queryset(self):
-        return super().get_queryset().select_related('cliente', 'tecnico_asignado', 'usuario_creacion').prefetch_related('seguimientos__usuario', 'historial_estados__usuario', 'cotizaciones_servicio')
+        return super().get_queryset().select_related('cliente', 'tecnico_asignado', 'usuario_creacion').prefetch_related('seguimientos__usuario', 'historial_estados__usuario', 'cotizaciones_servicio', 'anticipos__usuario')
 
 
 @roles_requeridos(*ROLES_TECNICOS)
@@ -169,6 +170,27 @@ def registrar_entrega(request, pk):
     return render(request, 'servicio_tecnico/accion_form.html', {'form': form, 'orden': orden, 'titulo': 'Registrar entrega final'})
 
 
+@roles_requeridos(*ROLES_ADMINISTRATIVOS)
+def registrar_anticipo(request, pk):
+    orden = get_object_or_404(OrdenServicio, pk=pk)
+    if orden.estado != OrdenServicio.Estado.APROBADO_REPARACION:
+        messages.error(request, 'Solo puede registrar anticipos cuando la reparación está aprobada.')
+        return redirect(orden)
+    anticipo = AnticipoOrdenServicio(orden_servicio=orden, usuario=request.user)
+    form = AnticipoOrdenServicioForm(request.POST or None, instance=anticipo)
+    if request.method == 'POST' and form.is_valid():
+        with transaction.atomic():
+            orden_bloqueada = OrdenServicio.objects.select_for_update().get(pk=orden.pk)
+            if orden_bloqueada.estado != OrdenServicio.Estado.APROBADO_REPARACION:
+                messages.error(request, 'La orden cambió de estado y ya no admite anticipos.')
+                return redirect(orden_bloqueada)
+            form.instance.orden_servicio = orden_bloqueada
+            form.save()
+        messages.success(request, 'Anticipo registrado correctamente.')
+        return redirect(orden)
+    return render(request, 'servicio_tecnico/anticipo_form.html', {'form': form, 'orden': orden})
+
+
 def guardar_cotizacion(request, orden, instance=None):
     form = CotizacionServicioForm(request.POST or None, instance=instance)
     formset = DetalleCotizacionFormSet(request.POST or None, instance=instance)
@@ -207,7 +229,7 @@ class CotizacionServicioDetailView(LoginRequiredMixin, RolServicioMixin, DetailV
     context_object_name = 'cotizacion'
 
     def get_queryset(self):
-        return super().get_queryset().select_related('orden_servicio__cliente', 'usuario_creacion').prefetch_related('detalles')
+        return super().get_queryset().select_related('orden_servicio__cliente', 'usuario_creacion').prefetch_related('detalles', 'orden_servicio__anticipos')
 
 
 @roles_requeridos(*ROLES_ADMINISTRATIVOS)
@@ -235,11 +257,11 @@ def render_pdf(request, template, context, filename):
 
 @roles_requeridos(*ROLES_SERVICIO)
 def constancia_recepcion_pdf(request, pk):
-    orden = get_object_or_404(OrdenServicio.objects.select_related('cliente', 'tecnico_asignado'), pk=pk)
+    orden = get_object_or_404(OrdenServicio.objects.select_related('cliente', 'tecnico_asignado').prefetch_related('anticipos'), pk=pk)
     return render_pdf(request, 'servicio_tecnico/pdf/constancia_recepcion.html', {'orden': orden}, f'{orden.numero_orden}-recepcion.pdf')
 
 
 @roles_requeridos(*ROLES_SERVICIO)
 def cotizacion_pdf(request, pk):
-    cotizacion = get_object_or_404(CotizacionServicio.objects.select_related('orden_servicio__cliente').prefetch_related('detalles'), pk=pk)
+    cotizacion = get_object_or_404(CotizacionServicio.objects.select_related('orden_servicio__cliente').prefetch_related('detalles', 'orden_servicio__anticipos'), pk=pk)
     return render_pdf(request, 'servicio_tecnico/pdf/cotizacion.html', {'cotizacion': cotizacion}, f'{cotizacion.numero_cotizacion}.pdf')
