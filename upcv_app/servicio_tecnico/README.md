@@ -13,3 +13,7 @@ El módulo reutiliza `cotizaciones_app.Cliente` y `almacen_app.Institucion`. Los
 1. Ejecutar `python manage.py migrate`.
 2. Crear/asignar los grupos anteriores desde administración.
 3. Acceder a `/servicio-tecnico/`.
+
+## Anticipos y saldo
+
+La orden permite registrar un anticipo no negativo. Cuando existe un costo final, el anticipo no puede superarlo. `saldo_pendiente` devuelve la diferencia entre costo final y anticipo, con límite mínimo de cero. El anticipo se incluye en la constancia de recepción y en el resumen económico de la orden/cotización.

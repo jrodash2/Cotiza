@@ -13,8 +13,16 @@ class StyledModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
-            css = 'form-select' if isinstance(field.widget, forms.Select) else 'form-control'
-            field.widget.attrs['class'] = f"{field.widget.attrs.get('class', '')} {css}".strip()
+            if isinstance(field.widget, forms.CheckboxInput):
+                css = 'form-check-input'
+            elif isinstance(field.widget, (forms.Select, forms.SelectMultiple)):
+                css = 'form-select'
+            else:
+                css = 'form-control'
+            current_classes = field.widget.attrs.get('class', '').split()
+            incompatible_classes = {'form-control', 'form-select', 'form-check-input'}
+            classes = [name for name in current_classes if name not in incompatible_classes]
+            field.widget.attrs['class'] = ' '.join([*classes, css])
             if isinstance(field.widget, forms.Textarea):
                 field.widget.attrs.setdefault('rows', 3)
 
@@ -27,9 +35,13 @@ class OrdenServicioForm(StyledModelForm):
             'accesorios_entregados', 'estado_fisico', 'falla_reportada',
             'observaciones_recepcion', 'clave_equipo', 'tecnico_asignado',
             'prioridad', 'fecha_estimada_revision', 'diagnostico_final',
-            'solucion_aplicada', 'costo_final', 'activo',
+            'solucion_aplicada', 'costo_final', 'anticipo', 'activo',
         ]
-        widgets = {'fecha_estimada_revision': forms.DateInput(attrs={'type': 'date'})}
+        widgets = {
+            'fecha_estimada_revision': forms.DateInput(attrs={'type': 'date'}),
+            'costo_final': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'placeholder': '0.00', 'inputmode': 'decimal'}),
+            'anticipo': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'placeholder': '0.00', 'inputmode': 'decimal'}),
+        }
 
 
 class SeguimientoOrdenServicioForm(StyledModelForm):

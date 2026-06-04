@@ -10,7 +10,7 @@ class SeguimientoInline(admin.TabularInline):
 
 @admin.register(OrdenServicio)
 class OrdenServicioAdmin(admin.ModelAdmin):
-    list_display = ('numero_orden', 'cliente', 'tipo_equipo', 'estado', 'prioridad', 'tecnico_asignado', 'fecha_recepcion')
+    list_display = ('numero_orden', 'cliente', 'tipo_equipo', 'estado', 'prioridad', 'anticipo', 'tecnico_asignado', 'fecha_recepcion')
     list_filter = ('estado', 'prioridad', 'tipo_equipo', 'activo')
     search_fields = ('numero_orden', 'cliente__nombre', 'numero_serie', 'marca', 'modelo')
     readonly_fields = ('numero_orden', 'fecha_recepcion', 'fecha_actualizacion')

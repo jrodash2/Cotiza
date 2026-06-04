@@ -68,6 +68,12 @@ class OrdenServicio(models.Model):
     diagnostico_final = models.TextField(blank=True)
     solucion_aplicada = models.TextField(blank=True)
     costo_final = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    anticipo = models.DecimalField(
+        'Anticipo recibido',
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal('0.00'),
+    )
     recibido_por = models.CharField(max_length=200, blank=True)
     observaciones_entrega = models.TextField(blank=True)
     usuario_creacion = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='ordenes_servicio_creadas')
@@ -92,10 +98,21 @@ class OrdenServicio(models.Model):
         errors = {}
         if self.costo_final is not None and self.costo_final < 0:
             errors['costo_final'] = 'El costo final no puede ser negativo.'
+        if self.anticipo is not None and self.anticipo < 0:
+            errors['anticipo'] = 'El anticipo no puede ser negativo.'
+        if self.costo_final and self.anticipo > self.costo_final:
+            errors['anticipo'] = 'El anticipo no puede superar el costo final registrado.'
         if self.estado == self.Estado.ENTREGADO and not self.fecha_entrega:
             errors['fecha_entrega'] = 'Debe registrar la fecha de entrega.'
         if errors:
             raise ValidationError(errors)
+
+    @property
+    def saldo_pendiente(self):
+        return max(
+            (self.costo_final or Decimal('0.00')) - (self.anticipo or Decimal('0.00')),
+            Decimal('0.00'),
+        )
 
     def save(self, *args, **kwargs):
         usuario_historial = kwargs.pop('usuario_historial', None)
@@ -172,6 +189,13 @@ class CotizacionServicio(models.Model):
 
     def __str__(self):
         return self.numero_cotizacion
+
+    @property
+    def saldo_despues_anticipo(self):
+        return max(
+            (self.total or Decimal('0.00')) - (self.orden_servicio.anticipo or Decimal('0.00')),
+            Decimal('0.00'),
+        )
 
     def clean(self):
         errors = {}
