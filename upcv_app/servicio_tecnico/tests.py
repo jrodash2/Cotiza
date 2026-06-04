@@ -6,7 +6,7 @@ from django.test import TestCase
 
 from cotizaciones_app.models import Cliente
 from .forms import DetalleCotizacionFormSet, OrdenServicioForm
-from .models import AnticipoOrdenServicio, CotizacionServicio, DetalleCotizacionServicio, OrdenServicio
+from .models import CotizacionServicio, DetalleCotizacionServicio, OrdenServicio, PagoOrdenServicio
 
 
 class ServicioTecnicoModelTests(TestCase):
@@ -36,39 +36,69 @@ class ServicioTecnicoModelTests(TestCase):
         cotizacion.refresh_from_db()
         self.assertEqual(cotizacion.total, Decimal('0.00'))
 
-    def test_anticipo_solo_se_permite_con_reparacion_aprobada(self):
-        anticipo = AnticipoOrdenServicio(orden_servicio=self.orden, monto=Decimal('25.00'), usuario=self.user)
-        with self.assertRaisesMessage(ValidationError, 'Solo se pueden registrar anticipos cuando la reparación está aprobada.'):
-            anticipo.full_clean()
-
-    def test_anticipos_acumulados_no_superan_total_aprobado(self):
+    def aprobar_orden_con_total(self, total=Decimal('100.00')):
         CotizacionServicio.objects.create(
             orden_servicio=self.orden,
-            total=Decimal('100.00'),
+            total=total,
             estado=CotizacionServicio.Estado.APROBADA,
             usuario_creacion=self.user,
         )
         self.orden.estado = OrdenServicio.Estado.APROBADO_REPARACION
         self.orden.save(usuario_historial=self.user)
-        AnticipoOrdenServicio.objects.create(orden_servicio=self.orden, monto=Decimal('60.00'), usuario=self.user)
-        segundo = AnticipoOrdenServicio(orden_servicio=self.orden, monto=Decimal('50.00'), usuario=self.user)
-        with self.assertRaisesMessage(ValidationError, 'El total de anticipos no puede superar el total aprobado.'):
-            segundo.full_clean()
-        self.assertEqual(self.orden.total_anticipos, Decimal('60.00'))
-        self.assertEqual(self.orden.saldo_pendiente, Decimal('40.00'))
 
-    def test_anticipo_debe_ser_mayor_a_cero(self):
+    def test_pago_requiere_estado_permitido_y_total_definido(self):
+        pago = PagoOrdenServicio(orden_servicio=self.orden, monto=Decimal('25.00'), usuario_registro=self.user)
+        with self.assertRaisesMessage(ValidationError, 'La orden no se encuentra en un estado que permita registrar pagos.'):
+            pago.full_clean()
         self.orden.estado = OrdenServicio.Estado.APROBADO_REPARACION
         self.orden.save(usuario_historial=self.user)
-        anticipo = AnticipoOrdenServicio(orden_servicio=self.orden, monto=Decimal('-1.00'), usuario=self.user)
-        with self.assertRaisesMessage(ValidationError, 'El anticipo debe ser mayor a cero.'):
-            anticipo.full_clean()
+        with self.assertRaisesMessage(ValidationError, 'Debe existir un costo final o una cotización aprobada antes de registrar pagos.'):
+            pago.full_clean()
+
+    def test_pagos_parciales_y_pago_despues_de_entrega(self):
+        self.aprobar_orden_con_total()
+        PagoOrdenServicio.objects.create(orden_servicio=self.orden, monto=Decimal('30.00'), tipo_pago='ANTICIPO', usuario_registro=self.user)
+        self.assertEqual(self.orden.anticipo_total, Decimal('30.00'))
+        self.assertEqual(self.orden.estado_pago, 'PAGO_PARCIAL')
+        self.orden.estado = OrdenServicio.Estado.ENTREGADO
+        self.orden.fecha_entrega = self.orden.fecha_recepcion
+        self.orden.save(usuario_historial=self.user)
+        PagoOrdenServicio.objects.create(orden_servicio=self.orden, monto=Decimal('70.00'), tipo_pago='PAGO_FINAL', usuario_registro=self.user)
+        self.assertEqual(self.orden.total_pagado, Decimal('100.00'))
+        self.assertEqual(self.orden.saldo_pendiente, Decimal('0.00'))
+        self.assertTrue(self.orden.esta_pagada)
+        self.assertEqual(self.orden.estado_pago, 'PAGADO')
+        self.assertRegex(self.orden.pagos.first().numero_recibo, r'^REC-\d{4}-\d{5}$')
+
+    def test_pago_no_supera_saldo_y_costo_final_manda(self):
+        self.aprobar_orden_con_total(Decimal('100.00'))
+        self.orden.costo_final = Decimal('80.00')
+        self.orden.save()
+        PagoOrdenServicio.objects.create(orden_servicio=self.orden, monto=Decimal('60.00'), usuario_registro=self.user)
+        segundo = PagoOrdenServicio(orden_servicio=self.orden, monto=Decimal('25.00'), usuario_registro=self.user)
+        with self.assertRaisesMessage(ValidationError, 'El pago no puede superar el saldo pendiente.'):
+            segundo.full_clean()
+        self.assertEqual(self.orden.total_cobro, Decimal('80.00'))
+        self.assertEqual(self.orden.saldo_pendiente, Decimal('20.00'))
+        self.orden.costo_final = Decimal('50.00')
+        with self.assertRaisesMessage(ValidationError, 'El costo final no puede ser menor que el total pagado.'):
+            self.orden.full_clean()
+
+    def test_pago_debe_ser_mayor_a_cero_y_anulado_no_suma(self):
+        self.aprobar_orden_con_total()
+        pago = PagoOrdenServicio(orden_servicio=self.orden, monto=Decimal('-1.00'), usuario_registro=self.user)
+        with self.assertRaisesMessage(ValidationError, 'El pago debe ser mayor a cero.'):
+            pago.full_clean()
+        pago = PagoOrdenServicio.objects.create(orden_servicio=self.orden, monto=Decimal('20.00'), usuario_registro=self.user)
+        pago.activo = False
+        pago.save()
+        self.assertEqual(self.orden.total_pagado, Decimal('0.00'))
 
 
 class ServicioTecnicoFormTests(TestCase):
-    def test_orden_no_solicita_anticipo_y_activo_usa_checkbox_bootstrap(self):
+    def test_orden_no_solicita_pago_y_activo_usa_checkbox_bootstrap(self):
         form = OrdenServicioForm()
-        self.assertNotIn('anticipo', form.fields)
+        self.assertNotIn('pago', form.fields)
         self.assertEqual(form.fields['activo'].widget.input_type, 'checkbox')
         self.assertIn('form-check-input', form.fields['activo'].widget.attrs['class'])
         self.assertNotIn('form-control', form.fields['activo'].widget.attrs['class'])

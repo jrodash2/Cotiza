@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AnticipoOrdenServicio, CotizacionServicio, DetalleCotizacionServicio, HistorialOrdenServicio, OrdenServicio, SeguimientoOrdenServicio
+from .models import PagoOrdenServicio, CotizacionServicio, DetalleCotizacionServicio, HistorialOrdenServicio, OrdenServicio, SeguimientoOrdenServicio
 
 
 class SeguimientoInline(admin.TabularInline):
@@ -10,7 +10,7 @@ class SeguimientoInline(admin.TabularInline):
 
 @admin.register(OrdenServicio)
 class OrdenServicioAdmin(admin.ModelAdmin):
-    list_display = ('numero_orden', 'cliente', 'tipo_equipo', 'estado', 'prioridad', 'total_anticipos', 'tecnico_asignado', 'fecha_recepcion')
+    list_display = ('numero_orden', 'cliente', 'tipo_equipo', 'estado', 'prioridad', 'total_pagado', 'tecnico_asignado', 'fecha_recepcion')
     list_filter = ('estado', 'prioridad', 'tipo_equipo', 'activo')
     search_fields = ('numero_orden', 'cliente__nombre', 'numero_serie', 'marca', 'modelo')
     readonly_fields = ('numero_orden', 'fecha_recepcion', 'fecha_actualizacion')
@@ -37,14 +37,17 @@ class CotizacionServicioAdmin(admin.ModelAdmin):
     inlines = [DetalleCotizacionInline]
 
 
-@admin.register(AnticipoOrdenServicio)
-class AnticipoOrdenServicioAdmin(admin.ModelAdmin):
-    list_display = ('orden_servicio', 'monto', 'fecha', 'usuario')
-    list_filter = ('fecha',)
+@admin.register(PagoOrdenServicio)
+class PagoOrdenServicioAdmin(admin.ModelAdmin):
+    list_display = ('numero_recibo', 'orden_servicio', 'tipo_pago', 'metodo_pago', 'monto', 'fecha', 'activo')
+    list_filter = ('activo', 'tipo_pago', 'metodo_pago', 'fecha')
     search_fields = ('orden_servicio__numero_orden', 'orden_servicio__cliente__nombre', 'observacion')
-    readonly_fields = ('usuario',)
+    readonly_fields = ('numero_recibo', 'usuario_registro', 'activo', 'fecha_anulacion', 'usuario_anulacion')
 
     def save_model(self, request, obj, form, change):
-        if not obj.usuario_id:
-            obj.usuario = request.user
+        if not obj.usuario_registro_id:
+            obj.usuario_registro = request.user
         super().save_model(request, obj, form, change)
+
+    def has_delete_permission(self, request, obj=None):
+        return False

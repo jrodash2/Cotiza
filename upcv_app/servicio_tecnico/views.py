@@ -14,7 +14,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from weasyprint import HTML
 
 from .forms import (
-    AnticipoOrdenServicioForm,
+    PagoOrdenServicioForm,
     CambioEstadoForm,
     CotizacionServicioForm,
     DetalleCotizacionFormSet,
@@ -22,7 +22,7 @@ from .forms import (
     OrdenServicioForm,
     SeguimientoOrdenServicioForm,
 )
-from .models import AnticipoOrdenServicio, CotizacionServicio, OrdenServicio
+from .models import CotizacionServicio, OrdenServicio, PagoOrdenServicio
 
 
 ROLES_SERVICIO = ('Administrador', 'Recepcion', 'Técnico', 'Tecnico', 'Almacen')
@@ -65,7 +65,7 @@ class OrdenServicioListView(LoginRequiredMixin, RolServicioMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        qs = super().get_queryset().select_related('cliente', 'tecnico_asignado')
+        qs = super().get_queryset().select_related('cliente', 'tecnico_asignado').prefetch_related('pagos', 'cotizaciones_servicio')
         q = self.request.GET.get('q', '').strip()
         estado = self.request.GET.get('estado', '')
         tecnico = self.request.GET.get('tecnico', '')
@@ -124,7 +124,7 @@ class OrdenServicioDetailView(LoginRequiredMixin, RolServicioMixin, DetailView):
     context_object_name = 'orden'
 
     def get_queryset(self):
-        return super().get_queryset().select_related('cliente', 'tecnico_asignado', 'usuario_creacion').prefetch_related('seguimientos__usuario', 'historial_estados__usuario', 'cotizaciones_servicio', 'anticipos__usuario')
+        return super().get_queryset().select_related('cliente', 'tecnico_asignado', 'usuario_creacion').prefetch_related('seguimientos__usuario', 'historial_estados__usuario', 'cotizaciones_servicio', 'pagos__usuario_registro')
 
 
 @roles_requeridos(*ROLES_TECNICOS)
@@ -171,24 +171,36 @@ def registrar_entrega(request, pk):
 
 
 @roles_requeridos(*ROLES_ADMINISTRATIVOS)
-def registrar_anticipo(request, pk):
+def registrar_pago(request, pk):
     orden = get_object_or_404(OrdenServicio, pk=pk)
-    if orden.estado != OrdenServicio.Estado.APROBADO_REPARACION:
-        messages.error(request, 'Solo puede registrar anticipos cuando la reparación está aprobada.')
+    if not orden.puede_registrar_pago:
+        messages.error(request, 'La orden no admite pagos o no tiene saldo pendiente.')
         return redirect(orden)
-    anticipo = AnticipoOrdenServicio(orden_servicio=orden, usuario=request.user)
-    form = AnticipoOrdenServicioForm(request.POST or None, instance=anticipo)
+    pago = PagoOrdenServicio(orden_servicio=orden, usuario_registro=request.user)
+    form = PagoOrdenServicioForm(request.POST or None, instance=pago)
     if request.method == 'POST' and form.is_valid():
         with transaction.atomic():
             orden_bloqueada = OrdenServicio.objects.select_for_update().get(pk=orden.pk)
-            if orden_bloqueada.estado != OrdenServicio.Estado.APROBADO_REPARACION:
-                messages.error(request, 'La orden cambió de estado y ya no admite anticipos.')
+            if not orden_bloqueada.puede_registrar_pago:
+                messages.error(request, 'La orden cambió y ya no admite este pago.')
                 return redirect(orden_bloqueada)
             form.instance.orden_servicio = orden_bloqueada
-            form.save()
-        messages.success(request, 'Anticipo registrado correctamente.')
-        return redirect(orden)
-    return render(request, 'servicio_tecnico/anticipo_form.html', {'form': form, 'orden': orden})
+            pago = form.save()
+        messages.success(request, f'Pago {pago.numero_recibo} registrado correctamente.')
+        return redirect('servicio_tecnico:pago_recibo_pdf', pk=pago.pk)
+    return render(request, 'servicio_tecnico/pago_form.html', {'form': form, 'orden': orden})
+
+
+@roles_requeridos('Administrador')
+def anular_pago(request, pk):
+    pago = get_object_or_404(PagoOrdenServicio, pk=pk, activo=True)
+    if request.method == 'POST':
+        pago.activo = False
+        pago.fecha_anulacion = timezone.now()
+        pago.usuario_anulacion = request.user
+        pago.save(update_fields=['activo', 'fecha_anulacion', 'usuario_anulacion'])
+        messages.success(request, f'Pago {pago.numero_recibo} anulado correctamente.')
+    return redirect(pago.orden_servicio)
 
 
 def guardar_cotizacion(request, orden, instance=None):
@@ -229,7 +241,7 @@ class CotizacionServicioDetailView(LoginRequiredMixin, RolServicioMixin, DetailV
     context_object_name = 'cotizacion'
 
     def get_queryset(self):
-        return super().get_queryset().select_related('orden_servicio__cliente', 'usuario_creacion').prefetch_related('detalles', 'orden_servicio__anticipos')
+        return super().get_queryset().select_related('orden_servicio__cliente', 'usuario_creacion').prefetch_related('detalles', 'orden_servicio__pagos')
 
 
 @roles_requeridos(*ROLES_ADMINISTRATIVOS)
@@ -257,11 +269,17 @@ def render_pdf(request, template, context, filename):
 
 @roles_requeridos(*ROLES_SERVICIO)
 def constancia_recepcion_pdf(request, pk):
-    orden = get_object_or_404(OrdenServicio.objects.select_related('cliente', 'tecnico_asignado').prefetch_related('anticipos'), pk=pk)
+    orden = get_object_or_404(OrdenServicio.objects.select_related('cliente', 'tecnico_asignado').prefetch_related('pagos'), pk=pk)
     return render_pdf(request, 'servicio_tecnico/pdf/constancia_recepcion.html', {'orden': orden}, f'{orden.numero_orden}-recepcion.pdf')
 
 
 @roles_requeridos(*ROLES_SERVICIO)
 def cotizacion_pdf(request, pk):
-    cotizacion = get_object_or_404(CotizacionServicio.objects.select_related('orden_servicio__cliente').prefetch_related('detalles', 'orden_servicio__anticipos'), pk=pk)
+    cotizacion = get_object_or_404(CotizacionServicio.objects.select_related('orden_servicio__cliente').prefetch_related('detalles', 'orden_servicio__pagos'), pk=pk)
     return render_pdf(request, 'servicio_tecnico/pdf/cotizacion.html', {'cotizacion': cotizacion}, f'{cotizacion.numero_cotizacion}.pdf')
+
+
+@roles_requeridos(*ROLES_SERVICIO)
+def pago_recibo_pdf(request, pk):
+    pago = get_object_or_404(PagoOrdenServicio.objects.select_related('orden_servicio__cliente', 'usuario_registro'), pk=pk)
+    return render_pdf(request, 'servicio_tecnico/pdf/recibo_pago.html', {'pago': pago, 'orden': pago.orden_servicio}, f'{pago.numero_recibo}.pdf')

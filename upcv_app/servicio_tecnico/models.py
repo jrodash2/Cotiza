@@ -92,6 +92,8 @@ class OrdenServicio(models.Model):
         errors = {}
         if self.costo_final is not None and self.costo_final < 0:
             errors['costo_final'] = 'El costo final no puede ser negativo.'
+        if self.pk and self.costo_final and self.total_pagado > self.costo_final:
+            errors['costo_final'] = 'El costo final no puede ser menor que el total pagado.'
         if self.estado == self.Estado.ENTREGADO and not self.fecha_entrega:
             errors['fecha_entrega'] = 'Debe registrar la fecha de entrega.'
         if errors:
@@ -102,17 +104,55 @@ class OrdenServicio(models.Model):
         return self.cotizaciones_servicio.filter(estado=CotizacionServicio.Estado.APROBADA).order_by('-fecha', '-id').first()
 
     @property
-    def total_aprobado(self):
+    def total_cobro(self):
+        if self.costo_final and self.costo_final > 0:
+            return self.costo_final
         cotizacion = self.cotizacion_aprobada
-        return cotizacion.total if cotizacion else (self.costo_final or Decimal('0.00'))
+        return cotizacion.total if cotizacion else Decimal('0.00')
+
+    @property
+    def total_aprobado(self):
+        return self.total_cobro
+
+    @property
+    def total_pagado(self):
+        return self.pagos.filter(activo=True).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+
+    @property
+    def anticipo_total(self):
+        return self.pagos.filter(activo=True, tipo_pago=PagoOrdenServicio.TipoPago.ANTICIPO).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
 
     @property
     def total_anticipos(self):
-        return self.anticipos.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        return self.anticipo_total
 
     @property
     def saldo_pendiente(self):
-        return max(self.total_aprobado - self.total_anticipos, Decimal('0.00'))
+        return max(self.total_cobro - self.total_pagado, Decimal('0.00'))
+
+    @property
+    def esta_pagada(self):
+        return self.total_cobro > 0 and self.saldo_pendiente == 0
+
+    @property
+    def estado_pago(self):
+        if self.esta_pagada:
+            return 'PAGADO'
+        if self.total_pagado > 0:
+            return 'PAGO_PARCIAL'
+        return 'PENDIENTE'
+
+    @property
+    def estado_pago_display(self):
+        return {
+            'PENDIENTE': 'Pendiente',
+            'PAGO_PARCIAL': 'Pago parcial',
+            'PAGADO': 'Pagado',
+        }[self.estado_pago]
+
+    @property
+    def puede_registrar_pago(self):
+        return self.estado in PagoOrdenServicio.ESTADOS_PERMITIDOS and self.total_cobro > 0 and self.saldo_pendiente > 0
 
     def save(self, *args, **kwargs):
         usuario_historial = kwargs.pop('usuario_historial', None)
@@ -133,35 +173,68 @@ class OrdenServicio(models.Model):
             )
 
 
-class AnticipoOrdenServicio(models.Model):
-    orden_servicio = models.ForeignKey(OrdenServicio, on_delete=models.CASCADE, related_name='anticipos')
-    monto = models.DecimalField(max_digits=12, decimal_places=2)
+class PagoOrdenServicio(models.Model):
+    class TipoPago(models.TextChoices):
+        ANTICIPO = 'ANTICIPO', 'Anticipo'
+        ABONO = 'ABONO', 'Abono'
+        PAGO_FINAL = 'PAGO_FINAL', 'Pago final'
+        AJUSTE = 'AJUSTE', 'Ajuste'
+
+    class MetodoPago(models.TextChoices):
+        EFECTIVO = 'EFECTIVO', 'Efectivo'
+        TRANSFERENCIA = 'TRANSFERENCIA', 'Transferencia'
+        DEPOSITO = 'DEPOSITO', 'Depósito'
+        TARJETA = 'TARJETA', 'Tarjeta'
+        OTRO = 'OTRO', 'Otro'
+
+    ESTADOS_PERMITIDOS = (
+        OrdenServicio.Estado.APROBADO_REPARACION,
+        OrdenServicio.Estado.EN_REPARACION,
+        OrdenServicio.Estado.PENDIENTE_REPUESTO,
+        OrdenServicio.Estado.REPARADO,
+        OrdenServicio.Estado.LISTO_PARA_ENTREGAR,
+        OrdenServicio.Estado.ENTREGADO,
+    )
+
+    orden_servicio = models.ForeignKey(OrdenServicio, on_delete=models.CASCADE, related_name='pagos')
+    numero_recibo = models.CharField(max_length=20, unique=True, blank=True)
     fecha = models.DateTimeField(default=timezone.now)
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+    tipo_pago = models.CharField(max_length=15, choices=TipoPago.choices, default=TipoPago.ABONO)
+    metodo_pago = models.CharField(max_length=20, choices=MetodoPago.choices, default=MetodoPago.EFECTIVO)
+    referencia = models.CharField(max_length=150, blank=True)
     observacion = models.TextField(blank=True)
-    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='anticipos_servicio_registrados')
+    usuario_registro = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='pagos_servicio_registrados')
+    activo = models.BooleanField(default=True)
+    fecha_anulacion = models.DateTimeField(null=True, blank=True)
+    usuario_anulacion = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name='pagos_servicio_anulados')
 
     class Meta:
         ordering = ['-fecha', '-id']
 
     def __str__(self):
-        return f'{self.orden_servicio.numero_orden} - Q{self.monto}'
+        return f'{self.numero_recibo} - {self.orden_servicio.numero_orden} - Q{self.monto}'
 
     def clean(self):
         errors = {}
         if self.monto is not None and self.monto <= 0:
-            errors['monto'] = 'El anticipo debe ser mayor a cero.'
-        if self.orden_servicio_id and self.orden_servicio.estado != OrdenServicio.Estado.APROBADO_REPARACION:
-            errors[NON_FIELD_ERRORS] = 'Solo se pueden registrar anticipos cuando la reparación está aprobada.'
-        if self.orden_servicio_id and self.monto and self.monto > 0:
-            anticipos_previos = self.orden_servicio.anticipos.exclude(pk=self.pk).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
-            total_aprobado = self.orden_servicio.total_aprobado
-            if total_aprobado > 0 and anticipos_previos + self.monto > total_aprobado:
-                errors['monto'] = 'El total de anticipos no puede superar el total aprobado.'
+            errors['monto'] = 'El pago debe ser mayor a cero.'
+        if self.orden_servicio_id and self.activo and self.orden_servicio.estado not in self.ESTADOS_PERMITIDOS:
+            errors[NON_FIELD_ERRORS] = 'La orden no se encuentra en un estado que permita registrar pagos.'
+        if self.orden_servicio_id and self.activo and self.monto and self.monto > 0:
+            total_cobro = self.orden_servicio.total_cobro
+            pagos_previos = self.orden_servicio.pagos.filter(activo=True).exclude(pk=self.pk).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+            if total_cobro <= 0:
+                errors[NON_FIELD_ERRORS] = 'Debe existir un costo final o una cotización aprobada antes de registrar pagos.'
+            elif pagos_previos + self.monto > total_cobro:
+                errors['monto'] = 'El pago no puede superar el saldo pendiente.'
         if errors:
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
-        self.full_clean()
+        self.full_clean(exclude=['numero_recibo'] if not self.numero_recibo else None)
+        if not self.numero_recibo:
+            self.numero_recibo = CorrelativoServicio.siguiente('PAGO', 'REC')
         return super().save(*args, **kwargs)
 
 
@@ -223,11 +296,15 @@ class CotizacionServicio(models.Model):
         return self.numero_cotizacion
 
     @property
-    def saldo_despues_anticipo(self):
+    def saldo_despues_pagos(self):
         return max(
-            (self.total or Decimal('0.00')) - self.orden_servicio.total_anticipos,
+            (self.total or Decimal('0.00')) - self.orden_servicio.total_pagado,
             Decimal('0.00'),
         )
+
+    @property
+    def saldo_despues_anticipo(self):
+        return self.saldo_despues_pagos
 
     def clean(self):
         errors = {}

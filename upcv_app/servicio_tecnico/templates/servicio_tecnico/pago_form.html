@@ -1,0 +1,35 @@
+{% extends 'almacen/base.html' %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-header">
+          <h4 class="mb-1">Registrar pago</h4>
+          <span class="text-muted">{{ orden.numero_orden }} · {{ orden.cliente }}</span>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-light border d-flex flex-wrap gap-3 justify-content-between">
+            <span>Total a cobrar</span><strong>Q{{ orden.total_cobro }}</strong>
+            <span>Total pagado</span><strong>Q{{ orden.total_pagado }}</strong>
+            <span>Saldo pendiente</span><strong>Q{{ orden.saldo_pendiente }}</strong>
+          </div>
+          <form method="post" novalidate>
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {% for field in form %}
+              <div class="mb-3">
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {% if field.name == 'monto' %}<div class="input-group"><span class="input-group-text">Q</span>{{ field }}</div>{% else %}{{ field }}{% endif %}
+                <div class="text-danger small">{{ field.errors }}</div>
+              </div>
+            {% endfor %}
+            <button class="btn btn-primary">Registrar pago</button>
+            <a class="btn btn-outline-secondary" href="{{ orden.get_absolute_url }}">Cancelar</a>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

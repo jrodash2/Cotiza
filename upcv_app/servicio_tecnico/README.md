@@ -14,9 +14,11 @@ El módulo reutiliza `cotizaciones_app.Cliente` y `almacen_app.Institucion`. Los
 2. Crear/asignar los grupos anteriores desde administración.
 3. Acceder a `/servicio-tecnico/`.
 
-## Anticipos y saldo
+## Pagos parciales y saldo
 
-Los anticipos se registran en `AnticipoOrdenServicio`, únicamente cuando la orden está en `APROBADO_REPARACION`. Esto permite múltiples pagos, usuario/fecha/observación por movimiento y conserva trazabilidad. El saldo usa el total de la cotización aprobada o, si no existe, el costo final.
+Los movimientos se registran en `PagoOrdenServicio` con recibo, tipo, método, referencia, fecha, usuario y estado activo. Se permiten pagos desde `APROBADO_REPARACION` y durante reparación, repuesto pendiente, reparación terminada, listo para entrega y entregado. Los pagos anulados conservan fecha y usuario de anulación, pero no suman. Cada pago genera un correlativo y un recibo PDF individual.
+
+La base de cobro es `costo_final` cuando es mayor que cero; de lo contrario se utiliza la cotización aprobada. El sistema calcula `total_pagado`, `anticipo_total`, `saldo_pendiente`, `esta_pagada` y `estado_pago`, bloqueando sobrepagos y pagos sin una base de cobro.
 
 ## Detalle de cotización
 

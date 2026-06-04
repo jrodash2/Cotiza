@@ -2,7 +2,7 @@ from django import forms
 from django.forms import inlineformset_factory
 
 from .models import (
-    AnticipoOrdenServicio,
+    PagoOrdenServicio,
     CotizacionServicio,
     DetalleCotizacionServicio,
     OrdenServicio,
@@ -44,10 +44,10 @@ class OrdenServicioForm(StyledModelForm):
         }
 
 
-class AnticipoOrdenServicioForm(StyledModelForm):
+class PagoOrdenServicioForm(StyledModelForm):
     class Meta:
-        model = AnticipoOrdenServicio
-        fields = ['monto', 'fecha', 'observacion']
+        model = PagoOrdenServicio
+        fields = ['monto', 'fecha', 'tipo_pago', 'metodo_pago', 'referencia', 'observacion']
         widgets = {
             'monto': forms.NumberInput(attrs={'step': '0.01', 'min': '0.01', 'placeholder': '0.00', 'inputmode': 'decimal'}),
             'fecha': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'}),
