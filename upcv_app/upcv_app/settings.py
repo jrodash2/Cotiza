@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     
     'almacen_app.apps.AlmacenAppConfig',  # ✅ solo esta línea
     'cotizaciones_app.apps.CotizacionesAppConfig',
+    'servicio_tecnico.apps.ServicioTecnicoConfig',
 ]
 
 
