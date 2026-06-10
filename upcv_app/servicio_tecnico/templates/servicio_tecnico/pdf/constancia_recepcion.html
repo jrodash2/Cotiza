@@ -1,1 +1,171 @@
-<!doctype html><html><head><meta charset="utf-8"><style>@page{size:letter;margin:1.5cm}body{font-family:Arial,sans-serif;font-size:11px;color:#222}h1{font-size:20px;margin:0}.header{display:flex;justify-content:space-between;border-bottom:2px solid #2454a6;padding-bottom:10px}.logo{max-height:65px;max-width:160px}.box{border:1px solid #bbb;border-radius:5px;padding:10px;margin-top:12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.label{font-weight:bold;color:#2454a6}.signature{margin-top:60px;display:grid;grid-template-columns:1fr 1fr;gap:60px;text-align:center}.line{border-top:1px solid #222;padding-top:5px}.legal{font-size:9px;text-align:justify;margin-top:28px}</style></head><body><div class="header"><div>{% if institucion.logo %}<img class="logo" src="{{ institucion.logo.url }}">{% endif %}<h1>{{ institucion.nombre|default:'Servicio Técnico' }}</h1><div>{{ institucion.direccion }} · {{ institucion.telefono }}</div></div><div><strong>CONSTANCIA DE RECEPCIÓN</strong><br>{{ orden.numero_orden }}<br>{{ orden.fecha_recepcion|date:'d/m/Y H:i' }}</div></div><div class="box grid"><div><span class="label">Cliente:</span> {{ orden.cliente }}</div><div><span class="label">NIT:</span> {{ orden.cliente.nit|default:'—' }}</div><div><span class="label">Teléfono:</span> {{ orden.cliente.telefono|default:'—' }}</div><div><span class="label">Correo:</span> {{ orden.cliente.email|default:'—' }}</div><div style="grid-column:1/3"><span class="label">Dirección:</span> {{ orden.cliente.direccion|default:'—' }}</div></div><div class="box"><h3>Equipo recibido</h3><div class="grid"><div><span class="label">Tipo:</span> {{ orden.tipo_equipo }}</div><div><span class="label">Marca / modelo:</span> {{ orden.marca }} {{ orden.modelo }}</div><div><span class="label">Serie:</span> {{ orden.numero_serie|default:'—' }}</div><div><span class="label">Color:</span> {{ orden.color|default:'—' }}</div></div><p><span class="label">Accesorios entregados:</span> {{ orden.accesorios_entregados|default:'Ninguno indicado' }}</p><p><span class="label">Estado físico:</span> {{ orden.estado_fisico|default:'Sin observaciones' }}</p></div><div class="box"><p><span class="label">Falla reportada:</span> {{ orden.falla_reportada }}</p><p><span class="label">Observaciones:</span> {{ orden.observaciones_recepcion|default:'Sin observaciones' }}</p>{% if orden.total_pagado > 0 %}<p><span class="label">Total pagado:</span> Q{{ orden.total_pagado }}</p>{% endif %}</div><p class="legal">El cliente declara que la información y los accesorios detallados son correctos. Autoriza la revisión técnica del equipo. El diagnóstico y cualquier reparación que genere costos adicionales serán informados para su aprobación. El establecimiento no se responsabiliza por información no respaldada, fallas preexistentes no visibles ni equipos no retirados dentro de los plazos comunicados, conforme a la legislación aplicable.</p><div class="signature"><div class="line">Firma del cliente</div><div class="line">Firma de recepción</div></div></body></html>
+{% load money %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Constancia de recepción {{ orden.numero_orden }}</title>
+  <style>
+    {% include "servicio_tecnico/pdf/includes/document_styles.html" %}
+  </style>
+</head>
+<body>
+  {% with cliente=orden.cliente %}
+    <div class="sheet">
+      <div class="page" id="constancia-print" data-correlativo="{{ orden.numero_orden }}">
+        <div class="band"></div>
+
+        <div class="content">
+          <table class="header-grid">
+            <tr>
+              <td style="width:25%;">
+                {% if logo_url %}
+                  <img src="{{ logo_url }}" alt="Logo {{ institucion.nombre }}" class="logo-img" crossorigin="anonymous">
+                {% elif institucion and institucion.logo %}
+                  <img src="{{ institucion.logo.url }}" alt="Logo {{ institucion.nombre }}" class="logo-img">
+                {% endif %}
+              </td>
+              <td style="width:45%; text-align:center;">
+                {% if institucion %}
+                  <div class="institution-name">{{ institucion.nombre }}</div>
+                  {% if institucion.direccion %}
+                    <div class="muted">{{ institucion.direccion }}</div>
+                  {% endif %}
+                {% endif %}
+              </td>
+              <td style="width:30%;" class="header-right">
+                {% if institucion and institucion.telefono %}
+                  <div>Tel: {{ institucion.telefono }}</div>
+                {% endif %}
+                <div class="no-wrap"><strong>No. {{ orden.numero_orden }}</strong></div>
+                <div class="no-wrap">Fecha: {{ orden.fecha_recepcion|date:'d/m/Y H:i' }}</div>
+              </td>
+            </tr>
+          </table>
+
+          <div class="divider"></div>
+
+          <table class="info-grid">
+            <tr>
+              <td style="width:55%;">
+                <div class="h3">Cliente</div>
+                <div><strong>{{ cliente.nombre }}</strong></div>
+                {% if cliente.direccion %}<div>{{ cliente.direccion }}</div>{% endif %}
+                {% if cliente.telefono %}<div>Tel: {{ cliente.telefono }}</div>{% endif %}
+                {% if cliente.email %}<div>Email: {{ cliente.email }}</div>{% endif %}
+                {% if cliente.nit %}<div>NIT: {{ cliente.nit }}</div>{% else %}<div>NIT: C/F</div>{% endif %}
+              </td>
+              <td style="width:45%; text-align:right;">
+                <div class="h1">CONSTANCIA DE RECEPCIÓN</div>
+                <div class="h2" style="margin-top:6px;">Servicio técnico</div>
+              </td>
+            </tr>
+          </table>
+
+          <table class="service-meta">
+            <tr>
+              <th style="width:25%;">Orden de servicio</th>
+              <td style="width:25%;">{{ orden.numero_orden }}</td>
+              <th style="width:25%;">Recibido por</th>
+              <td style="width:25%;">{{ orden.usuario_creacion|default:'—' }}</td>
+            </tr>
+            <tr>
+              <th>Tipo de equipo</th>
+              <td>{{ orden.tipo_equipo|default:'—' }}</td>
+              <th>Técnico asignado</th>
+              <td>{{ orden.tecnico_asignado|default:'—' }}</td>
+            </tr>
+            <tr>
+              <th>Marca</th>
+              <td>{{ orden.marca|default:'—' }}</td>
+              <th>Modelo</th>
+              <td>{{ orden.modelo|default:'—' }}</td>
+            </tr>
+            <tr>
+              <th>Serie</th>
+              <td>{{ orden.numero_serie|default:'—' }}</td>
+              <th>Color</th>
+              <td>{{ orden.color|default:'—' }}</td>
+            </tr>
+            <tr>
+              <th>Accesorios entregados</th>
+              <td colspan="3">{{ orden.accesorios_entregados|default:'Ninguno indicado' }}</td>
+            </tr>
+            <tr>
+              <th>Estado físico</th>
+              <td colspan="3">{{ orden.estado_fisico|default:'Sin observaciones' }}</td>
+            </tr>
+            <tr>
+              <th>Falla reportada</th>
+              <td colspan="3">{{ orden.falla_reportada|default:'—' }}</td>
+            </tr>
+            <tr>
+              <th>Observaciones</th>
+              <td colspan="3">{{ orden.observaciones_recepcion|default:'Sin observaciones' }}</td>
+            </tr>
+            {% if orden.total_pagado > 0 %}
+              <tr>
+                <th>Total pagado</th>
+                <td colspan="3">{{ orden.total_pagado|money_q }}</td>
+              </tr>
+            {% endif %}
+          </table>
+
+          <div class="obs-box">
+            <div class="h3">Condiciones de recepción</div>
+            <div class="obs-text">
+              <p>El cliente declara que la información y los accesorios detallados son correctos y autoriza la revisión técnica del equipo.</p>
+              <p class="condition-row"><strong>Diagnóstico:</strong> cualquier reparación que genere costos adicionales será informada para aprobación del cliente.</p>
+              <p class="condition-row"><strong>Respaldo:</strong> el establecimiento no se responsabiliza por información no respaldada ni por fallas preexistentes no visibles al momento de la recepción.</p>
+              <p class="condition-row"><strong>Retiro:</strong> el equipo deberá retirarse dentro de los plazos comunicados por servicio técnico.</p>
+            </div>
+          </div>
+
+          <div class="signature-box">
+            <table class="signature-table">
+              <tr>
+                <td><div class="signature-line">Firma del cliente</div></td>
+                <td><div class="signature-line">Firma de recepción</div></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="footer">
+          <div class="payment-box">
+            <table class="payment-table">
+              <tr>
+                <td style="width:60%;">
+                  <div class="h3">Servicio técnico</div>
+                  <p class="payment-text">Constancia de recepción de equipo para diagnóstico y seguimiento técnico.</p>
+                </td>
+                <td style="width:40%; text-align:right;">
+                  <div class="bank-label">Documento</div>
+                  <div class="bank-number">{{ orden.numero_orden }}</div>
+                  <div class="bank-owner">{{ institucion.nombre|default:'Tecnologías de Guatemala' }}</div>
+                </td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="divider"></div>
+
+          <table class="footer-grid">
+            <tr>
+              <td style="width:70%;">
+                {% if institucion and institucion.pagina_web %}
+                  <div><strong>Web:</strong> {{ institucion.pagina_web|strip_http }}</div>
+                {% endif %}
+              </td>
+              <td style="width:30%; text-align:right;">
+                <div class="muted">Gracias por su preferencia</div>
+              </td>
+            </tr>
+          </table>
+
+          <div class="bottom-line"></div>
+        </div>
+      </div>
+    </div>
+  {% endwith %}
+</body>
+</html>
