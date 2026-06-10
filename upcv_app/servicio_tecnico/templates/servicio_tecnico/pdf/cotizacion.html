@@ -7,59 +7,250 @@
   <style>
     {% include "cotizaciones_app/includes/cotizacion_document_styles.html" %}
 
-    @page { size: letter; margin: 0.8cm; }
+    @page { size: Letter; margin: 1.15cm 1.1cm; }
 
+    *{ box-sizing:border-box; }
+    html, body{
+      margin:0;
+      padding:0;
+      overflow:visible;
+    }
+    body{
+      font-size:10.5px;
+      line-height:1.35;
+      color:#111827;
+      background:#ffffff;
+    }
     .sheet{
+      display:block;
+      min-height:0;
       background:#ffffff;
       padding:0;
-      min-height:auto;
+      width:100%;
     }
     .page{
-      max-width:none;
-      min-height:auto;
-      padding:34px 42px;
-    }
-    .service-meta{
+      display:block;
       width:100%;
+      max-width:none;
+      min-height:0;
+      margin:0;
+      padding:0;
+      overflow:visible;
+      background:#ffffff;
+    }
+    .content{
+      display:block;
+    }
+    .band{
+      height:5px;
+      margin-bottom:12px;
+    }
+    .divider{
+      margin:10px 0;
+    }
+    .institution-name{
+      font-size:20px;
+      line-height:1.15;
+      margin:3px 0 3px;
+    }
+    .h1{
+      font-size:19px;
+      line-height:1.15;
+    }
+    .h2{
+      font-size:13px;
+      line-height:1.2;
+    }
+    .h3{
+      font-size:12px;
+      line-height:1.25;
+      margin:0 0 5px;
+    }
+    .muted, .header-right{
+      font-size:10.5px;
+    }
+    .header-right strong{
+      font-size:12px;
+    }
+    .header-grid, .info-grid, .footer-grid, .service-meta, .items, .payment-table{
+      width:100%;
+      max-width:100%;
       border-collapse:collapse;
       table-layout:fixed;
-      margin-top:16px;
+    }
+    .header-grid, .info-grid, .total-wrap, .footer, .payment-box{
+      break-inside:avoid;
+      page-break-inside:avoid;
+    }
+    .header-grid td, .info-grid td, .footer-grid td{
+      overflow-wrap:anywhere;
+      word-break:normal;
+    }
+    .logo-img{
+      height:52px;
+      max-width:140px;
+      object-fit:contain;
+    }
+    .service-meta{
+      margin-top:10px;
       border:1px solid #d8dce6;
-      border-radius:10px;
-      overflow:hidden;
+    }
+    .service-meta tr{
+      break-inside:avoid;
+      page-break-inside:avoid;
     }
     .service-meta th{
       background:#f5f7fb;
       color:#111827;
-      font-size:14px;
+      font-size:9.8px;
+      line-height:1.25;
       text-align:left;
-      padding:10px 12px;
-      border:1px solid #d8dce6;
-    }
-    .service-meta td{
-      font-size:14px;
-      padding:10px 12px;
+      padding:5px 6px;
       border:1px solid #d8dce6;
       vertical-align:top;
-      line-height:1.35;
+      overflow-wrap:anywhere;
+    }
+    .service-meta td{
+      font-size:9.8px;
+      line-height:1.25;
+      padding:5px 6px;
+      border:1px solid #d8dce6;
+      vertical-align:top;
+      overflow-wrap:anywhere;
+    }
+    .items{
+      margin-top:11px;
+      page-break-inside:auto;
+    }
+    .items thead{
+      display:table-header-group;
+    }
+    .items tr{
+      break-inside:avoid;
+      page-break-inside:avoid;
+    }
+    .items th, .items td{
+      font-size:9.8px;
+      line-height:1.3;
+      padding:6px 7px;
+      overflow-wrap:anywhere;
+      word-break:normal;
+    }
+    .items th{
+      font-size:10px;
+    }
+    .money-col{
+      white-space:nowrap;
+      width:18%;
+    }
+    .qty-col{
+      width:12%;
+      white-space:nowrap;
     }
     .commercial-note{
-      margin-top:10px;
-      padding:10px 12px;
+      margin-top:8px;
+      padding:7px 9px;
       border:1px solid #dbeafe;
       background:#eff6ff;
-      border-radius:10px;
+      border-radius:7px;
       color:#1e3a8a;
-      font-size:13px;
+      font-size:10px;
+      line-height:1.3;
       font-weight:700;
       text-align:right;
+      break-inside:avoid;
+      page-break-inside:avoid;
     }
-    .conditions-list{
-      margin:6px 0 0 18px;
+    .total-wrap{
+      margin-top:9px;
+    }
+    .total-box{
+      width:280px;
+      max-width:48%;
+      padding:10px 12px;
+      border-radius:8px;
+    }
+    .total-line{
+      display:table;
+      width:100%;
+      font-size:10px;
+      line-height:1.25;
+      margin-bottom:4px;
+    }
+    .total-line span, .total-line strong{
+      display:table-cell;
+      vertical-align:top;
+    }
+    .total-line strong{
+      text-align:right;
+      white-space:nowrap;
+    }
+    .total-line.total-final{
+      font-size:12px;
+      margin-top:5px;
+      padding-top:6px;
+    }
+    .tax-note{
+      font-size:8.8px;
+      line-height:1.25;
+      margin-top:5px;
+    }
+    .obs-box{
+      margin-top:10px;
+      padding:9px 10px;
+      border-radius:8px;
+      break-inside:auto;
+      page-break-inside:auto;
+    }
+    .obs-box .h3{
+      break-after:avoid;
+      page-break-after:avoid;
+    }
+    .obs-text{
+      font-size:9.8px;
+      line-height:1.35;
+      white-space:normal;
+    }
+    .obs-text p{
+      margin:0 0 5px;
+    }
+    .condition-row{
+      margin:0 0 3px;
+      padding-left:0;
+    }
+    .footer{
+      display:block;
+      margin-top:10px;
+    }
+    .payment-box{
+      padding:9px 10px;
+      border-radius:8px;
+    }
+    .payment-table td{
+      vertical-align:top;
+      border:0;
       padding:0;
     }
-    .conditions-list li{
-      margin-bottom:4px;
+    .payment-text{
+      font-size:9.8px;
+      line-height:1.35;
+    }
+    .bank-label{
+      font-size:9.5px;
+      margin-bottom:3px;
+    }
+    .bank-number{
+      font-size:17px;
+      line-height:1.05;
+      letter-spacing:.8px;
+    }
+    .bank-owner{
+      font-size:10px;
+      margin-top:3px;
+    }
+    .bottom-line{
+      height:3px;
+      margin-top:8px;
     }
   </style>
 </head>
@@ -74,9 +265,9 @@
             <tr>
               <td style="width:25%;">
                 {% if logo_url %}
-                  <img src="{{ logo_url }}" alt="Logo {{ institucion.nombre }}" style="height:70px;" crossorigin="anonymous">
+                  <img src="{{ logo_url }}" alt="Logo {{ institucion.nombre }}" class="logo-img" crossorigin="anonymous">
                 {% elif institucion and institucion.logo %}
-                  <img src="{{ institucion.logo.url }}" alt="Logo {{ institucion.nombre }}" style="height:70px;">
+                  <img src="{{ institucion.logo.url }}" alt="Logo {{ institucion.nombre }}" class="logo-img">
                 {% endif %}
               </td>
               <td style="width:45%; text-align:center;">
@@ -163,10 +354,10 @@
           <table class="items">
             <thead>
               <tr>
-                <th style="width:55%;">Descripción</th>
-                <th style="width:15%;" class="text-center">Cantidad</th>
-                <th style="width:15%;" class="text-right">Precio</th>
-                <th style="width:15%;" class="text-right">Total</th>
+                <th style="width:52%;">Descripción</th>
+                <th class="text-center qty-col">Cantidad</th>
+                <th class="text-right money-col">Precio</th>
+                <th class="text-right money-col">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -176,9 +367,9 @@
                     <strong>{{ item.get_tipo_item_display }}</strong><br>
                     {{ item.descripcion }}
                   </td>
-                  <td class="text-center">{{ item.cantidad|floatformat:2 }}</td>
-                  <td class="text-right no-wrap">{{ item.precio_unitario|money_q }}</td>
-                  <td class="text-right no-wrap">{{ item.subtotal|money_q }}</td>
+                  <td class="text-center qty-col">{{ item.cantidad|floatformat:2 }}</td>
+                  <td class="text-right money-col">{{ item.precio_unitario|money_q }}</td>
+                  <td class="text-right money-col">{{ item.subtotal|money_q }}</td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -198,34 +389,32 @@
           <div class="obs-box">
             <div class="h3">Observaciones y condiciones</div>
             <div class="obs-text">
-{% if cotizacion.observaciones %}{{ cotizacion.observaciones }}
-
-{% endif %}Cotización correspondiente a revisión, reparación, repuestos, mano de obra y/o servicios técnicos para la orden {{ orden.numero_orden }}.
-              <ul class="conditions-list">
-                <li>Validez de la cotización: {{ cotizacion.vigencia }} días calendario.</li>
-                <li>Los repuestos, mano de obra y servicios quedan sujetos a aprobación del cliente.</li>
-                <li>Precios expresados en quetzales, sin incluir IVA.</li>
-              </ul>
+              {% if cotizacion.observaciones %}
+                <p>{{ cotizacion.observaciones|linebreaksbr }}</p>
+              {% endif %}
+              <p>Cotización correspondiente a revisión, reparación, repuestos, mano de obra y/o servicios técnicos para la orden {{ orden.numero_orden }}.</p>
+              <p class="condition-row"><strong>Validez:</strong> {{ cotizacion.vigencia }} días calendario.</p>
+              <p class="condition-row"><strong>Aprobación:</strong> repuestos, mano de obra y servicios quedan sujetos a aprobación del cliente.</p>
+              <p class="condition-row"><strong>IVA:</strong> precios expresados en quetzales, sin incluir IVA.</p>
             </div>
           </div>
         </div>
 
         <div class="footer">
           <div class="payment-box">
-            <div class="payment-grid">
-              <div class="payment-left">
-                <div class="h3">Método de pago</div>
-                <p class="payment-text">
-                  50% para confirmar el servicio y 50% entrega satisfactoria.
-                </p>
-              </div>
-
-              <div class="payment-right">
-                <div class="bank-label">Cuenta Banrural</div>
-                <div class="bank-number">3356033880</div>
-                <div class="bank-owner">Tecnologías de Guatemala</div>
-              </div>
-            </div>
+            <table class="payment-table">
+              <tr>
+                <td style="width:60%;">
+                  <div class="h3">Método de pago</div>
+                  <p class="payment-text">50% para confirmar el servicio y 50% entrega satisfactoria.</p>
+                </td>
+                <td style="width:40%; text-align:right;">
+                  <div class="bank-label">Cuenta Banrural</div>
+                  <div class="bank-number">3356033880</div>
+                  <div class="bank-owner">Tecnologías de Guatemala</div>
+                </td>
+              </tr>
+            </table>
           </div>
 
           <div class="divider"></div>
