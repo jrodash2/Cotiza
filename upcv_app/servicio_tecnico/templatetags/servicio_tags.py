@@ -1,5 +1,7 @@
 from django import template
 
+from servicio_tecnico.utils import nombre_usuario as obtener_nombre_usuario
+
 register = template.Library()
 
 
@@ -12,3 +14,8 @@ def estado_badge(estado):
         'ENTREGADO': 'dark', 'NO_REPARADO': 'danger', 'CANCELADO': 'danger', 'BORRADOR': 'secondary',
         'ENVIADA': 'info', 'APROBADA': 'success', 'RECHAZADA': 'danger',
     }.get(estado, 'secondary')
+
+
+@register.filter
+def nombre_usuario(user):
+    return obtener_nombre_usuario(user)

@@ -7,6 +7,7 @@ from django.test import TestCase
 from cotizaciones_app.models import Cliente
 from .forms import DetalleCotizacionFormSet, OrdenServicioForm
 from .models import CotizacionServicio, DetalleCotizacionServicio, OrdenServicio, PagoOrdenServicio
+from .utils import nombre_usuario
 
 
 class ServicioTecnicoModelTests(TestCase):
@@ -110,6 +111,27 @@ class ServicioTecnicoFormTests(TestCase):
         self.assertEqual(form.fields['activo'].widget.input_type, 'checkbox')
         self.assertIn('form-check-input', form.fields['activo'].widget.attrs['class'])
         self.assertNotIn('form-control', form.fields['activo'].widget.attrs['class'])
+
+    def test_nombre_usuario_prefiere_nombre_completo_y_usa_username_como_fallback(self):
+        user = get_user_model().objects.create_user(
+            username='tecnico-fallback',
+            first_name='Ana',
+            last_name='García',
+        )
+        self.assertEqual(nombre_usuario(user), 'Ana García')
+        user.last_name = ''
+        self.assertEqual(nombre_usuario(user), 'Ana')
+        user.first_name = ''
+        self.assertEqual(nombre_usuario(user), 'tecnico-fallback')
+
+    def test_tecnico_asignado_muestra_nombre_legible_en_formulario(self):
+        tecnico = get_user_model().objects.create_user(
+            username='tecnico-form',
+            first_name='Luis',
+            last_name='Pérez',
+        )
+        form = OrdenServicioForm()
+        self.assertEqual(form.fields['tecnico_asignado'].label_from_instance(tecnico), 'Luis Pérez')
 
     def test_formset_elimina_existente_y_acepta_nuevo_item(self):
         user = get_user_model().objects.create_user(username='formset-user')

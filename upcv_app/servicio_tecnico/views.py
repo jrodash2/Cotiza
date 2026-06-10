@@ -90,7 +90,7 @@ class OrdenServicioListView(LoginRequiredMixin, RolServicioMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['estados'] = OrdenServicio.Estado.choices
-        context['tecnicos'] = OrdenServicio._meta.get_field('tecnico_asignado').remote_field.model.objects.filter(is_active=True).order_by('first_name', 'username')
+        context['tecnicos'] = OrdenServicio._meta.get_field('tecnico_asignado').remote_field.model.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
         return context
 
 

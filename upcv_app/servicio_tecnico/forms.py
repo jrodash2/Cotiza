@@ -1,6 +1,7 @@
 from django import forms
 from django.forms import BaseInlineFormSet, inlineformset_factory
 
+from .utils import nombre_usuario
 from .models import (
     PagoOrdenServicio,
     CotizacionServicio,
@@ -29,6 +30,10 @@ class StyledModelForm(forms.ModelForm):
 
 
 class OrdenServicioForm(StyledModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['tecnico_asignado'].label_from_instance = nombre_usuario
+
     class Meta:
         model = OrdenServicio
         fields = [

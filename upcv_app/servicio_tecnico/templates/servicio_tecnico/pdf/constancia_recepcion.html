@@ -1,4 +1,4 @@
-{% load money %}
+{% load money servicio_tags %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -66,13 +66,13 @@
               <th style="width:25%;">Orden de servicio</th>
               <td style="width:25%;">{{ orden.numero_orden }}</td>
               <th style="width:25%;">Recibido por</th>
-              <td style="width:25%;">{{ orden.usuario_creacion|default:'—' }}</td>
+              <td style="width:25%;">{{ orden.usuario_creacion|nombre_usuario|default:'—' }}</td>
             </tr>
             <tr>
               <th>Tipo de equipo</th>
               <td>{{ orden.tipo_equipo|default:'—' }}</td>
               <th>Técnico asignado</th>
-              <td>{{ orden.tecnico_asignado|default:'—' }}</td>
+              <td>{{ orden.tecnico_asignado|nombre_usuario|default:'—' }}</td>
             </tr>
             <tr>
               <th>Marca</th>

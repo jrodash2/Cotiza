@@ -1,4 +1,4 @@
-{% load money %}
+{% load money servicio_tags %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -80,7 +80,7 @@
               <th>Serie</th>
               <td>{{ orden.numero_serie|default:'—' }}</td>
               <th>Técnico asignado</th>
-              <td>{{ orden.tecnico_asignado|default:'—' }}</td>
+              <td>{{ orden.tecnico_asignado|nombre_usuario|default:'—' }}</td>
             </tr>
             <tr>
               <th>Falla reportada</th>
