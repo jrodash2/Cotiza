@@ -1,1 +1,441 @@
-<!doctype html><html><head><meta charset="utf-8"><style>@page{size:letter;margin:1.5cm}body{font-family:Arial,sans-serif;font-size:11px;color:#222}.header{display:flex;justify-content:space-between;border-bottom:2px solid #2454a6;padding-bottom:10px}.logo{max-height:65px;max-width:160px}h1{margin:0;font-size:20px}.box{border:1px solid #bbb;padding:9px;margin:12px 0}table{width:100%;border-collapse:collapse}th{background:#2454a6;color:#fff;padding:7px;text-align:left}td{border-bottom:1px solid #ddd;padding:7px}.right{text-align:right}.totals{margin-left:auto;width:45%;margin-top:12px}.totals td{font-weight:bold}.signature{margin:65px auto 0;width:45%;border-top:1px solid #222;text-align:center;padding-top:5px}</style></head><body><div class="header"><div>{% if institucion.logo %}<img class="logo" src="{{ institucion.logo.url }}">{% endif %}<h1>{{ institucion.nombre|default:'Servicio Técnico' }}</h1><div>{{ institucion.direccion }} · {{ institucion.telefono }}</div></div><div><strong>COTIZACIÓN</strong><br>{{ cotizacion.numero_cotizacion }}<br>{{ cotizacion.fecha|date:'d/m/Y' }}</div></div><div class="box"><strong>Cliente:</strong> {{ cotizacion.orden_servicio.cliente }} · {{ cotizacion.orden_servicio.cliente.nit|default:'C/F' }}<br><strong>Orden:</strong> {{ cotizacion.orden_servicio.numero_orden }}<br><strong>Equipo:</strong> {{ cotizacion.orden_servicio.tipo_equipo }} {{ cotizacion.orden_servicio.marca }} {{ cotizacion.orden_servicio.modelo }} · Serie {{ cotizacion.orden_servicio.numero_serie|default:'—' }}</div><table><thead><tr><th>Tipo</th><th>Descripción</th><th class="right">Cantidad</th><th class="right">Precio</th><th class="right">Subtotal</th></tr></thead><tbody>{% for item in cotizacion.detalles.all %}<tr><td>{{ item.get_tipo_item_display }}</td><td>{{ item.descripcion }}</td><td class="right">{{ item.cantidad }}</td><td class="right">Q{{ item.precio_unitario }}</td><td class="right">Q{{ item.subtotal }}</td></tr>{% endfor %}</tbody></table><table class="totals"><tr><td>Subtotal</td><td class="right">Q{{ cotizacion.subtotal }}</td></tr><tr><td>Descuento</td><td class="right">Q{{ cotizacion.descuento }}</td></tr><tr><td>Total</td><td class="right">Q{{ cotizacion.total }}</td></tr>{% if cotizacion.orden_servicio.total_pagado > 0 %}<tr><td>Total pagado</td><td class="right">Q{{ cotizacion.orden_servicio.total_pagado }}</td></tr><tr><td>Saldo estimado</td><td class="right">Q{{ cotizacion.saldo_despues_pagos }}</td></tr>{% endif %}</table><div class="box"><strong>Vigencia:</strong> {{ cotizacion.vigencia }} días.<br><strong>Observaciones:</strong> {{ cotizacion.observaciones|default:'Sin observaciones' }}</div><div class="signature">Firma / sello</div></body></html>
+{% load money %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Cotización {{ cotizacion.numero_cotizacion }}</title>
+  <style>
+    {% include "cotizaciones_app/includes/cotizacion_document_styles.html" %}
+
+    @page { size: Letter; margin: 1.15cm 1.1cm; }
+
+    *{ box-sizing:border-box; }
+    html, body{
+      margin:0;
+      padding:0;
+      overflow:visible;
+    }
+    body{
+      font-size:10.5px;
+      line-height:1.35;
+      color:#111827;
+      background:#ffffff;
+    }
+    .sheet{
+      display:block;
+      min-height:0;
+      background:#ffffff;
+      padding:0;
+      width:100%;
+    }
+    .page{
+      display:block;
+      width:100%;
+      max-width:none;
+      min-height:0;
+      margin:0;
+      padding:0;
+      overflow:visible;
+      background:#ffffff;
+    }
+    .content{
+      display:block;
+    }
+    .band{
+      height:5px;
+      margin-bottom:12px;
+    }
+    .divider{
+      margin:10px 0;
+    }
+    .institution-name{
+      font-size:20px;
+      line-height:1.15;
+      margin:3px 0 3px;
+    }
+    .h1{
+      font-size:19px;
+      line-height:1.15;
+    }
+    .h2{
+      font-size:13px;
+      line-height:1.2;
+    }
+    .h3{
+      font-size:12px;
+      line-height:1.25;
+      margin:0 0 5px;
+    }
+    .muted, .header-right{
+      font-size:10.5px;
+    }
+    .header-right strong{
+      font-size:12px;
+    }
+    .header-grid, .info-grid, .footer-grid, .service-meta, .items, .payment-table{
+      width:100%;
+      max-width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+    }
+    .header-grid, .info-grid, .total-wrap, .footer, .payment-box{
+      break-inside:avoid;
+      page-break-inside:avoid;
+    }
+    .header-grid td, .info-grid td, .footer-grid td{
+      overflow-wrap:anywhere;
+      word-break:normal;
+    }
+    .logo-img{
+      height:52px;
+      max-width:140px;
+      object-fit:contain;
+    }
+    .service-meta{
+      margin-top:10px;
+      border:1px solid #d8dce6;
+    }
+    .service-meta tr{
+      break-inside:avoid;
+      page-break-inside:avoid;
+    }
+    .service-meta th{
+      background:#f5f7fb;
+      color:#111827;
+      font-size:9.8px;
+      line-height:1.25;
+      text-align:left;
+      padding:5px 6px;
+      border:1px solid #d8dce6;
+      vertical-align:top;
+      overflow-wrap:anywhere;
+    }
+    .service-meta td{
+      font-size:9.8px;
+      line-height:1.25;
+      padding:5px 6px;
+      border:1px solid #d8dce6;
+      vertical-align:top;
+      overflow-wrap:anywhere;
+    }
+    .items{
+      margin-top:11px;
+      page-break-inside:auto;
+    }
+    .items thead{
+      display:table-header-group;
+    }
+    .items tr{
+      break-inside:avoid;
+      page-break-inside:avoid;
+    }
+    .items th, .items td{
+      font-size:9.8px;
+      line-height:1.3;
+      padding:6px 7px;
+      overflow-wrap:anywhere;
+      word-break:normal;
+    }
+    .items th{
+      font-size:10px;
+    }
+    .money-col{
+      white-space:nowrap;
+      width:18%;
+    }
+    .qty-col{
+      width:12%;
+      white-space:nowrap;
+    }
+    .commercial-note{
+      margin-top:8px;
+      padding:7px 9px;
+      border:1px solid #dbeafe;
+      background:#eff6ff;
+      border-radius:7px;
+      color:#1e3a8a;
+      font-size:10px;
+      line-height:1.3;
+      font-weight:700;
+      text-align:right;
+      break-inside:avoid;
+      page-break-inside:avoid;
+    }
+    .total-wrap{
+      margin-top:9px;
+    }
+    .total-box{
+      width:280px;
+      max-width:48%;
+      padding:10px 12px;
+      border-radius:8px;
+    }
+    .total-line{
+      display:table;
+      width:100%;
+      font-size:10px;
+      line-height:1.25;
+      margin-bottom:4px;
+    }
+    .total-line span, .total-line strong{
+      display:table-cell;
+      vertical-align:top;
+    }
+    .total-line strong{
+      text-align:right;
+      white-space:nowrap;
+    }
+    .total-line.total-final{
+      font-size:12px;
+      margin-top:5px;
+      padding-top:6px;
+    }
+    .tax-note{
+      font-size:8.8px;
+      line-height:1.25;
+      margin-top:5px;
+    }
+    .obs-box{
+      margin-top:10px;
+      padding:9px 10px;
+      border-radius:8px;
+      break-inside:auto;
+      page-break-inside:auto;
+    }
+    .obs-box .h3{
+      break-after:avoid;
+      page-break-after:avoid;
+    }
+    .obs-text{
+      font-size:9.8px;
+      line-height:1.35;
+      white-space:normal;
+    }
+    .obs-text p{
+      margin:0 0 5px;
+    }
+    .condition-row{
+      margin:0 0 3px;
+      padding-left:0;
+    }
+    .footer{
+      display:block;
+      margin-top:10px;
+    }
+    .payment-box{
+      padding:9px 10px;
+      border-radius:8px;
+    }
+    .payment-table td{
+      vertical-align:top;
+      border:0;
+      padding:0;
+    }
+    .payment-text{
+      font-size:9.8px;
+      line-height:1.35;
+    }
+    .bank-label{
+      font-size:9.5px;
+      margin-bottom:3px;
+    }
+    .bank-number{
+      font-size:17px;
+      line-height:1.05;
+      letter-spacing:.8px;
+    }
+    .bank-owner{
+      font-size:10px;
+      margin-top:3px;
+    }
+    .bottom-line{
+      height:3px;
+      margin-top:8px;
+    }
+  </style>
+</head>
+<body>
+  {% with orden=cotizacion.orden_servicio cliente=cotizacion.orden_servicio.cliente %}
+    <div class="sheet">
+      <div class="page" id="cotizacion-print" data-correlativo="{{ cotizacion.numero_cotizacion }}">
+        <div class="band"></div>
+
+        <div class="content">
+          <table class="header-grid">
+            <tr>
+              <td style="width:25%;">
+                {% if logo_url %}
+                  <img src="{{ logo_url }}" alt="Logo {{ institucion.nombre }}" class="logo-img" crossorigin="anonymous">
+                {% elif institucion and institucion.logo %}
+                  <img src="{{ institucion.logo.url }}" alt="Logo {{ institucion.nombre }}" class="logo-img">
+                {% endif %}
+              </td>
+              <td style="width:45%; text-align:center;">
+                {% if institucion %}
+                  <div class="institution-name">{{ institucion.nombre }}</div>
+                  {% if institucion.direccion %}
+                    <div class="muted">{{ institucion.direccion }}</div>
+                  {% endif %}
+                {% endif %}
+              </td>
+              <td style="width:30%;" class="header-right">
+                {% if institucion and institucion.telefono %}
+                  <div>Tel: {{ institucion.telefono }}</div>
+                {% endif %}
+                <div class="no-wrap"><strong>No. {{ cotizacion.numero_cotizacion }}</strong></div>
+                <div class="no-wrap">Fecha: {{ cotizacion.fecha|date:'d/m/Y' }}</div>
+                <div class="no-wrap">Vigencia: {{ cotizacion.vigencia }} días</div>
+              </td>
+            </tr>
+          </table>
+
+          <div class="divider"></div>
+
+          <table class="info-grid">
+            <tr>
+              <td style="width:55%;">
+                <div class="h3">Cliente</div>
+                <div><strong>{{ cliente.nombre }}</strong></div>
+                {% if cliente.direccion %}<div>{{ cliente.direccion }}</div>{% endif %}
+                {% if cliente.telefono %}<div>Tel: {{ cliente.telefono }}</div>{% endif %}
+                {% if cliente.email %}<div>Email: {{ cliente.email }}</div>{% endif %}
+                {% if cliente.nit %}<div>NIT: {{ cliente.nit }}</div>{% else %}<div>NIT: C/F</div>{% endif %}
+              </td>
+
+              <td style="width:45%; text-align:right;">
+                <div class="h1">COTIZACIÓN</div>
+                <div class="h2" style="margin-top:6px;">Servicio técnico</div>
+                <div class="badge-red">PRECIOS SIN IVA</div>
+              </td>
+            </tr>
+          </table>
+
+          <table class="service-meta">
+            <tr>
+              <th style="width:25%;">Orden de servicio</th>
+              <td style="width:25%;">{{ orden.numero_orden }}</td>
+              <th style="width:25%;">Tipo de equipo</th>
+              <td style="width:25%;">{{ orden.tipo_equipo|default:'—' }}</td>
+            </tr>
+            <tr>
+              <th>Marca</th>
+              <td>{{ orden.marca|default:'—' }}</td>
+              <th>Modelo</th>
+              <td>{{ orden.modelo|default:'—' }}</td>
+            </tr>
+            <tr>
+              <th>Serie</th>
+              <td>{{ orden.numero_serie|default:'—' }}</td>
+              <th>Técnico asignado</th>
+              <td>{{ orden.tecnico_asignado|default:'—' }}</td>
+            </tr>
+            <tr>
+              <th>Falla reportada</th>
+              <td colspan="3">{{ orden.falla_reportada|default:'—' }}</td>
+            </tr>
+            {% if orden.diagnostico_final %}
+              <tr>
+                <th>Diagnóstico</th>
+                <td colspan="3">{{ orden.diagnostico_final }}</td>
+              </tr>
+            {% endif %}
+            {% if orden.observaciones_recepcion or orden.solucion_aplicada %}
+              <tr>
+                <th>Observaciones técnicas</th>
+                <td colspan="3">
+                  {% if orden.observaciones_recepcion %}{{ orden.observaciones_recepcion }}{% endif %}
+                  {% if orden.observaciones_recepcion and orden.solucion_aplicada %}<br>{% endif %}
+                  {% if orden.solucion_aplicada %}{{ orden.solucion_aplicada }}{% endif %}
+                </td>
+              </tr>
+            {% endif %}
+          </table>
+
+          <table class="items">
+            <thead>
+              <tr>
+                <th style="width:52%;">Descripción</th>
+                <th class="text-center qty-col">Cantidad</th>
+                <th class="text-right money-col">Precio</th>
+                <th class="text-right money-col">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in cotizacion.detalles.all %}
+                <tr>
+                  <td>
+                    <strong>{{ item.get_tipo_item_display }}</strong><br>
+                    {{ item.descripcion }}
+                  </td>
+                  <td class="text-center qty-col">{{ item.cantidad|floatformat:2 }}</td>
+                  <td class="text-right money-col">{{ item.precio_unitario|money_q }}</td>
+                  <td class="text-right money-col">{{ item.subtotal|money_q }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <div class="commercial-note">Precios expresados en quetzales, sin incluir IVA.</div>
+
+          <div class="total-wrap">
+            <div class="total-box">
+              <div class="total-line"><span>Subtotal sin IVA</span><strong>{{ cotizacion.subtotal|money_q }}</strong></div>
+              <div class="total-line"><span>Descuento</span><strong>- {{ cotizacion.descuento|money_q }}</strong></div>
+              <div class="total-line total-final"><span>Total sin IVA</span><strong>{{ cotizacion.total|money_q }}</strong></div>
+              <div class="tax-note">Precios expresados en quetzales, sin incluir IVA.</div>
+            </div>
+          </div>
+
+          <div class="obs-box">
+            <div class="h3">Observaciones y condiciones</div>
+            <div class="obs-text">
+              {% if cotizacion.observaciones %}
+                <p>{{ cotizacion.observaciones|linebreaksbr }}</p>
+              {% endif %}
+              <p>Cotización correspondiente a revisión, reparación, repuestos, mano de obra y/o servicios técnicos para la orden {{ orden.numero_orden }}.</p>
+              <p class="condition-row"><strong>Validez:</strong> {{ cotizacion.vigencia }} días calendario.</p>
+              <p class="condition-row"><strong>Aprobación:</strong> repuestos, mano de obra y servicios quedan sujetos a aprobación del cliente.</p>
+              <p class="condition-row"><strong>IVA:</strong> precios expresados en quetzales, sin incluir IVA.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <div class="payment-box">
+            <table class="payment-table">
+              <tr>
+                <td style="width:60%;">
+                  <div class="h3">Método de pago</div>
+                  <p class="payment-text">50% para confirmar el servicio y 50% entrega satisfactoria.</p>
+                </td>
+                <td style="width:40%; text-align:right;">
+                  <div class="bank-label">Cuenta Banrural</div>
+                  <div class="bank-number">3356033880</div>
+                  <div class="bank-owner">Tecnologías de Guatemala</div>
+                </td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="divider"></div>
+
+          <table class="footer-grid">
+            <tr>
+              <td style="width:70%;">
+                {% if institucion and institucion.pagina_web %}
+                  <div><strong>Web:</strong> {{ institucion.pagina_web|strip_http }}</div>
+                {% endif %}
+              </td>
+              <td style="width:30%; text-align:right;">
+                <div class="muted">Gracias por su preferencia</div>
+              </td>
+            </tr>
+          </table>
+
+          <div class="bottom-line"></div>
+        </div>
+      </div>
+    </div>
+  {% endwith %}
+</body>
+</html>
