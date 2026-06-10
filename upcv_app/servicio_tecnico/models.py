@@ -308,10 +308,14 @@ class CotizacionServicio(models.Model):
 
     def clean(self):
         errors = {}
-        if self.vigencia < 1:
+        if self.vigencia is not None and self.vigencia < 1:
             errors['vigencia'] = 'La vigencia debe ser mayor a cero.'
-        if self.descuento < 0:
+        if self.descuento is not None and self.descuento < 0:
             errors['descuento'] = 'El descuento no puede ser negativo.'
+        if self.subtotal is not None and self.subtotal < 0:
+            errors['subtotal'] = 'El subtotal no puede ser negativo.'
+        if self.total is not None and self.total < 0:
+            errors['total'] = 'El total no puede ser negativo.'
         if errors:
             raise ValidationError(errors)
 
@@ -345,10 +349,20 @@ class DetalleCotizacionServicio(models.Model):
 
     def clean(self):
         errors = {}
-        if self.cantidad <= 0:
+        if not self.descripcion:
+            errors['descripcion'] = 'La descripción es obligatoria.'
+        if not self.tipo_item:
+            errors['tipo_item'] = 'Seleccione el tipo de ítem.'
+        if self.cantidad is None:
+            errors['cantidad'] = 'Ingrese la cantidad.'
+        elif self.cantidad <= 0:
             errors['cantidad'] = 'La cantidad debe ser mayor a cero.'
-        if self.precio_unitario < 0:
+        if self.precio_unitario is None:
+            errors['precio_unitario'] = 'Ingrese el precio unitario.'
+        elif self.precio_unitario < 0:
             errors['precio_unitario'] = 'El precio no puede ser negativo.'
+        if self.subtotal is not None and self.subtotal < 0:
+            errors['subtotal'] = 'El subtotal no puede ser negativo.'
         if errors:
             raise ValidationError(errors)
 
