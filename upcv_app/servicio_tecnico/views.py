@@ -292,5 +292,5 @@ def cotizacion_pdf(request, pk):
 
 @roles_requeridos(*ROLES_SERVICIO)
 def pago_recibo_pdf(request, pk):
-    pago = get_object_or_404(PagoOrdenServicio.objects.select_related('orden_servicio__cliente', 'usuario_registro'), pk=pk)
+    pago = get_object_or_404(PagoOrdenServicio.objects.select_related('orden_servicio__cliente', 'orden_servicio__tecnico_asignado', 'usuario_registro', 'usuario_anulacion'), pk=pk)
     return render_pdf(request, 'servicio_tecnico/pdf/recibo_pago.html', {'pago': pago, 'orden': pago.orden_servicio}, f'{pago.numero_recibo}.pdf')
