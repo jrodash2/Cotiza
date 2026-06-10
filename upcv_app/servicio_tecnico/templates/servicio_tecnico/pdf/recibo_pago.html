@@ -1,1 +1,199 @@
-<!doctype html><html><head><meta charset="utf-8"><style>@page{size:letter;margin:1.5cm}body{font-family:Arial,sans-serif;font-size:11px;color:#222}.header{display:flex;justify-content:space-between;border-bottom:2px solid #2454a6;padding-bottom:10px}.logo{max-height:65px;max-width:160px}.box{border:1px solid #bbb;padding:12px;margin-top:14px}.amount{font-size:24px;color:#198754;text-align:center;margin:18px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.signature{margin:65px auto 0;width:45%;border-top:1px solid #222;text-align:center;padding-top:5px}</style></head><body><div class="header"><div>{% if institucion.logo %}<img class="logo" src="{{ institucion.logo.url }}">{% endif %}<h2>{{ institucion.nombre|default:'Servicio Técnico' }}</h2><div>{{ institucion.direccion }} · {{ institucion.telefono }}</div></div><div><strong>RECIBO DE PAGO</strong>{% if not pago.activo %}<br><strong style="color:#c00">ANULADO</strong>{% endif %}<br>{{ pago.numero_recibo }}<br>{{ pago.fecha|date:'d/m/Y H:i' }}</div></div><div class="box grid"><div><strong>Cliente:</strong> {{ orden.cliente }}</div><div><strong>Orden:</strong> {{ orden.numero_orden }}</div><div><strong>Tipo:</strong> {{ pago.get_tipo_pago_display }}</div><div><strong>Método:</strong> {{ pago.get_metodo_pago_display }}</div><div><strong>Referencia:</strong> {{ pago.referencia|default:'—' }}</div><div><strong>Registrado por:</strong> {{ pago.usuario_registro }}</div></div><div class="amount">Q{{ pago.monto }}</div><div class="box"><strong>Total a cobrar:</strong> Q{{ orden.total_cobro }}<br><strong>Total pagado:</strong> Q{{ orden.total_pagado }}<br><strong>Saldo pendiente:</strong> Q{{ orden.saldo_pendiente }}<br><strong>Observación:</strong> {{ pago.observacion|default:'Sin observaciones' }}</div><div class="signature">Firma / sello</div></body></html>
+{% load money servicio_tags %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Recibo de pago {{ pago.numero_recibo }}</title>
+  <style>
+    {% include "servicio_tecnico/pdf/includes/document_styles.html" %}
+
+    .receipt-amount{
+      width:320px;
+      max-width:52%;
+      margin:12px auto 0;
+      background:#1f4ed8;
+      color:#ffffff;
+      padding:14px 16px;
+      border-radius:10px;
+      text-align:center;
+      break-inside:avoid;
+      page-break-inside:avoid;
+    }
+    .receipt-amount .lbl{
+      font-size:10px;
+      letter-spacing:.8px;
+      text-transform:uppercase;
+      color:#dbeafe;
+    }
+    .receipt-amount .amt{
+      font-size:24px;
+      font-weight:800;
+      line-height:1.15;
+      margin-top:3px;
+    }
+    .status-void{
+      color:#b91c1c;
+      font-weight:800;
+      margin-top:4px;
+    }
+  </style>
+</head>
+<body>
+  {% with cliente=orden.cliente cotizacion=orden.cotizacion_aprobada %}
+    <div class="sheet">
+      <div class="page" id="recibo-print" data-correlativo="{{ pago.numero_recibo }}">
+        <div class="band"></div>
+
+        <div class="content">
+          <table class="header-grid">
+            <tr>
+              <td style="width:25%;">
+                {% if logo_url %}
+                  <img src="{{ logo_url }}" alt="Logo {{ institucion.nombre }}" class="logo-img" crossorigin="anonymous">
+                {% elif institucion and institucion.logo %}
+                  <img src="{{ institucion.logo.url }}" alt="Logo {{ institucion.nombre }}" class="logo-img">
+                {% endif %}
+              </td>
+              <td style="width:45%; text-align:center;">
+                {% if institucion %}
+                  <div class="institution-name">{{ institucion.nombre }}</div>
+                  {% if institucion.direccion %}
+                    <div class="muted">{{ institucion.direccion }}</div>
+                  {% endif %}
+                {% endif %}
+              </td>
+              <td style="width:30%;" class="header-right">
+                {% if institucion and institucion.telefono %}
+                  <div>Tel: {{ institucion.telefono }}</div>
+                {% endif %}
+                <div class="no-wrap"><strong>No. {{ pago.numero_recibo }}</strong></div>
+                <div class="no-wrap">Fecha: {{ pago.fecha|date:'d/m/Y H:i' }}</div>
+                {% if not pago.activo %}<div class="status-void">ANULADO</div>{% endif %}
+              </td>
+            </tr>
+          </table>
+
+          <div class="divider"></div>
+
+          <table class="info-grid">
+            <tr>
+              <td style="width:55%;">
+                <div class="h3">Cliente</div>
+                <div><strong>{{ cliente.nombre }}</strong></div>
+                {% if cliente.direccion %}<div>{{ cliente.direccion }}</div>{% endif %}
+                {% if cliente.telefono %}<div>Tel: {{ cliente.telefono }}</div>{% endif %}
+                {% if cliente.email %}<div>Email: {{ cliente.email }}</div>{% endif %}
+                {% if cliente.nit %}<div>NIT: {{ cliente.nit }}</div>{% else %}<div>NIT: C/F</div>{% endif %}
+              </td>
+              <td style="width:45%; text-align:right;">
+                <div class="h1">RECIBO DE PAGO</div>
+                <div class="h2" style="margin-top:6px;">Servicio técnico</div>
+              </td>
+            </tr>
+          </table>
+
+          <table class="service-meta">
+            <tr>
+              <th style="width:25%;">Orden de servicio</th>
+              <td style="width:25%;">{{ orden.numero_orden }}</td>
+              <th style="width:25%;">Cotización asociada</th>
+              <td style="width:25%;">{% if cotizacion %}{{ cotizacion.numero_cotizacion }}{% else %}—{% endif %}</td>
+            </tr>
+            <tr>
+              <th>Tipo de pago</th>
+              <td>{{ pago.get_tipo_pago_display }}</td>
+              <th>Método</th>
+              <td>{{ pago.get_metodo_pago_display }}</td>
+            </tr>
+            <tr>
+              <th>Referencia</th>
+              <td>{{ pago.referencia|default:'—' }}</td>
+              <th>Registrado por</th>
+              <td>{{ pago.usuario_registro|nombre_usuario }}</td>
+            </tr>
+            <tr>
+              <th>Técnico asignado</th>
+              <td>{{ orden.tecnico_asignado|nombre_usuario|default:'Sin asignar' }}</td>
+              <th>Estado del recibo</th>
+              <td>{% if pago.activo %}Activo{% else %}Anulado{% endif %}</td>
+            </tr>
+            {% if pago.usuario_anulacion %}
+              <tr>
+                <th>Anulado por</th>
+                <td>{{ pago.usuario_anulacion|nombre_usuario }}</td>
+                <th>Fecha de anulación</th>
+                <td>{{ pago.fecha_anulacion|date:'d/m/Y H:i' }}</td>
+              </tr>
+            {% endif %}
+          </table>
+
+          <div class="receipt-amount">
+            <div class="lbl">Monto recibido</div>
+            <div class="amt">{{ pago.monto|money_q }}</div>
+          </div>
+
+          <div class="total-wrap">
+            <div class="total-box">
+              <div class="total-line"><span>Total a cobrar</span><strong>{{ orden.total_cobro|money_q }}</strong></div>
+              <div class="total-line"><span>Total pagado</span><strong>{{ orden.total_pagado|money_q }}</strong></div>
+              <div class="total-line total-final"><span>Saldo pendiente</span><strong>{{ orden.saldo_pendiente|money_q }}</strong></div>
+            </div>
+          </div>
+
+          <div class="obs-box">
+            <div class="h3">Observaciones</div>
+            <div class="obs-text">
+              <p>{{ pago.observacion|default:'Sin observaciones' }}</p>
+              <p class="condition-row"><strong>Documento:</strong> comprobante de pago aplicado a la orden de servicio técnico {{ orden.numero_orden }}.</p>
+            </div>
+          </div>
+
+          <div class="signature-box">
+            <table class="signature-table">
+              <tr>
+                <td><div class="signature-line">Firma / sello</div></td>
+                <td><div class="signature-line">Recibido conforme</div></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="footer">
+          <div class="payment-box">
+            <table class="payment-table">
+              <tr>
+                <td style="width:60%;">
+                  <div class="h3">Recibo de pago</div>
+                  <p class="payment-text">Comprobante emitido por pago registrado en servicio técnico.</p>
+                </td>
+                <td style="width:40%; text-align:right;">
+                  <div class="bank-label">Documento</div>
+                  <div class="bank-number">{{ pago.numero_recibo }}</div>
+                  <div class="bank-owner">{{ institucion.nombre|default:'Tecnologías de Guatemala' }}</div>
+                </td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="divider"></div>
+
+          <table class="footer-grid">
+            <tr>
+              <td style="width:70%;">
+                {% if institucion and institucion.pagina_web %}
+                  <div><strong>Web:</strong> {{ institucion.pagina_web|strip_http }}</div>
+                {% endif %}
+              </td>
+              <td style="width:30%; text-align:right;">
+                <div class="muted">Gracias por su preferencia</div>
+              </td>
+            </tr>
+          </table>
+
+          <div class="bottom-line"></div>
+        </div>
+      </div>
+    </div>
+  {% endwith %}
+</body>
+</html>

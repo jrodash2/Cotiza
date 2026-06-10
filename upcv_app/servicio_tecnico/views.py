@@ -13,6 +13,7 @@ from django.utils.dateparse import parse_date
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from weasyprint import HTML
 
+from almacen_app.models import Institucion
 from .forms import (
     PagoOrdenServicioForm,
     CambioEstadoForm,
@@ -89,7 +90,7 @@ class OrdenServicioListView(LoginRequiredMixin, RolServicioMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['estados'] = OrdenServicio.Estado.choices
-        context['tecnicos'] = OrdenServicio._meta.get_field('tecnico_asignado').remote_field.model.objects.filter(is_active=True).order_by('first_name', 'username')
+        context['tecnicos'] = OrdenServicio._meta.get_field('tecnico_asignado').remote_field.model.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
         return context
 
 
@@ -259,7 +260,17 @@ def decidir_cotizacion(request, pk, decision):
     return redirect('servicio_tecnico:cotizacion_detalle', pk=pk)
 
 
+def _get_logo_url(request, institucion):
+    if not institucion or not institucion.logo:
+        return None
+    return request.build_absolute_uri(institucion.logo.url)
+
+
 def render_pdf(request, template, context, filename):
+    context = {**context}
+    institucion = context.get('institucion') or Institucion.objects.first()
+    context.setdefault('institucion', institucion)
+    context.setdefault('logo_url', _get_logo_url(request, institucion))
     html = render_to_string(template, context, request=request)
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -281,5 +292,5 @@ def cotizacion_pdf(request, pk):
 
 @roles_requeridos(*ROLES_SERVICIO)
 def pago_recibo_pdf(request, pk):
-    pago = get_object_or_404(PagoOrdenServicio.objects.select_related('orden_servicio__cliente', 'usuario_registro'), pk=pk)
+    pago = get_object_or_404(PagoOrdenServicio.objects.select_related('orden_servicio__cliente', 'orden_servicio__tecnico_asignado', 'usuario_registro', 'usuario_anulacion'), pk=pk)
     return render_pdf(request, 'servicio_tecnico/pdf/recibo_pago.html', {'pago': pago, 'orden': pago.orden_servicio}, f'{pago.numero_recibo}.pdf')
