@@ -36,6 +36,14 @@ class ServicioTecnicoModelTests(TestCase):
         cotizacion.refresh_from_db()
         self.assertEqual(cotizacion.total, Decimal('0.00'))
 
+    def test_detalle_clean_maneja_valores_nulos_sin_type_error(self):
+        cotizacion = CotizacionServicio.objects.create(orden_servicio=self.orden, usuario_creacion=self.user)
+        detalle = DetalleCotizacionServicio(cotizacion=cotizacion, cantidad=None, precio_unitario=None)
+        with self.assertRaises(ValidationError) as context:
+            detalle.full_clean()
+        self.assertIn('cantidad', context.exception.message_dict)
+        self.assertIn('precio_unitario', context.exception.message_dict)
+
     def aprobar_orden_con_total(self, total=Decimal('100.00')):
         CotizacionServicio.objects.create(
             orden_servicio=self.orden,
@@ -121,3 +129,32 @@ class ServicioTecnicoFormTests(TestCase):
         self.assertEqual(cotizacion.detalles.get().descripcion, 'Nueva línea')
         cotizacion.refresh_from_db()
         self.assertEqual(cotizacion.total, Decimal('50.00'))
+
+    def test_formset_ignora_fila_extra_vacia_con_valores_por_defecto(self):
+        user = get_user_model().objects.create_user(username='formset-empty-user')
+        cliente = Cliente.objects.create(nombre='Cliente formset vacío')
+        orden = OrdenServicio.objects.create(cliente=cliente, tipo_equipo='PC', falla_reportada='Falla', usuario_creacion=user)
+        cotizacion = CotizacionServicio.objects.create(orden_servicio=orden, usuario_creacion=user)
+        data = {
+            'detalles-TOTAL_FORMS': '2', 'detalles-INITIAL_FORMS': '0', 'detalles-MIN_NUM_FORMS': '1', 'detalles-MAX_NUM_FORMS': '1000',
+            'detalles-0-id': '', 'detalles-0-tipo_item': 'SERVICIO', 'detalles-0-descripcion': 'Diagnóstico', 'detalles-0-cantidad': '1', 'detalles-0-precio_unitario': '25',
+            'detalles-1-id': '', 'detalles-1-tipo_item': 'SERVICIO', 'detalles-1-descripcion': '', 'detalles-1-cantidad': '1.00', 'detalles-1-precio_unitario': '',
+        }
+        formset = DetalleCotizacionFormSet(data, instance=cotizacion)
+        self.assertTrue(formset.is_valid(), formset.errors)
+        formset.save()
+        self.assertEqual(cotizacion.detalles.count(), 1)
+        self.assertEqual(cotizacion.detalles.get().descripcion, 'Diagnóstico')
+
+    def test_formset_marca_error_en_fila_parcial(self):
+        user = get_user_model().objects.create_user(username='formset-partial-user')
+        cliente = Cliente.objects.create(nombre='Cliente formset parcial')
+        orden = OrdenServicio.objects.create(cliente=cliente, tipo_equipo='PC', falla_reportada='Falla', usuario_creacion=user)
+        cotizacion = CotizacionServicio.objects.create(orden_servicio=orden, usuario_creacion=user)
+        data = {
+            'detalles-TOTAL_FORMS': '1', 'detalles-INITIAL_FORMS': '0', 'detalles-MIN_NUM_FORMS': '1', 'detalles-MAX_NUM_FORMS': '1000',
+            'detalles-0-id': '', 'detalles-0-tipo_item': 'SERVICIO', 'detalles-0-descripcion': 'Diagnóstico', 'detalles-0-cantidad': '1', 'detalles-0-precio_unitario': '',
+        }
+        formset = DetalleCotizacionFormSet(data, instance=cotizacion)
+        self.assertFalse(formset.is_valid())
+        self.assertIn('precio_unitario', formset.forms[0].errors)
