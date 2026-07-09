@@ -1,6 +1,7 @@
 from functools import wraps
 
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db import transaction
@@ -251,13 +252,50 @@ def decidir_cotizacion(request, pk, decision):
     if request.method != 'POST' or decision not in ('aprobar', 'rechazar'):
         return redirect('servicio_tecnico:cotizacion_detalle', pk=pk)
     aprobada = decision == 'aprobar'
+    tenia_vigente = cotizacion.orden_servicio.cotizaciones_servicio.filter(
+        estado=CotizacionServicio.Estado.APROBADA,
+        es_vigente=True,
+    ).exclude(pk=cotizacion.pk).exists()
     cotizacion.estado = CotizacionServicio.Estado.APROBADA if aprobada else CotizacionServicio.Estado.RECHAZADA
-    cotizacion.save(update_fields=['estado', 'fecha_actualizacion'])
+    if not aprobada:
+        cotizacion.es_vigente = False
+    cotizacion.save(update_fields=['estado', 'es_vigente', 'fecha_actualizacion'])
     orden = cotizacion.orden_servicio
+    if aprobada and not tenia_vigente and not cotizacion.es_vigente:
+        try:
+            cotizacion.marcar_como_vigente()
+            messages.info(request, f'Cotización {cotizacion.numero_cotizacion} establecida como vigente para cobro.')
+        except ValidationError as exc:
+            messages.warning(request, 'Cotización aprobada, pero no se pudo establecer como vigente: ' + '; '.join(exc.messages))
+    elif aprobada and orden.get_cotizacion_vigente() and orden.get_cotizacion_vigente().pk != cotizacion.pk:
+        messages.info(request, 'Cotización aprobada como alternativa. La base de cobro vigente no cambió automáticamente.')
     orden.estado = OrdenServicio.Estado.APROBADO_REPARACION if aprobada else OrdenServicio.Estado.NO_REPARADO
     orden.save(usuario_historial=request.user, observacion_historial=f'Cotización {cotizacion.numero_cotizacion} {cotizacion.get_estado_display().lower()}.')
     messages.success(request, f'Cotización {cotizacion.get_estado_display().lower()}.')
     return redirect('servicio_tecnico:cotizacion_detalle', pk=pk)
+
+
+@roles_requeridos(*ROLES_ADMINISTRATIVOS)
+def establecer_cotizacion_vigente(request, pk, orden_pk=None):
+    cotizaciones = CotizacionServicio.objects.select_related('orden_servicio')
+    if orden_pk is not None:
+        cotizaciones = cotizaciones.filter(orden_servicio_id=orden_pk)
+    cotizacion = get_object_or_404(cotizaciones, pk=pk)
+    orden = cotizacion.orden_servicio
+    if request.method != 'POST':
+        messages.error(request, 'La cotización vigente solo puede cambiarse desde el botón Establecer vigente.')
+        return redirect(orden)
+    orden_id_form = request.POST.get('orden_id')
+    if orden_id_form and str(orden.pk) != str(orden_id_form):
+        messages.error(request, 'La cotización seleccionada no pertenece a la orden indicada.')
+        return redirect(orden)
+    try:
+        cotizacion.marcar_como_vigente()
+    except ValidationError as exc:
+        messages.error(request, '; '.join(exc.messages))
+    else:
+        messages.success(request, f'Cotización {cotizacion.numero_cotizacion} establecida como vigente para cobro.')
+    return redirect(orden)
 
 
 def _get_logo_url(request, institucion):

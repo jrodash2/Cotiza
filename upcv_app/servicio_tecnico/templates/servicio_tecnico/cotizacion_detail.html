@@ -7,6 +7,7 @@
       <h3>
         {{ cotizacion.numero_cotizacion }}
         <span class="badge bg-{{ cotizacion.estado|estado_badge }} fs-6">{{ cotizacion.get_estado_display }}</span>
+        {% if cotizacion.es_vigente %}<span class="badge bg-success fs-6">Vigente para cobro</span>{% endif %}
         <span class="badge bg-warning text-dark fs-6">Precios sin IVA</span>
       </h3>
       <a href="{{ cotizacion.orden_servicio.get_absolute_url }}">Orden {{ cotizacion.orden_servicio.numero_orden }}</a>
@@ -19,6 +20,13 @@
         <form method="post" action="{% url 'servicio_tecnico:cotizacion_decidir' cotizacion.pk 'aprobar' %}">
           {% csrf_token %}
           <button class="btn btn-success">Aprobar</button>
+        </form>
+      {% endif %}
+      {% if cotizacion.estado == 'APROBADA' and not cotizacion.es_vigente %}
+        <form method="post" action="{% url 'servicio_tecnico:orden_cotizacion_vigente' cotizacion.orden_servicio.pk cotizacion.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="orden_id" value="{{ cotizacion.orden_servicio.pk }}">
+          <button class="btn btn-warning" type="submit">Establecer vigente</button>
         </form>
       {% endif %}
       {% if cotizacion.estado != 'RECHAZADA' %}

@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.urls import reverse
 
 from cotizaciones_app.models import Cliente
 from .forms import DetalleCotizacionFormSet, OrdenServicioForm
@@ -12,7 +13,7 @@ from .utils import nombre_usuario
 
 class ServicioTecnicoModelTests(TestCase):
     def setUp(self):
-        self.user = get_user_model().objects.create_user(username='admin-test', password='test')
+        self.user = get_user_model().objects.create_user(username='admin-test', password='test', is_superuser=True)
         self.cliente = Cliente.objects.create(nombre='Cliente de prueba')
         self.orden = OrdenServicio.objects.create(
             cliente=self.cliente,
@@ -54,6 +55,120 @@ class ServicioTecnicoModelTests(TestCase):
         )
         self.orden.estado = OrdenServicio.Estado.APROBADO_REPARACION
         self.orden.save(usuario_historial=self.user)
+
+
+    def test_nueva_cotizacion_aprobada_no_reemplaza_vigente_con_pagos(self):
+        cotizacion_vigente = CotizacionServicio.objects.create(
+            orden_servicio=self.orden,
+            total=Decimal('600.00'),
+            estado=CotizacionServicio.Estado.APROBADA,
+            es_vigente=True,
+            usuario_creacion=self.user,
+        )
+        self.orden.estado = OrdenServicio.Estado.APROBADO_REPARACION
+        self.orden.save(usuario_historial=self.user)
+        PagoOrdenServicio.objects.create(orden_servicio=self.orden, monto=Decimal('100.00'), usuario_registro=self.user)
+
+        cotizacion_nueva = CotizacionServicio.objects.create(
+            orden_servicio=self.orden,
+            total=Decimal('50.00'),
+            estado=CotizacionServicio.Estado.APROBADA,
+            usuario_creacion=self.user,
+        )
+
+        self.assertEqual(self.orden.get_cotizacion_vigente(), cotizacion_vigente)
+        self.assertFalse(cotizacion_nueva.es_vigente)
+        self.assertEqual(self.orden.total_cobro, Decimal('600.00'))
+        self.assertEqual(self.orden.total_pagado, Decimal('100.00'))
+        self.assertEqual(self.orden.saldo_pendiente, Decimal('500.00'))
+        self.assertTrue(self.orden.puede_registrar_pago)
+
+    def test_no_permite_marcar_vigente_menor_que_total_pagado(self):
+        CotizacionServicio.objects.create(
+            orden_servicio=self.orden,
+            total=Decimal('600.00'),
+            estado=CotizacionServicio.Estado.APROBADA,
+            es_vigente=True,
+            usuario_creacion=self.user,
+        )
+        self.orden.estado = OrdenServicio.Estado.APROBADO_REPARACION
+        self.orden.save(usuario_historial=self.user)
+        PagoOrdenServicio.objects.create(orden_servicio=self.orden, monto=Decimal('100.00'), usuario_registro=self.user)
+        cotizacion_menor = CotizacionServicio.objects.create(
+            orden_servicio=self.orden,
+            total=Decimal('50.00'),
+            estado=CotizacionServicio.Estado.APROBADA,
+            usuario_creacion=self.user,
+        )
+
+        with self.assertRaisesMessage(ValidationError, 'La cotización vigente no puede ser menor que el total ya pagado de la orden.'):
+            cotizacion_menor.marcar_como_vigente()
+
+        cotizacion_mayor = CotizacionServicio.objects.create(
+            orden_servicio=self.orden,
+            total=Decimal('700.00'),
+            estado=CotizacionServicio.Estado.APROBADA,
+            usuario_creacion=self.user,
+        )
+        cotizacion_mayor.marcar_como_vigente()
+        cotizacion_mayor.refresh_from_db()
+        self.assertTrue(cotizacion_mayor.es_vigente)
+        self.assertEqual(self.orden.get_cotizacion_vigente(), cotizacion_mayor)
+
+
+    def test_vista_establecer_vigente_por_post_actualiza_y_redirige_a_orden(self):
+        cotizacion_anterior = CotizacionServicio.objects.create(
+            orden_servicio=self.orden,
+            total=Decimal('600.00'),
+            estado=CotizacionServicio.Estado.APROBADA,
+            es_vigente=True,
+            usuario_creacion=self.user,
+        )
+        cotizacion_nueva = CotizacionServicio.objects.create(
+            orden_servicio=self.orden,
+            total=Decimal('700.00'),
+            estado=CotizacionServicio.Estado.APROBADA,
+            usuario_creacion=self.user,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse('servicio_tecnico:orden_cotizacion_vigente', args=[self.orden.pk, cotizacion_nueva.pk]),
+            {'orden_id': self.orden.pk},
+        )
+
+        self.assertRedirects(response, self.orden.get_absolute_url())
+        cotizacion_anterior.refresh_from_db()
+        cotizacion_nueva.refresh_from_db()
+        self.assertFalse(cotizacion_anterior.es_vigente)
+        self.assertTrue(cotizacion_nueva.es_vigente)
+        self.assertEqual(self.orden.get_cotizacion_vigente(), cotizacion_nueva)
+        self.assertEqual(self.orden.total_cobro, Decimal('700.00'))
+
+    def test_vista_establecer_vigente_valida_orden_de_la_url(self):
+        otro_cliente = Cliente.objects.create(nombre='Otro cliente')
+        otra_orden = OrdenServicio.objects.create(
+            cliente=otro_cliente,
+            tipo_equipo='Impresora',
+            falla_reportada='No imprime',
+            usuario_creacion=self.user,
+        )
+        cotizacion = CotizacionServicio.objects.create(
+            orden_servicio=self.orden,
+            total=Decimal('600.00'),
+            estado=CotizacionServicio.Estado.APROBADA,
+            usuario_creacion=self.user,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse('servicio_tecnico:orden_cotizacion_vigente', args=[otra_orden.pk, cotizacion.pk]),
+            {'orden_id': otra_orden.pk},
+        )
+
+        self.assertEqual(response.status_code, 404)
+        cotizacion.refresh_from_db()
+        self.assertFalse(cotizacion.es_vigente)
 
     def test_pago_requiere_estado_permitido_y_total_definido(self):
         pago = PagoOrdenServicio(orden_servicio=self.orden, monto=Decimal('25.00'), usuario_registro=self.user)
