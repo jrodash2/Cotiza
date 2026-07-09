@@ -478,3 +478,78 @@ thead.table-light {
   fill: #1e40af !important;
   stroke: none !important;
 }
+
+/* Global table integration: cards provide the outer frame, tables should not add a second box. */
+.table-responsive,
+.dataTables_wrapper,
+.dataTables_scroll,
+.dataTables_scrollHead,
+.dataTables_scrollBody,
+.dataTables_scrollFoot {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.card .table-responsive,
+.card .dataTables_wrapper,
+.card .dataTables_scroll,
+.card .dataTables_scrollHead,
+.card .dataTables_scrollBody,
+.card .dataTables_scrollFoot,
+.card .table {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+.card .card-body > .table-responsive:first-child,
+.card .card-body > .dataTables_wrapper:first-child,
+.card .card-body.p-0 > .table-responsive:first-child {
+  margin-top: 0;
+}
+
+.table,
+.table-bordered,
+table.dataTable,
+table.dataTable.no-footer,
+table.dataTable.table-bordered {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+.table-bordered > :not(caption) > * > *,
+.table > :not(caption) > * > * {
+  border-left: 0 !important;
+  border-right: 0 !important;
+}
+
+.table > thead,
+.table > thead > tr > th,
+table.dataTable thead th,
+table.dataTable thead td {
+  border-top: 0 !important;
+}
+
+.table > tbody > tr:last-child > td,
+.table > tbody > tr:last-child > th,
+table.dataTable tbody tr:last-child td,
+table.dataTable tbody tr:last-child th {
+  border-bottom-color: transparent !important;
+}
+
+.dataTables_wrapper .row,
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.card .dataTables_wrapper .dataTables_length,
+.card .dataTables_wrapper .dataTables_filter {
+  padding-top: 0.15rem;
+}
