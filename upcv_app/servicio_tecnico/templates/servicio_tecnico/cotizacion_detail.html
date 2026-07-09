@@ -23,9 +23,10 @@
         </form>
       {% endif %}
       {% if cotizacion.estado == 'APROBADA' and not cotizacion.es_vigente %}
-        <form method="post" action="{% url 'servicio_tecnico:cotizacion_vigente' cotizacion.pk %}">
+        <form method="post" action="{% url 'servicio_tecnico:orden_cotizacion_vigente' cotizacion.orden_servicio.pk cotizacion.pk %}">
           {% csrf_token %}
-          <button class="btn btn-warning">Establecer vigente</button>
+          <input type="hidden" name="orden_id" value="{{ cotizacion.orden_servicio.pk }}">
+          <button class="btn btn-warning" type="submit">Establecer vigente</button>
         </form>
       {% endif %}
       {% if cotizacion.estado != 'RECHAZADA' %}

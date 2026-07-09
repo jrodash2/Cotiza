@@ -276,17 +276,26 @@ def decidir_cotizacion(request, pk, decision):
 
 
 @roles_requeridos(*ROLES_ADMINISTRATIVOS)
-def establecer_cotizacion_vigente(request, pk):
-    cotizacion = get_object_or_404(CotizacionServicio.objects.select_related('orden_servicio'), pk=pk)
+def establecer_cotizacion_vigente(request, pk, orden_pk=None):
+    cotizaciones = CotizacionServicio.objects.select_related('orden_servicio')
+    if orden_pk is not None:
+        cotizaciones = cotizaciones.filter(orden_servicio_id=orden_pk)
+    cotizacion = get_object_or_404(cotizaciones, pk=pk)
+    orden = cotizacion.orden_servicio
     if request.method != 'POST':
-        return redirect('servicio_tecnico:cotizacion_detalle', pk=pk)
+        messages.error(request, 'La cotización vigente solo puede cambiarse desde el botón Establecer vigente.')
+        return redirect(orden)
+    orden_id_form = request.POST.get('orden_id')
+    if orden_id_form and str(orden.pk) != str(orden_id_form):
+        messages.error(request, 'La cotización seleccionada no pertenece a la orden indicada.')
+        return redirect(orden)
     try:
         cotizacion.marcar_como_vigente()
     except ValidationError as exc:
         messages.error(request, '; '.join(exc.messages))
     else:
         messages.success(request, f'Cotización {cotizacion.numero_cotizacion} establecida como vigente para cobro.')
-    return redirect(cotizacion.orden_servicio)
+    return redirect(orden)
 
 
 def _get_logo_url(request, institucion):
