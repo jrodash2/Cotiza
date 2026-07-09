@@ -30,8 +30,8 @@ class DetalleCotizacionInline(admin.TabularInline):
 
 @admin.register(CotizacionServicio)
 class CotizacionServicioAdmin(admin.ModelAdmin):
-    list_display = ('numero_cotizacion', 'orden_servicio', 'fecha', 'estado', 'total')
-    list_filter = ('estado', 'fecha')
+    list_display = ('numero_cotizacion', 'orden_servicio', 'fecha', 'estado', 'es_vigente', 'total')
+    list_filter = ('estado', 'es_vigente', 'fecha')
     search_fields = ('numero_cotizacion', 'orden_servicio__numero_orden', 'orden_servicio__cliente__nombre')
     readonly_fields = ('numero_cotizacion', 'subtotal', 'total', 'fecha_actualizacion')
     inlines = [DetalleCotizacionInline]
