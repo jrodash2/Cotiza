@@ -99,24 +99,65 @@ class OrdenServicio(models.Model):
         if errors:
             raise ValidationError(errors)
 
+    def get_cotizacion_vigente(self):
+        """Devuelve la cotización vigente definida para cobro.
+
+        La vigencia no se deduce de la última aprobación: debe estar marcada
+        explícitamente para evitar que una cotización nueva de menor valor
+        reemplace la base económica de una orden que ya tiene pagos. Para
+        datos históricos sin marca, se usa una regla conservadora: preferir una
+        cotización aprobada cuyo total cubra lo ya pagado.
+        """
+        vigente = self.cotizaciones_servicio.filter(
+            estado=CotizacionServicio.Estado.APROBADA,
+            es_vigente=True,
+        ).order_by('-fecha', '-id').first()
+        if vigente:
+            return vigente
+
+        total_pagado = self.get_total_pagado()
+        aprobadas = self.cotizaciones_servicio.filter(estado=CotizacionServicio.Estado.APROBADA)
+        if total_pagado > 0:
+            consistente = aprobadas.filter(total__gte=total_pagado).order_by('total', '-fecha', '-id').first()
+            if consistente:
+                return consistente
+        return aprobadas.order_by('-fecha', '-id').first()
+
+    def get_cotizacion_aprobada_vigente(self):
+        return self.get_cotizacion_vigente()
+
+    @property
+    def cotizacion_vigente(self):
+        return self.get_cotizacion_vigente()
+
+    @property
+    def cotizacion_aprobada_vigente(self):
+        return self.get_cotizacion_vigente()
+
     @property
     def cotizacion_aprobada(self):
-        return self.cotizaciones_servicio.filter(estado=CotizacionServicio.Estado.APROBADA).order_by('-fecha', '-id').first()
+        return self.get_cotizacion_vigente()
+
+    def get_total_base_cobro(self):
+        if self.costo_final and self.costo_final > 0:
+            return self.costo_final
+        cotizacion = self.get_cotizacion_aprobada_vigente()
+        return cotizacion.total if cotizacion else Decimal('0.00')
 
     @property
     def total_cobro(self):
-        if self.costo_final and self.costo_final > 0:
-            return self.costo_final
-        cotizacion = self.cotizacion_aprobada
-        return cotizacion.total if cotizacion else Decimal('0.00')
+        return self.get_total_base_cobro()
 
     @property
     def total_aprobado(self):
         return self.total_cobro
 
+    def get_total_pagado(self):
+        return self.pagos.filter(activo=True).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+
     @property
     def total_pagado(self):
-        return self.pagos.filter(activo=True).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        return self.get_total_pagado()
 
     @property
     def anticipo_total(self):
@@ -126,9 +167,12 @@ class OrdenServicio(models.Model):
     def total_anticipos(self):
         return self.anticipo_total
 
+    def get_saldo_pendiente(self):
+        return max(self.get_total_base_cobro() - self.get_total_pagado(), Decimal('0.00'))
+
     @property
     def saldo_pendiente(self):
-        return max(self.total_cobro - self.total_pagado, Decimal('0.00'))
+        return self.get_saldo_pendiente()
 
     @property
     def esta_pagada(self):
@@ -150,9 +194,16 @@ class OrdenServicio(models.Model):
             'PAGADO': 'Pagado',
         }[self.estado_pago]
 
+    def puede_registrar_pago_func(self):
+        return (
+            self.estado in PagoOrdenServicio.ESTADOS_PERMITIDOS
+            and self.get_total_base_cobro() > 0
+            and self.get_saldo_pendiente() > 0
+        )
+
     @property
     def puede_registrar_pago(self):
-        return self.estado in PagoOrdenServicio.ESTADOS_PERMITIDOS and self.total_cobro > 0 and self.saldo_pendiente > 0
+        return self.puede_registrar_pago_func()
 
     def save(self, *args, **kwargs):
         usuario_historial = kwargs.pop('usuario_historial', None)
@@ -286,11 +337,19 @@ class CotizacionServicio(models.Model):
     total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     observaciones = models.TextField(blank=True)
     estado = models.CharField(max_length=15, choices=Estado.choices, default=Estado.BORRADOR)
+    es_vigente = models.BooleanField(default=False, help_text='Cotización vigente usada como base de cobro de la orden.')
     usuario_creacion = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-fecha', '-id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['orden_servicio'],
+                condition=models.Q(es_vigente=True),
+                name='servicio_cotizacion_vigente_unica_por_orden',
+            ),
+        ]
 
     def __str__(self):
         return self.numero_cotizacion
@@ -305,6 +364,17 @@ class CotizacionServicio(models.Model):
     @property
     def saldo_despues_anticipo(self):
         return self.saldo_despues_pagos
+
+    def marcar_como_vigente(self):
+        if self.estado != self.Estado.APROBADA:
+            raise ValidationError('Solo una cotización aprobada puede marcarse como vigente.')
+        total_pagado = self.orden_servicio.get_total_pagado()
+        if total_pagado > 0 and (self.total or Decimal('0.00')) < total_pagado:
+            raise ValidationError('La cotización vigente no puede ser menor que el total ya pagado de la orden.')
+        with transaction.atomic():
+            type(self).objects.select_for_update().filter(orden_servicio=self.orden_servicio).exclude(pk=self.pk).update(es_vigente=False)
+            self.es_vigente = True
+            self.save(update_fields=['es_vigente', 'fecha_actualizacion'])
 
     def clean(self):
         errors = {}
