@@ -29,8 +29,8 @@
       <div class="card-body">
         {{ formset.management_form }}
         {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
-        <div class="table-responsive">
-          <table class="table align-middle" id="items-table">
+        <div class="table-responsive st-table-shell">
+          <table class="table align-middle st-data-table st-data-table--editor" id="items-table">
             <thead><tr><th style="min-width:150px">Tipo</th><th style="min-width:260px">Descripción</th><th style="min-width:120px">Cantidad</th><th style="min-width:150px">Precio unitario</th><th class="text-end" style="min-width:130px">Subtotal</th><th></th></tr></thead>
             <tbody id="items-body">
               {% for item in formset %}
@@ -40,7 +40,7 @@
                   <td>{{ item.cantidad }}<div class="text-danger small">{{ item.cantidad.errors }}</div></td>
                   <td><div class="input-group"><span class="input-group-text">Q</span>{{ item.precio_unitario }}</div><div class="text-danger small">{{ item.precio_unitario.errors }}</div></td>
                   <td class="text-end fw-semibold item-subtotal">Q0.00</td>
-                  <td class="text-end"><span class="d-none delete-field">{{ item.DELETE }}</span><button type="button" class="btn btn-outline-danger btn-sm eliminar-item">Eliminar</button></td>
+                  <td class="text-end st-actions"><span class="d-none delete-field">{{ item.DELETE }}</span><button type="button" class="btn btn-outline-danger btn-sm eliminar-item">Eliminar</button></td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -53,7 +53,7 @@
             <td>{{ formset.empty_form.cantidad }}<div class="text-danger small">{{ formset.empty_form.cantidad.errors }}</div></td>
             <td><div class="input-group"><span class="input-group-text">Q</span>{{ formset.empty_form.precio_unitario }}</div><div class="text-danger small">{{ formset.empty_form.precio_unitario.errors }}</div></td>
             <td class="text-end fw-semibold item-subtotal">Q0.00</td>
-            <td class="text-end"><span class="d-none delete-field">{{ formset.empty_form.DELETE }}</span><button type="button" class="btn btn-outline-danger btn-sm eliminar-item">Eliminar</button></td>
+            <td class="text-end st-actions"><span class="d-none delete-field">{{ formset.empty_form.DELETE }}</span><button type="button" class="btn btn-outline-danger btn-sm eliminar-item">Eliminar</button></td>
           </tr>
         </template>
         <div class="row justify-content-end mt-3"><div class="col-md-5 col-lg-4"><div class="border rounded p-3">
