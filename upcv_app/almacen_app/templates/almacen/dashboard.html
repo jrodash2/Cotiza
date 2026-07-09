@@ -47,8 +47,8 @@
           <div class="col-12 col-md-6 col-xl-3">
             <div class="card">
               <div class="card-body">
-                <p class="text-muted mb-1">Productos / Servicios</p>
-                <h3 class="dashboard-card-title mb-0">{{ totals.productos }}</h3>
+                <p class="text-muted mb-1">Órdenes con Saldo</p>
+                <h3 class="dashboard-card-title mb-0">{{ servicio_economico.ordenes_con_saldo }}</h3>
               </div>
             </div>
           </div>
@@ -97,11 +97,11 @@
           <div class="col-12 col-xl-6">
             <div class="card h-100">
               <div class="card-header">
-                <h5 class="dashboard-card-title mb-0">Top Clientes</h5>
+                <h5 class="dashboard-card-title mb-0">Órdenes de Servicio Técnico</h5>
               </div>
               <div class="card-body dashboard-chart">
-                <div id="chart-top-clientes" style="min-height: 320px; width: 100%;"></div>
-                <div class="text-muted text-center mt-3 d-none" data-empty="chart-top">
+                <div id="chart-ordenes-estado" style="min-height: 320px; width: 100%;"></div>
+                <div class="text-muted text-center mt-3 d-none" data-empty="chart-service-status">
                   Sin datos
                 </div>
               </div>
@@ -110,13 +110,68 @@
           <div class="col-12 col-xl-6">
             <div class="card h-100">
               <div class="card-header">
-                <h5 class="dashboard-card-title mb-0">Top Productos / Servicios</h5>
+                <h5 class="dashboard-card-title mb-0">Ingresos Servicio Técnico por Mes</h5>
               </div>
               <div class="card-body dashboard-chart">
-                <div id="chart-top-productos" style="min-height: 320px; width: 100%;"></div>
-                <div class="text-muted text-center mt-3 d-none" data-empty="chart-products">
+                <div id="chart-pagos-servicio-mes" style="min-height: 320px; width: 100%;"></div>
+                <div class="text-muted text-center mt-3 d-none" data-empty="chart-service-payments">
                   Sin datos
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 mt-0">
+          {% for item in servicio_estados_resumen %}
+          <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm">
+              <div class="card-body">
+                <span class="badge bg-{{ item.color }} mb-2">Servicio técnico</span>
+                <p class="text-muted mb-1">{{ item.label }}</p>
+                <h4 class="dashboard-card-title mb-0">{{ item.value }}</h4>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="row g-3 mt-0">
+          <div class="col-12 col-xl-4">
+            <div class="card h-100">
+              <div class="card-header"><h5 class="dashboard-card-title mb-0">Métricas económicas ST</h5></div>
+              <div class="card-body">
+                <div class="d-flex justify-content-between border-bottom py-2"><span>Total cotizado</span><strong>{{ servicio_economico.total_cotizado }}</strong></div>
+                <div class="d-flex justify-content-between border-bottom py-2"><span>Total pagado</span><strong class="text-success">{{ servicio_economico.total_pagado }}</strong></div>
+                <div class="d-flex justify-content-between border-bottom py-2"><span>Saldo pendiente</span><strong class="text-danger">{{ servicio_economico.saldo_pendiente }}</strong></div>
+                <div class="d-flex justify-content-between border-bottom py-2"><span>Ingresos hoy</span><strong>{{ servicio_economico.ingresos_hoy }}</strong></div>
+                <div class="d-flex justify-content-between py-2"><span>Ingresos del mes</span><strong>{{ servicio_economico.ingresos_mes }}</strong></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-xl-4">
+            <div class="card h-100">
+              <div class="card-header"><h5 class="dashboard-card-title mb-0">Últimas órdenes ingresadas</h5></div>
+              <div class="card-body">
+                {% for orden in ultimas_ordenes_servicio %}
+                  <div class="d-flex justify-content-between border-bottom py-2">
+                    <div><a href="{% url 'servicio_tecnico:orden_detalle' orden.pk %}"><strong>{{ orden.numero_orden }}</strong></a><br><small class="text-muted">{{ orden.cliente }} · {{ orden.tipo_equipo }}</small></div>
+                    <span class="badge bg-light text-dark">{{ orden.get_estado_display }}</span>
+                  </div>
+                {% empty %}<p class="text-muted mb-0">Sin órdenes registradas.</p>{% endfor %}
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-xl-4">
+            <div class="card h-100">
+              <div class="card-header"><h5 class="dashboard-card-title mb-0">Órdenes pendientes de pago</h5></div>
+              <div class="card-body">
+                {% for orden in ordenes_pendientes_pago %}
+                  <div class="d-flex justify-content-between border-bottom py-2">
+                    <div><a href="{% url 'servicio_tecnico:orden_detalle' orden.pk %}"><strong>{{ orden.numero_orden }}</strong></a><br><small class="text-muted">Saldo {{ orden.saldo_pendiente }}</small></div>
+                    <span class="badge bg-warning text-dark">{{ orden.estado_pago_display }}</span>
+                  </div>
+                {% empty %}<p class="text-muted mb-0">Sin saldos pendientes.</p>{% endfor %}
               </div>
             </div>
           </div>
@@ -126,19 +181,12 @@
         {{ chart_month_sales|json_script:"chart-month-sales" }}
         {{ clientes_por_mes_labels|json_script:"chart-clientes-labels" }}
         {{ clientes_por_mes_data|json_script:"chart-clientes-data" }}
-        {{ top_clients_labels|json_script:"chart-top-labels" }}
-        {{ top_clients_totals|json_script:"chart-top-totals" }}
-        {{ top_products_labels|json_script:"chart-top-products-labels" }}
-        {{ top_products_totals|json_script:"chart-top-products-totals" }}
+        {{ ordenes_por_estado_labels|json_script:"chart-service-status-labels" }}
+        {{ ordenes_por_estado_totals|json_script:"chart-service-status-totals" }}
+        {{ pagos_servicio_mes|json_script:"chart-service-payments-data" }}
       </div>
     </div>
 
-    {{ chart_month_labels|json_script:"chart-month-labels" }}
-    {{ chart_month_sales|json_script:"chart-month-sales" }}
-    {{ clientes_por_mes_labels|json_script:"chart-clientes-labels" }}
-    {{ clientes_por_mes_data|json_script:"chart-clientes-data" }}
-    {{ top_clients_labels|json_script:"chart-top-labels" }}
-    {{ top_clients_totals|json_script:"chart-top-totals" }}
   </div>
 
 
@@ -148,14 +196,9 @@
     const monthSales = JSON.parse(document.getElementById('chart-month-sales').textContent);
     const clientesLabels = JSON.parse(document.getElementById('chart-clientes-labels').textContent);
     const clientesData = JSON.parse(document.getElementById('chart-clientes-data').textContent);
-    const topLabels = JSON.parse(document.getElementById('chart-top-labels').textContent);
-    const topTotals = JSON.parse(document.getElementById('chart-top-totals').textContent);
-    const topProductsLabels = JSON.parse(
-      document.getElementById('chart-top-products-labels').textContent
-    );
-    const topProductsTotals = JSON.parse(
-      document.getElementById('chart-top-products-totals').textContent
-    );
+    const serviceStatusLabels = JSON.parse(document.getElementById('chart-service-status-labels').textContent);
+    const serviceStatusTotals = JSON.parse(document.getElementById('chart-service-status-totals').textContent);
+    const servicePaymentsData = JSON.parse(document.getElementById('chart-service-payments-data').textContent);
 
     const brandBlue = '#1f4ed8';
     const brandBlueLight = '#88a8fb';
@@ -188,8 +231,8 @@
     if (!window.ApexCharts) {
       showEmpty('chart-months');
       showEmpty('chart-clients-months');
-      showEmpty('chart-top');
-      showEmpty('chart-products');
+      showEmpty('chart-service-status');
+      showEmpty('chart-service-payments');
       return;
     }
 
@@ -197,10 +240,9 @@
     const safeMonthSales = cleanSeries(monthSales);
     const safeClientesLabels = cleanLabels(clientesLabels, 'Mes');
     const safeClientesData = cleanSeries(clientesData);
-    const safeTopLabels = cleanLabels(topLabels, 'SIN CLIENTE');
-    const safeTopTotals = cleanSeries(topTotals);
-    const safeTopProductsLabels = cleanLabels(topProductsLabels, 'SIN NOMBRE');
-    const safeTopProductsTotals = cleanSeries(topProductsTotals);
+    const safeServiceStatusLabels = cleanLabels(serviceStatusLabels, 'Estado');
+    const safeServiceStatusTotals = cleanSeries(serviceStatusTotals);
+    const safeServicePaymentsData = cleanSeries(servicePaymentsData);
 
     if (!safeMonthLabels.length) {
       showEmpty('chart-months');
@@ -246,52 +288,31 @@
       }).render();
     }
 
-    if (!safeTopLabels.length) {
-      showEmpty('chart-top');
+    if (!safeServiceStatusLabels.length) {
+      showEmpty('chart-service-status');
     } else {
-      new ApexCharts(document.querySelector('#chart-top-clientes'), {
-        chart: {
-          type: 'donut',
-          height: 300,
-        },
-        labels: safeTopLabels,
-        series: safeTopTotals,
-        colors: [brandBlue, '#3c6df0', '#5c89f5', brandBlueLight, '#b3c7ff'],
+      new ApexCharts(document.querySelector('#chart-ordenes-estado'), {
+        chart: { type: 'donut', height: 300 },
+        labels: safeServiceStatusLabels,
+        series: safeServiceStatusTotals,
+        colors: [brandBlue, '#3c6df0', '#5c89f5', brandBlueLight, '#b3c7ff', '#16a34a', '#f59e0b'],
         legend: { position: 'bottom' },
-        tooltip: {
-          y: { formatter: (val) => formatCurrency(val) },
-        },
+        tooltip: { y: { formatter: (val) => `${Math.round(toSafeNumber(val))} orden(es)` } },
       }).render();
     }
 
-    if (!safeTopProductsLabels.length) {
-      showEmpty('chart-products');
+    if (!safeServicePaymentsData.some((value) => value > 0)) {
+      showEmpty('chart-service-payments');
     } else {
-      new ApexCharts(document.querySelector('#chart-top-productos'), {
-        chart: {
-          type: 'bar',
-          height: 320,
-          toolbar: { show: false },
-        },
+      new ApexCharts(document.querySelector('#chart-pagos-servicio-mes'), {
+        chart: { type: 'bar', height: 320, toolbar: { show: false } },
         colors: [brandBlue],
-        series: [{ name: 'Total vendido', data: safeTopProductsTotals }],
-        xaxis: {
-          categories: safeTopProductsLabels,
-          labels: { trim: true },
-        },
-        yaxis: {
-          labels: { formatter: (val) => formatCurrency(val) },
-        },
-        plotOptions: { bar: { horizontal: true, borderRadius: 6 } },
+        series: [{ name: 'Pagos servicio técnico', data: safeServicePaymentsData }],
+        xaxis: { categories: safeMonthLabels },
+        yaxis: { labels: { formatter: (val) => formatCurrency(val) } },
+        plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
         dataLabels: { enabled: false },
-        tooltip: {
-          y: {
-            formatter: (val, opts) => {
-              const product = safeTopProductsLabels?.[opts?.dataPointIndex] || 'SIN NOMBRE';
-              return `${product}: ${formatCurrency(val)}`;
-            },
-          },
-        },
+        tooltip: { y: { formatter: (val) => formatCurrency(val) } },
       }).render();
     }
   });
