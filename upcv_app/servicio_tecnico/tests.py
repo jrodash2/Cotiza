@@ -55,6 +55,65 @@ class ServicioTecnicoModelTests(TestCase):
         self.orden.estado = OrdenServicio.Estado.APROBADO_REPARACION
         self.orden.save(usuario_historial=self.user)
 
+
+    def test_nueva_cotizacion_aprobada_no_reemplaza_vigente_con_pagos(self):
+        cotizacion_vigente = CotizacionServicio.objects.create(
+            orden_servicio=self.orden,
+            total=Decimal('600.00'),
+            estado=CotizacionServicio.Estado.APROBADA,
+            es_vigente=True,
+            usuario_creacion=self.user,
+        )
+        self.orden.estado = OrdenServicio.Estado.APROBADO_REPARACION
+        self.orden.save(usuario_historial=self.user)
+        PagoOrdenServicio.objects.create(orden_servicio=self.orden, monto=Decimal('100.00'), usuario_registro=self.user)
+
+        cotizacion_nueva = CotizacionServicio.objects.create(
+            orden_servicio=self.orden,
+            total=Decimal('50.00'),
+            estado=CotizacionServicio.Estado.APROBADA,
+            usuario_creacion=self.user,
+        )
+
+        self.assertEqual(self.orden.get_cotizacion_vigente(), cotizacion_vigente)
+        self.assertFalse(cotizacion_nueva.es_vigente)
+        self.assertEqual(self.orden.total_cobro, Decimal('600.00'))
+        self.assertEqual(self.orden.total_pagado, Decimal('100.00'))
+        self.assertEqual(self.orden.saldo_pendiente, Decimal('500.00'))
+        self.assertTrue(self.orden.puede_registrar_pago)
+
+    def test_no_permite_marcar_vigente_menor_que_total_pagado(self):
+        CotizacionServicio.objects.create(
+            orden_servicio=self.orden,
+            total=Decimal('600.00'),
+            estado=CotizacionServicio.Estado.APROBADA,
+            es_vigente=True,
+            usuario_creacion=self.user,
+        )
+        self.orden.estado = OrdenServicio.Estado.APROBADO_REPARACION
+        self.orden.save(usuario_historial=self.user)
+        PagoOrdenServicio.objects.create(orden_servicio=self.orden, monto=Decimal('100.00'), usuario_registro=self.user)
+        cotizacion_menor = CotizacionServicio.objects.create(
+            orden_servicio=self.orden,
+            total=Decimal('50.00'),
+            estado=CotizacionServicio.Estado.APROBADA,
+            usuario_creacion=self.user,
+        )
+
+        with self.assertRaisesMessage(ValidationError, 'La cotización vigente no puede ser menor que el total ya pagado de la orden.'):
+            cotizacion_menor.marcar_como_vigente()
+
+        cotizacion_mayor = CotizacionServicio.objects.create(
+            orden_servicio=self.orden,
+            total=Decimal('700.00'),
+            estado=CotizacionServicio.Estado.APROBADA,
+            usuario_creacion=self.user,
+        )
+        cotizacion_mayor.marcar_como_vigente()
+        cotizacion_mayor.refresh_from_db()
+        self.assertTrue(cotizacion_mayor.es_vigente)
+        self.assertEqual(self.orden.get_cotizacion_vigente(), cotizacion_mayor)
+
     def test_pago_requiere_estado_permitido_y_total_definido(self):
         pago = PagoOrdenServicio(orden_servicio=self.orden, monto=Decimal('25.00'), usuario_registro=self.user)
         with self.assertRaisesMessage(ValidationError, 'La orden no se encuentra en un estado que permita registrar pagos.'):

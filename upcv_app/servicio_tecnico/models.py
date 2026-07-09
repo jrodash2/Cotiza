@@ -99,25 +99,44 @@ class OrdenServicio(models.Model):
         if errors:
             raise ValidationError(errors)
 
-    def get_cotizacion_aprobada_vigente(self):
-        """Devuelve la cotización aprobada vigente para esta orden.
+    def get_cotizacion_vigente(self):
+        """Devuelve la cotización vigente definida para cobro.
 
-        Si por trazabilidad histórica existe más de una cotización aprobada,
-        la base de cobro debe tomar la aprobación más reciente de la orden, no
-        quedarse atada a una cotización anterior. La fecha define vigencia
-        funcional y el id desempata cotizaciones creadas el mismo día.
+        La vigencia no se deduce de la última aprobación: debe estar marcada
+        explícitamente para evitar que una cotización nueva de menor valor
+        reemplace la base económica de una orden que ya tiene pagos. Para
+        datos históricos sin marca, se usa una regla conservadora: preferir una
+        cotización aprobada cuyo total cubra lo ya pagado.
         """
-        return self.cotizaciones_servicio.filter(
+        vigente = self.cotizaciones_servicio.filter(
             estado=CotizacionServicio.Estado.APROBADA,
+            es_vigente=True,
         ).order_by('-fecha', '-id').first()
+        if vigente:
+            return vigente
+
+        total_pagado = self.get_total_pagado()
+        aprobadas = self.cotizaciones_servicio.filter(estado=CotizacionServicio.Estado.APROBADA)
+        if total_pagado > 0:
+            consistente = aprobadas.filter(total__gte=total_pagado).order_by('total', '-fecha', '-id').first()
+            if consistente:
+                return consistente
+        return aprobadas.order_by('-fecha', '-id').first()
+
+    def get_cotizacion_aprobada_vigente(self):
+        return self.get_cotizacion_vigente()
+
+    @property
+    def cotizacion_vigente(self):
+        return self.get_cotizacion_vigente()
 
     @property
     def cotizacion_aprobada_vigente(self):
-        return self.get_cotizacion_aprobada_vigente()
+        return self.get_cotizacion_vigente()
 
     @property
     def cotizacion_aprobada(self):
-        return self.get_cotizacion_aprobada_vigente()
+        return self.get_cotizacion_vigente()
 
     def get_total_base_cobro(self):
         if self.costo_final and self.costo_final > 0:
@@ -318,11 +337,19 @@ class CotizacionServicio(models.Model):
     total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     observaciones = models.TextField(blank=True)
     estado = models.CharField(max_length=15, choices=Estado.choices, default=Estado.BORRADOR)
+    es_vigente = models.BooleanField(default=False, help_text='Cotización vigente usada como base de cobro de la orden.')
     usuario_creacion = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-fecha', '-id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['orden_servicio'],
+                condition=models.Q(es_vigente=True),
+                name='servicio_cotizacion_vigente_unica_por_orden',
+            ),
+        ]
 
     def __str__(self):
         return self.numero_cotizacion
@@ -337,6 +364,17 @@ class CotizacionServicio(models.Model):
     @property
     def saldo_despues_anticipo(self):
         return self.saldo_despues_pagos
+
+    def marcar_como_vigente(self):
+        if self.estado != self.Estado.APROBADA:
+            raise ValidationError('Solo una cotización aprobada puede marcarse como vigente.')
+        total_pagado = self.orden_servicio.get_total_pagado()
+        if total_pagado > 0 and (self.total or Decimal('0.00')) < total_pagado:
+            raise ValidationError('La cotización vigente no puede ser menor que el total ya pagado de la orden.')
+        with transaction.atomic():
+            type(self).objects.select_for_update().filter(orden_servicio=self.orden_servicio).exclude(pk=self.pk).update(es_vigente=False)
+            self.es_vigente = True
+            self.save(update_fields=['es_vigente', 'fecha_actualizacion'])
 
     def clean(self):
         errors = {}
