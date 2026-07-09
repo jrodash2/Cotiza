@@ -43,6 +43,7 @@
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom_sidebar.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/app-fixes.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/layout-fixes.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/aurora-ui.css' %}">
     <style>
       .page-header {
         position: sticky;
@@ -72,13 +73,13 @@
       .sidebar-wrapper .sidebar-links .sidebar-list.active > a svg,
       .sidebar-wrapper .sidebar-links .sidebar-submenu li a.active,
       .sidebar-wrapper .sidebar-links .sidebar-submenu li a.active svg {
-        color: #38bdf8 !important;
-        fill: #38bdf8 !important;
+        color: var(--aurora-primary) !important;
+        fill: var(--aurora-primary) !important;
       }
 
       .sidebar-wrapper .sidebar-links .sidebar-list.active > a,
       .sidebar-wrapper .sidebar-links .sidebar-submenu li a.active {
-        background-color: rgba(56, 189, 248, 0.12) !important;
+        background-color: rgba(37, 99, 235, 0.12) !important;
       }
     </style>
   </head>
@@ -211,6 +212,16 @@
         {% endif %}
         <div class="page-body">
           <div class="container-fluid">
+            {% if messages %}
+              <div class="pt-3">
+                {% for message in messages %}
+                  <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
             {% block content %}
             {% endblock %}
           </div>
