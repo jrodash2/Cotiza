@@ -1,3 +1,4 @@
+import logging
 from functools import wraps
 
 from django.contrib import messages
@@ -25,6 +26,9 @@ from .forms import (
     SeguimientoOrdenServicioForm,
 )
 from .models import CotizacionServicio, OrdenServicio, PagoOrdenServicio
+
+
+logger = logging.getLogger(__name__)
 
 
 ROLES_SERVICIO = ('Administrador', 'Recepcion', 'Técnico', 'Tecnico', 'Almacen')
@@ -277,6 +281,13 @@ def decidir_cotizacion(request, pk, decision):
 
 @roles_requeridos(*ROLES_ADMINISTRATIVOS)
 def establecer_cotizacion_vigente(request, pk, orden_pk=None):
+    logger.info(
+        'Solicitud para establecer cotización vigente: method=%s orden_pk=%s cotizacion_pk=%s post=%s',
+        request.method,
+        orden_pk,
+        pk,
+        dict(request.POST.items()) if request.method == 'POST' else {},
+    )
     cotizaciones = CotizacionServicio.objects.select_related('orden_servicio')
     if orden_pk is not None:
         cotizaciones = cotizaciones.filter(orden_servicio_id=orden_pk)
@@ -289,12 +300,20 @@ def establecer_cotizacion_vigente(request, pk, orden_pk=None):
     if orden_id_form and str(orden.pk) != str(orden_id_form):
         messages.error(request, 'La cotización seleccionada no pertenece a la orden indicada.')
         return redirect(orden)
+    total_pagado = orden.get_total_pagado()
     try:
         cotizacion.marcar_como_vigente()
     except ValidationError as exc:
+        logger.warning('No se pudo establecer cotización vigente %s: %s', pk, exc.messages)
         messages.error(request, '; '.join(exc.messages))
     else:
+        logger.info('Cotización %s marcada como vigente para orden %s', cotizacion.pk, orden.pk)
         messages.success(request, f'Cotización {cotizacion.numero_cotizacion} establecida como vigente para cobro.')
+        if total_pagado > (cotizacion.total or 0):
+            messages.warning(
+                request,
+                'El total pagado supera el total de la nueva cotización vigente; el saldo pendiente se mostrará en Q0.00.',
+            )
     return redirect(orden)
 
 

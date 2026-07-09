@@ -368,9 +368,6 @@ class CotizacionServicio(models.Model):
     def marcar_como_vigente(self):
         if self.estado != self.Estado.APROBADA:
             raise ValidationError('Solo una cotización aprobada puede marcarse como vigente.')
-        total_pagado = self.orden_servicio.get_total_pagado()
-        if total_pagado > 0 and (self.total or Decimal('0.00')) < total_pagado:
-            raise ValidationError('La cotización vigente no puede ser menor que el total ya pagado de la orden.')
         with transaction.atomic():
             type(self).objects.select_for_update().filter(orden_servicio=self.orden_servicio).exclude(pk=self.pk).update(es_vigente=False)
             self.es_vigente = True

@@ -83,8 +83,8 @@ class ServicioTecnicoModelTests(TestCase):
         self.assertEqual(self.orden.saldo_pendiente, Decimal('500.00'))
         self.assertTrue(self.orden.puede_registrar_pago)
 
-    def test_no_permite_marcar_vigente_menor_que_total_pagado(self):
-        CotizacionServicio.objects.create(
+    def test_permite_marcar_vigente_menor_que_total_pagado_sin_perder_pagos(self):
+        cotizacion_anterior = CotizacionServicio.objects.create(
             orden_servicio=self.orden,
             total=Decimal('600.00'),
             estado=CotizacionServicio.Estado.APROBADA,
@@ -101,19 +101,16 @@ class ServicioTecnicoModelTests(TestCase):
             usuario_creacion=self.user,
         )
 
-        with self.assertRaisesMessage(ValidationError, 'La cotización vigente no puede ser menor que el total ya pagado de la orden.'):
-            cotizacion_menor.marcar_como_vigente()
+        cotizacion_menor.marcar_como_vigente()
 
-        cotizacion_mayor = CotizacionServicio.objects.create(
-            orden_servicio=self.orden,
-            total=Decimal('700.00'),
-            estado=CotizacionServicio.Estado.APROBADA,
-            usuario_creacion=self.user,
-        )
-        cotizacion_mayor.marcar_como_vigente()
-        cotizacion_mayor.refresh_from_db()
-        self.assertTrue(cotizacion_mayor.es_vigente)
-        self.assertEqual(self.orden.get_cotizacion_vigente(), cotizacion_mayor)
+        cotizacion_anterior.refresh_from_db()
+        cotizacion_menor.refresh_from_db()
+        self.assertFalse(cotizacion_anterior.es_vigente)
+        self.assertTrue(cotizacion_menor.es_vigente)
+        self.assertEqual(self.orden.get_cotizacion_vigente(), cotizacion_menor)
+        self.assertEqual(self.orden.total_cobro, Decimal('50.00'))
+        self.assertEqual(self.orden.total_pagado, Decimal('100.00'))
+        self.assertEqual(self.orden.saldo_pendiente, Decimal('0.00'))
 
 
     def test_vista_establecer_vigente_por_post_actualiza_y_redirige_a_orden(self):
@@ -133,7 +130,7 @@ class ServicioTecnicoModelTests(TestCase):
         self.client.force_login(self.user)
 
         response = self.client.post(
-            reverse('servicio_tecnico:orden_cotizacion_vigente', args=[self.orden.pk, cotizacion_nueva.pk]),
+            reverse('servicio_tecnico:establecer_cotizacion_vigente', args=[self.orden.pk, cotizacion_nueva.pk]),
             {'orden_id': self.orden.pk},
         )
 
@@ -162,7 +159,7 @@ class ServicioTecnicoModelTests(TestCase):
         self.client.force_login(self.user)
 
         response = self.client.post(
-            reverse('servicio_tecnico:orden_cotizacion_vigente', args=[otra_orden.pk, cotizacion.pk]),
+            reverse('servicio_tecnico:establecer_cotizacion_vigente', args=[otra_orden.pk, cotizacion.pk]),
             {'orden_id': otra_orden.pk},
         )
 
