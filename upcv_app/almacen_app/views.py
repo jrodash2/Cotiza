@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from .form import InstitucionForm, UserCreateForm, UserEditForm, PerfilForm
 from .models import Perfil, Institucion
-from cotizaciones_app.models import Cliente, Cotizacion, CotizacionItem, ProductoServicio, Venta
+from cotizaciones_app.models import Cliente, Cotizacion, Venta
 from django.views.generic import CreateView
 from django.views.generic import ListView
 from django.urls import reverse_lazy
@@ -66,6 +66,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.utils.html import strip_tags
 from decimal import Decimal
+from servicio_tecnico.models import OrdenServicio, PagoOrdenServicio
 from datetime import datetime  
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
@@ -205,67 +206,35 @@ import json
 @login_required
 @grupo_requerido('Administrador', 'Almacen')
 def dahsboard(request):
-    cotizaciones_qs = Cotizacion.objects.select_related('cliente')
     ventas_qs = Venta.objects.select_related('cotizacion', 'cliente').exclude(
         cotizacion__estado=Cotizacion.ESTADO_ANULADA,
     )
+    ordenes_qs = OrdenServicio.objects.select_related('cliente', 'tecnico_asignado').prefetch_related('pagos', 'cotizaciones_servicio')
+    pagos_servicio_qs = PagoOrdenServicio.objects.filter(activo=True).select_related('orden_servicio', 'usuario_registro')
 
     current_year = timezone.now().year
+    today = timezone.localdate()
     month_labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
     monthly_sales_amounts = [0.0] * 12
     for venta in ventas_qs.filter(fecha_venta__year=current_year):
         month = venta.fecha_venta
-        if not month:
-            continue
-        monthly_sales_amounts[month.month - 1] += float(venta.total or 0)
+        if month:
+            monthly_sales_amounts[month.month - 1] += float(venta.total or 0)
 
     clientes_por_mes_data = [0] * 12
     if 'created_at' in {field.name for field in Cliente._meta.get_fields()}:
-        clientes_fechas = Cliente.objects.filter(
-            created_at__year=current_year,
-        ).values_list('created_at', flat=True)
+        clientes_fechas = Cliente.objects.filter(created_at__year=current_year).values_list('created_at', flat=True)
     else:
-        clientes_fechas = Cliente.objects.annotate(
-            fecha_registro=Min('cotizaciones__fecha_emision'),
-        ).values_list('fecha_registro', flat=True)
-
+        clientes_fechas = Cliente.objects.annotate(fecha_registro=Min('cotizaciones__fecha_emision')).values_list('fecha_registro', flat=True)
     for fecha in clientes_fechas:
-        if not fecha:
-            continue
-        if getattr(fecha, 'year', None) != current_year:
-            continue
-        clientes_por_mes_data[fecha.month - 1] += 1
-
-    top_clients = (
-        cotizaciones_qs.values('cliente__nombre')
-        .annotate(
-            total_amount=Coalesce(
-                Sum('subtotal_venta'),
-                Value(Decimal('0.00')),
-                output_field=DecimalField(max_digits=12, decimal_places=2),
-            )
-        )
-        .order_by('-total_amount')[:5]
-    )
-    top_clients_labels = [item['cliente__nombre'] or 'Sin cliente' for item in top_clients]
-    top_clients_amounts = [float(item['total_amount'] or 0) for item in top_clients]
+        if fecha and getattr(fecha, 'year', None) == current_year:
+            clientes_por_mes_data[fecha.month - 1] += 1
 
     totals = {
-        'cotizaciones': cotizaciones_qs.count(),
-        'ventas': ventas_qs.count(),
         'clientes': Cliente.objects.count(),
-        'productos': ProductoServicio.objects.count(),
         'ventas_monto': Decimal('0.00'),
         'pendiente_pago': Decimal('0.00'),
-        'monto': cotizaciones_qs.exclude(estado=Cotizacion.ESTADO_ANULADA).aggregate(
-            total=Coalesce(
-                Sum('subtotal_venta'),
-                Value(Decimal('0.00')),
-                output_field=DecimalField(max_digits=12, decimal_places=2),
-            )
-        )['total'],
     }
-
     for venta in ventas_qs:
         total_venta = venta.total or Decimal('0.00')
         saldo = venta.saldo or Decimal('0.00')
@@ -278,29 +247,46 @@ def dahsboard(request):
             value = Decimal('0.00')
         return f"Q{value:,.2f}"
 
-    top_productos = (
-        CotizacionItem.objects.select_related('producto_servicio')
-        .filter(cotizacion__venta__isnull=False)
-        .values('producto_servicio__nombre')
-        .annotate(
-            total_monto=Coalesce(
-                Sum('total_linea_venta'),
-                Value(Decimal('0.00')),
-                output_field=DecimalField(max_digits=18, decimal_places=2),
-            ),
-            total_cantidad=Coalesce(
-                Sum('cantidad'),
-                Value(Decimal('0.00')),
-                output_field=DecimalField(max_digits=18, decimal_places=2),
-            ),
-        )
-        .order_by('-total_monto')[:10]
-    )
-    top_productos_labels = [
-        item['producto_servicio__nombre'] or 'SIN NOMBRE'
-        for item in top_productos
+    estado_counts = dict(ordenes_qs.values_list('estado').annotate(total=Count('id')))
+    servicio_estados_resumen = [
+        {'label': 'Recibidas hoy', 'value': ordenes_qs.filter(fecha_recepcion__date=today).count(), 'color': 'primary'},
+        {'label': 'En diagnóstico', 'value': estado_counts.get(OrdenServicio.Estado.EN_DIAGNOSTICO, 0), 'color': 'info'},
+        {'label': 'Pendientes de cotización', 'value': estado_counts.get(OrdenServicio.Estado.PENDIENTE_COTIZACION, 0), 'color': 'warning'},
+        {'label': 'Cotizadas', 'value': estado_counts.get(OrdenServicio.Estado.COTIZADO, 0), 'color': 'secondary'},
+        {'label': 'Aprobadas reparación', 'value': estado_counts.get(OrdenServicio.Estado.APROBADO_REPARACION, 0), 'color': 'success'},
+        {'label': 'En reparación', 'value': estado_counts.get(OrdenServicio.Estado.EN_REPARACION, 0), 'color': 'primary'},
+        {'label': 'Listas para entregar', 'value': estado_counts.get(OrdenServicio.Estado.LISTO_PARA_ENTREGAR, 0), 'color': 'success'},
+        {'label': 'Entregadas', 'value': estado_counts.get(OrdenServicio.Estado.ENTREGADO, 0), 'color': 'dark'},
     ]
-    top_productos_totals = [float(item['total_monto'] or Decimal('0.00')) for item in top_productos]
+
+    ordenes_con_saldo = []
+    total_base_servicio = Decimal('0.00')
+    total_pagado_servicio = Decimal('0.00')
+    saldo_pendiente_servicio = Decimal('0.00')
+    for orden in ordenes_qs:
+        base = orden.get_total_base_cobro()
+        pagado = orden.get_total_pagado()
+        saldo = max(base - pagado, Decimal('0.00'))
+        total_base_servicio += base
+        total_pagado_servicio += pagado
+        saldo_pendiente_servicio += saldo
+        if saldo > 0:
+            ordenes_con_saldo.append(orden)
+
+    ingresos_hoy_servicio = pagos_servicio_qs.filter(fecha__date=today).aggregate(total=Coalesce(Sum('monto'), Value(Decimal('0.00')), output_field=DecimalField(max_digits=12, decimal_places=2)))['total']
+    ingresos_mes_servicio = pagos_servicio_qs.filter(fecha__year=today.year, fecha__month=today.month).aggregate(total=Coalesce(Sum('monto'), Value(Decimal('0.00')), output_field=DecimalField(max_digits=12, decimal_places=2)))['total']
+
+    ordenes_por_estado_labels = []
+    ordenes_por_estado_totals = []
+    for estado, label in OrdenServicio.Estado.choices:
+        total = estado_counts.get(estado, 0)
+        if total:
+            ordenes_por_estado_labels.append(label)
+            ordenes_por_estado_totals.append(total)
+
+    pagos_servicio_mes = [0.0] * 12
+    for pago in pagos_servicio_qs.filter(fecha__year=current_year):
+        pagos_servicio_mes[pago.fecha.month - 1] += float(pago.monto or 0)
 
     context = {
         'totals': totals,
@@ -310,10 +296,20 @@ def dahsboard(request):
         'chart_month_sales': monthly_sales_amounts,
         'clientes_por_mes_labels': month_labels,
         'clientes_por_mes_data': clientes_por_mes_data,
-        'top_clients_labels': top_clients_labels,
-        'top_clients_totals': top_clients_amounts,
-        'top_products_labels': top_productos_labels,
-        'top_products_totals': top_productos_totals,
+        'servicio_estados_resumen': servicio_estados_resumen,
+        'servicio_economico': {
+            'total_cotizado': fmt_q(total_base_servicio),
+            'total_pagado': fmt_q(total_pagado_servicio),
+            'saldo_pendiente': fmt_q(saldo_pendiente_servicio),
+            'ingresos_hoy': fmt_q(ingresos_hoy_servicio),
+            'ingresos_mes': fmt_q(ingresos_mes_servicio),
+            'ordenes_con_saldo': len(ordenes_con_saldo),
+        },
+        'ultimas_ordenes_servicio': ordenes_qs.order_by('-fecha_recepcion', '-id')[:5],
+        'ordenes_pendientes_pago': ordenes_con_saldo[:5],
+        'ordenes_por_estado_labels': ordenes_por_estado_labels,
+        'ordenes_por_estado_totals': ordenes_por_estado_totals,
+        'pagos_servicio_mes': pagos_servicio_mes,
     }
 
     return render(request, 'almacen/dashboard.html', context)

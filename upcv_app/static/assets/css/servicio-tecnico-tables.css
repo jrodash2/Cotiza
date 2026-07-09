@@ -1,0 +1,166 @@
+/* Servicio Técnico DataTables — shared visual layer */
+.st-table-shell {
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+  background: transparent;
+  box-shadow: none;
+}
+
+.st-data-table {
+  width: 100% !important;
+  margin: 0 !important;
+  border-collapse: separate !important;
+  border-spacing: 0;
+}
+
+.st-data-table thead th {
+  background: linear-gradient(180deg, #f8fafc 0%, #eef6ff 100%) !important;
+  color: #334155 !important;
+  border-bottom: 1px solid var(--aurora-border, rgba(15, 23, 42, 0.09)) !important;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.st-data-table tbody td,
+.st-data-table tbody th {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.065) !important;
+  color: #0f172a;
+  padding: 0.95rem 1rem !important;
+  vertical-align: middle;
+}
+
+.st-data-table tbody tr:hover td,
+.st-data-table tbody tr:hover th {
+  background: rgba(37, 99, 235, 0.045) !important;
+}
+
+.st-data-table .st-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.st-data-table .btn-sm {
+  padding: 0.35rem 0.72rem;
+  font-size: 0.78rem;
+}
+
+.st-data-table tfoot th,
+.st-data-table tfoot td {
+  background: #f8fafc !important;
+  border-top: 1px solid var(--aurora-border, rgba(15, 23, 42, 0.09)) !important;
+}
+
+.st-datatable-wrapper.dataTables_wrapper {
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.st-datatable-wrapper .dataTables_length,
+.st-datatable-wrapper .dataTables_filter {
+  margin-bottom: 0.95rem;
+  color: var(--aurora-muted, #64748b);
+  font-weight: 650;
+}
+
+.st-datatable-wrapper .dataTables_length select,
+.st-datatable-wrapper .dataTables_filter input {
+  min-height: 38px;
+  border-radius: 999px !important;
+  border: 1px solid var(--aurora-border-strong, rgba(15, 23, 42, 0.14)) !important;
+  background: #fff !important;
+  padding: 0.35rem 0.85rem;
+}
+
+.st-datatable-wrapper .dataTables_filter {
+  text-align: right;
+}
+
+.st-datatable-wrapper .dataTables_filter input {
+  min-width: min(280px, 100%);
+  margin-left: 0.5rem;
+}
+
+.st-datatable-wrapper .dataTables_info {
+  color: var(--aurora-muted, #64748b);
+  padding-top: 1rem !important;
+}
+
+.st-datatable-wrapper .dataTables_paginate {
+  padding-top: 0.8rem !important;
+}
+
+.st-datatable-wrapper .dataTables_paginate .paginate_button {
+  border: 1px solid var(--aurora-border, rgba(15, 23, 42, 0.09)) !important;
+  border-radius: 999px !important;
+  margin: 0 0.12rem;
+  padding: 0.42rem 0.72rem !important;
+  color: #1d4ed8 !important;
+  background: #fff !important;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.05);
+}
+
+.st-datatable-wrapper .dataTables_paginate .paginate_button.current,
+.st-datatable-wrapper .dataTables_paginate .paginate_button.current:hover {
+  color: #fff !important;
+  border-color: transparent !important;
+  background: linear-gradient(135deg, #2563eb, #06b6d4) !important;
+}
+
+.st-datatable-wrapper .dataTables_paginate .paginate_button:hover {
+  color: #1d4ed8 !important;
+  border-color: rgba(37, 99, 235, 0.28) !important;
+  background: rgba(37, 99, 235, 0.08) !important;
+}
+
+.st-datatable-wrapper div.dataTables_processing {
+  border-radius: var(--aurora-radius, 16px);
+  border: 1px solid var(--aurora-border, rgba(15, 23, 42, 0.09));
+  box-shadow: var(--aurora-shadow-sm, 0 8px 20px rgba(15, 23, 42, 0.06));
+}
+
+@media (max-width: 767.98px) {
+  .st-datatable-wrapper.dataTables_wrapper {
+    padding: 0.75rem;
+  }
+
+  .st-datatable-wrapper .dataTables_filter,
+  .st-datatable-wrapper .dataTables_length {
+    text-align: left;
+  }
+
+  .st-datatable-wrapper .dataTables_filter input {
+    display: block;
+    width: 100%;
+    margin: 0.45rem 0 0;
+  }
+}
+
+
+.card .st-datatable-wrapper.dataTables_wrapper,
+.card .st-table-shell,
+.card .table-responsive {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.card .st-datatable-wrapper .st-dt-controls,
+.card .st-datatable-wrapper .row:last-child {
+  padding: 0 0.25rem;
+}
+
+.card .st-datatable-wrapper table.dataTable,
+.card .st-data-table {
+  border: 0 !important;
+}
+
+.card .st-data-table thead th:first-child { border-top-left-radius: 12px; }
+.card .st-data-table thead th:last-child { border-top-right-radius: 12px; }
