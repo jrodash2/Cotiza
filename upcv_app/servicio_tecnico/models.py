@@ -99,24 +99,46 @@ class OrdenServicio(models.Model):
         if errors:
             raise ValidationError(errors)
 
+    def get_cotizacion_aprobada_vigente(self):
+        """Devuelve la cotización aprobada vigente para esta orden.
+
+        Si por trazabilidad histórica existe más de una cotización aprobada,
+        la base de cobro debe tomar la aprobación más reciente de la orden, no
+        quedarse atada a una cotización anterior. La fecha define vigencia
+        funcional y el id desempata cotizaciones creadas el mismo día.
+        """
+        return self.cotizaciones_servicio.filter(
+            estado=CotizacionServicio.Estado.APROBADA,
+        ).order_by('-fecha', '-id').first()
+
+    @property
+    def cotizacion_aprobada_vigente(self):
+        return self.get_cotizacion_aprobada_vigente()
+
     @property
     def cotizacion_aprobada(self):
-        return self.cotizaciones_servicio.filter(estado=CotizacionServicio.Estado.APROBADA).order_by('-fecha', '-id').first()
+        return self.get_cotizacion_aprobada_vigente()
+
+    def get_total_base_cobro(self):
+        if self.costo_final and self.costo_final > 0:
+            return self.costo_final
+        cotizacion = self.get_cotizacion_aprobada_vigente()
+        return cotizacion.total if cotizacion else Decimal('0.00')
 
     @property
     def total_cobro(self):
-        if self.costo_final and self.costo_final > 0:
-            return self.costo_final
-        cotizacion = self.cotizacion_aprobada
-        return cotizacion.total if cotizacion else Decimal('0.00')
+        return self.get_total_base_cobro()
 
     @property
     def total_aprobado(self):
         return self.total_cobro
 
+    def get_total_pagado(self):
+        return self.pagos.filter(activo=True).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+
     @property
     def total_pagado(self):
-        return self.pagos.filter(activo=True).aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+        return self.get_total_pagado()
 
     @property
     def anticipo_total(self):
@@ -126,9 +148,12 @@ class OrdenServicio(models.Model):
     def total_anticipos(self):
         return self.anticipo_total
 
+    def get_saldo_pendiente(self):
+        return max(self.get_total_base_cobro() - self.get_total_pagado(), Decimal('0.00'))
+
     @property
     def saldo_pendiente(self):
-        return max(self.total_cobro - self.total_pagado, Decimal('0.00'))
+        return self.get_saldo_pendiente()
 
     @property
     def esta_pagada(self):
@@ -150,9 +175,16 @@ class OrdenServicio(models.Model):
             'PAGADO': 'Pagado',
         }[self.estado_pago]
 
+    def puede_registrar_pago_func(self):
+        return (
+            self.estado in PagoOrdenServicio.ESTADOS_PERMITIDOS
+            and self.get_total_base_cobro() > 0
+            and self.get_saldo_pendiente() > 0
+        )
+
     @property
     def puede_registrar_pago(self):
-        return self.estado in PagoOrdenServicio.ESTADOS_PERMITIDOS and self.total_cobro > 0 and self.saldo_pendiente > 0
+        return self.puede_registrar_pago_func()
 
     def save(self, *args, **kwargs):
         usuario_historial = kwargs.pop('usuario_historial', None)
