@@ -110,8 +110,7 @@ small.text-muted,
 .dropdown-menu,
 .profile-dropdown,
 .onhover-show-div,
-.dataTables_wrapper,
-.table-responsive {
+.dataTables_wrapper {
   border: 1px solid var(--aurora-border) !important;
   border-radius: var(--aurora-radius) !important;
   box-shadow: var(--aurora-shadow-sm) !important;
@@ -311,26 +310,79 @@ thead.table-light {
 .alert-info { background: rgba(14,165,233,0.12); color: #075985; }
 
 .sidebar-wrapper {
-  background: rgba(255,255,255,0.92) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96)) !important;
   border-right: 1px solid var(--aurora-border);
   box-shadow: 12px 0 36px rgba(15, 23, 42, 0.06);
   backdrop-filter: blur(16px);
 }
 
+.sidebar-wrapper .sidebar-main-title h6,
+.sidebar-wrapper .pin-title h6 {
+  color: #475569 !important;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .sidebar-wrapper .sidebar-links .sidebar-list > a,
-.sidebar-wrapper .sidebar-links .sidebar-submenu li a {
+.sidebar-wrapper .sidebar-links .sidebar-submenu li a,
+.sidebar-wrapper .sidebar-links .sidebar-list > a span,
+.sidebar-wrapper .sidebar-links .sidebar-submenu li a span {
   border-radius: 14px;
   margin: 0.18rem 0.55rem;
+  color: #1e293b !important;
+  opacity: 1 !important;
+  font-weight: 650;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.sidebar-wrapper .sidebar-links .sidebar-submenu li a {
   color: #334155 !important;
-  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+  font-weight: 600;
+}
+
+.sidebar-wrapper .sidebar-links .sidebar-list > a svg,
+.sidebar-wrapper .sidebar-links .sidebar-submenu li a svg,
+.sidebar-wrapper .sidebar-links .sidebar-list > i {
+  color: #475569 !important;
+  stroke: #475569 !important;
+  fill: none !important;
+  opacity: 1 !important;
 }
 
 .sidebar-wrapper .sidebar-links .sidebar-list > a:hover,
-.sidebar-wrapper .sidebar-links .sidebar-list.active > a,
-.sidebar-wrapper .sidebar-links .sidebar-submenu li a.active {
-  background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(6,182,212,0.10)) !important;
-  color: var(--aurora-primary-600) !important;
+.sidebar-wrapper .sidebar-links .sidebar-submenu li a:hover {
+  background: rgba(37, 99, 235, 0.08) !important;
+  color: #1d4ed8 !important;
   transform: translateX(2px);
+}
+
+.sidebar-wrapper .sidebar-links .sidebar-list > a:hover span,
+.sidebar-wrapper .sidebar-links .sidebar-submenu li a:hover span,
+.sidebar-wrapper .sidebar-links .sidebar-list > a:hover svg,
+.sidebar-wrapper .sidebar-links .sidebar-submenu li a:hover svg {
+  color: #1d4ed8 !important;
+  stroke: #1d4ed8 !important;
+}
+
+.sidebar-wrapper .sidebar-links .sidebar-list.active > a,
+.sidebar-wrapper .sidebar-links .sidebar-list > a.active,
+.sidebar-wrapper .sidebar-links .sidebar-submenu li a.active {
+  background: linear-gradient(135deg, rgba(37,99,235,0.16), rgba(6,182,212,0.12)) !important;
+  color: #1e40af !important;
+  box-shadow: inset 3px 0 0 #2563eb, 0 8px 20px rgba(37, 99, 235, 0.10);
+  transform: none;
+}
+
+.sidebar-wrapper .sidebar-links .sidebar-list.active > a span,
+.sidebar-wrapper .sidebar-links .sidebar-list > a.active span,
+.sidebar-wrapper .sidebar-links .sidebar-submenu li a.active span,
+.sidebar-wrapper .sidebar-links .sidebar-list.active > a svg,
+.sidebar-wrapper .sidebar-links .sidebar-list > a.active svg,
+.sidebar-wrapper .sidebar-links .sidebar-submenu li a.active svg {
+  color: #1e40af !important;
+  stroke: #1e40af !important;
+  fill: none !important;
 }
 
 .profile-nav img,
@@ -410,4 +462,19 @@ thead.table-light {
   .btn {
     white-space: normal;
   }
+}
+
+.sidebar-wrapper .sidebar-links .sidebar-list > a svg.fill-icon,
+.sidebar-wrapper .sidebar-links .sidebar-submenu li a svg.fill-icon {
+  fill: #475569 !important;
+  stroke: none !important;
+}
+
+.sidebar-wrapper .sidebar-links .sidebar-list > a:hover svg.fill-icon,
+.sidebar-wrapper .sidebar-links .sidebar-submenu li a:hover svg.fill-icon,
+.sidebar-wrapper .sidebar-links .sidebar-list.active > a svg.fill-icon,
+.sidebar-wrapper .sidebar-links .sidebar-list > a.active svg.fill-icon,
+.sidebar-wrapper .sidebar-links .sidebar-submenu li a.active svg.fill-icon {
+  fill: #1e40af !important;
+  stroke: none !important;
 }

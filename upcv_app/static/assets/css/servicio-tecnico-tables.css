@@ -1,10 +1,10 @@
 /* Servicio Técnico DataTables — shared visual layer */
 .st-table-shell {
-  border: 1px solid var(--aurora-border, rgba(15, 23, 42, 0.09));
-  border-radius: var(--aurora-radius, 16px);
+  border: 0;
+  border-radius: 0;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: var(--aurora-shadow-sm, 0 8px 20px rgba(15, 23, 42, 0.06));
+  background: transparent;
+  box-shadow: none;
 }
 
 .st-data-table {
@@ -56,11 +56,11 @@
 }
 
 .st-datatable-wrapper.dataTables_wrapper {
-  padding: 1rem;
-  border: 1px solid var(--aurora-border, rgba(15, 23, 42, 0.09)) !important;
-  border-radius: var(--aurora-radius, 16px) !important;
-  background: rgba(255, 255, 255, 0.94) !important;
-  box-shadow: var(--aurora-shadow-sm, 0 8px 20px rgba(15, 23, 42, 0.06)) !important;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .st-datatable-wrapper .dataTables_length,
@@ -142,3 +142,25 @@
     margin: 0.45rem 0 0;
   }
 }
+
+
+.card .st-datatable-wrapper.dataTables_wrapper,
+.card .st-table-shell,
+.card .table-responsive {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.card .st-datatable-wrapper .st-dt-controls,
+.card .st-datatable-wrapper .row:last-child {
+  padding: 0 0.25rem;
+}
+
+.card .st-datatable-wrapper table.dataTable,
+.card .st-data-table {
+  border: 0 !important;
+}
+
+.card .st-data-table thead th:first-child { border-top-left-radius: 12px; }
+.card .st-data-table thead th:last-child { border-top-right-radius: 12px; }
