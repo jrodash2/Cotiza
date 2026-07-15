@@ -11,6 +11,20 @@
     <link rel="icon" href="{% static 'assets/images/favicon.svg' %}" type="image/x-icon">
     <link rel="shortcut icon" href="{% static 'assets/images/favicon.svg' %}" type="image/x-icon">
     <title>UPCV</title>
+    <script>
+      (function () {
+        try {
+          var savedMode = localStorage.getItem('mode');
+          if (savedMode === 'dark-only') {
+            document.documentElement.classList.add('aurora-dark-boot');
+            document.addEventListener('DOMContentLoaded', function () {
+              document.body.classList.add('dark-only');
+              document.body.classList.remove('light');
+            });
+          }
+        } catch (error) {}
+      })();
+    </script>
 
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/font-awesome.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/icofont.css' %}">
