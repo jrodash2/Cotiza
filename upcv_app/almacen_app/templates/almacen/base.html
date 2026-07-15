@@ -11,10 +11,20 @@
     <link rel="icon" href="{% static 'assets/images/favicon.svg' %}" type="image/x-icon">
     <link rel="shortcut icon" href="{% static 'assets/images/favicon.svg' %}" type="image/x-icon">
     <title>UPCV</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+    <script>
+      (function () {
+        try {
+          var savedMode = localStorage.getItem('mode');
+          if (savedMode === 'dark-only') {
+            document.documentElement.classList.add('aurora-dark-boot');
+            document.addEventListener('DOMContentLoaded', function () {
+              document.body.classList.add('dark-only');
+              document.body.classList.remove('light');
+            });
+          }
+        } catch (error) {}
+      })();
+    </script>
 
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/font-awesome.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/icofont.css' %}">
@@ -22,16 +32,7 @@
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/flag-icon.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/feather-icon.css' %}">
 
-    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/slick.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/slick-theme.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/scrollbar.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/animate.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/js-datatables/style.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/owlcarousel.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/echart.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/date-picker.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/datatables.css' %}">
-    <link rel="stylesheet" href="{% static 'assets/css/datatable/datatables.min.css' %}">
 
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/vendors/bootstrap.css' %}">
 
@@ -44,7 +45,7 @@
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/app-fixes.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/layout-fixes.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'assets/css/aurora-ui.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/servicio-tecnico-tables.css' %}">
+    {% block extra_css %}{% endblock %}
     <style>
       .page-header {
         position: sticky;
@@ -240,33 +241,30 @@
     </div>
 
     <script src="{% static 'assets/js/jquery.min.js' %}"></script>
-    <script src="{% static 'assets/js/bootstrap/bootstrap.bundle.min.js' %}"></script>
-    <script src="{% static 'assets/js/icons/feather-icon/feather.min.js' %}"></script>
-    <script src="{% static 'assets/js/icons/feather-icon/feather-icon.js' %}"></script>
-    <script src="{% static 'assets/js/scrollbar/simplebar.js' %}"></script>
-    <script src="{% static 'assets/js/scrollbar/custom.js' %}"></script>
-    <script src="{% static 'assets/js/config.js' %}"></script>
-    <script src="{% static 'assets/js/sidebar-menu.js' %}"></script>
-    <script src="{% static 'assets/js/sidebar-pin.js' %}"></script>
-    <script src="{% static 'assets/js/slick/slick.min.js' %}"></script>
-    <script src="{% static 'assets/js/slick/slick.js' %}"></script>
-    <script src="{% static 'assets/js/header-slick.js' %}"></script>
-    <script src="{% static 'assets/js/js-datatables/simple-datatables@latest.js' %}"></script>
-    <script src="{% static 'assets/js/datatable/datatables/jquery.dataTables.min.js' %}"></script>
-    <script src="{% static 'assets/js/datatable/datatable-extension/dataTables.bootstrap5.min.js' %}"></script>
-    <script src="{% static 'assets/js/datatable/datatable-extension/dataTables.responsive.min.js' %}"></script>
-    <script src="{% static 'assets/js/datatable/datatable-extension/responsive.bootstrap5.min.js' %}"></script>
-    <script src="{% static 'assets/js/app-datatables.js' %}"></script>
-    <script src="{% static 'assets/js/custom-list-product.js' %}"></script>
-    <script src="{% static 'assets/js/owlcarousel/owl.carousel.js' %}"></script>
-    <script src="{% static 'assets/js/ecommerce.js' %}"></script>
-    <script src="{% static 'assets/js/script.js' %}"></script>
-    <script src="{% static 'assets/js/notify/bootstrap-notify.min.js' %}"></script>
-    <script src="{% static 'assets/js/icons/icons-notify2.js' %}"></script>
-    <script src="{% static 'assets/js/icons/icons-notify.js' %}"></script>
-    <script src="{% static 'assets/js/chart/apex-chart/apex-chart.js' %}"></script>
+    <script src="{% static 'assets/js/bootstrap/bootstrap.bundle.min.js' %}" defer></script>
+    <script src="{% static 'assets/js/icons/feather-icon/feather.min.js' %}" defer></script>
+    <script src="{% static 'assets/js/icons/feather-icon/feather-icon.js' %}" defer></script>
+    <script src="{% static 'assets/js/scrollbar/simplebar.js' %}" defer></script>
+    <script src="{% static 'assets/js/scrollbar/custom.js' %}" defer></script>
+    <script src="{% static 'assets/js/config.js' %}" defer></script>
+    <script src="{% static 'assets/js/sidebar-menu.js' %}" defer></script>
+    <script src="{% static 'assets/js/sidebar-pin.js' %}" defer></script>
+    <script src="{% static 'assets/js/script.js' %}" defer></script>
+    <script>
+      window.AURORA_ASSETS = {
+        datatablesCss: "{% static 'assets/css/datatable/datatables.min.css' %}",
+        datatablesCore: "{% static 'assets/js/datatable/datatables/jquery.dataTables.min.js' %}",
+        datatablesBootstrap: "{% static 'assets/js/datatable/datatable-extension/dataTables.bootstrap5.min.js' %}",
+        datatablesResponsive: "{% static 'assets/js/datatable/datatable-extension/dataTables.responsive.min.js' %}",
+        datatablesResponsiveBootstrap: "{% static 'assets/js/datatable/datatable-extension/responsive.bootstrap5.min.js' %}",
+        appDatatables: "{% static 'assets/js/app-datatables.js' %}",
+        servicioTecnicoTablesCss: "{% static 'assets/css/servicio-tecnico-tables.css' %}"
+      };
+    </script>
+    <script src="{% static 'assets/js/aurora-loader.js' %}" defer></script>
     <script>
       document.getElementById('currentYear').textContent = new Date().getFullYear();
     </script>
+    {% block extra_js %}{% endblock %}
   </body>
 </html>
